@@ -34,3 +34,7 @@ jobs:
           ls supabase/migrations/0002_seed.sql
           ls supabase/migrations/0003_rls_functions.sql
           ls supabase/migrations/0004_operations.sql
+
+# NOTE : ce fichier doit être déplacé vers `.github/workflows/ci.yml` dans le
+# dépôt GitHub (le token de déploiement Arena n'a pas la permission `workflows`).
+# Une fois en place, les jobs CI s'exécuteront à chaque push/PR.
