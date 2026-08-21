@@ -1,0 +1,39 @@
+# DebitManager Mobile (Flutter) — scaffold
+#
+# Application Android/iOS offline-first (SQLite chiffré + synchronisation différée).
+# Développement prévu aux sprints 0 et 2 du backlog (docs/backlog.md).
+#
+# Démarrage :
+#   cd mobile
+#   flutter pub get
+#   flutter run
+
+name: debitmanager_mobile
+description: DebitManager — gestion de bars, maquis et restaurants (offline-first).
+publish_to: "none"
+version: 0.1.0
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.19.0
+  supabase_flutter: ^2.5.6
+  sqflite_sqlcipher: ^3.1.2        # base locale chiffrée
+  connectivity_plus: ^6.0.3
+  geolocator: ^11.0.0
+  qr_flutter: ^4.1.0
+  shared_preferences: ^2.2.3
+  google_fonts: ^6.2.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
