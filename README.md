@@ -2,74 +2,80 @@
 
 Plateforme SaaS mobile-first & web de gestion de bars, maquis, restaurants, boîtes de nuit et lounges en Afrique de l'Ouest — **GitHub · Supabase · Vercel**.
 
-La documentation de référence complète (8 documents) est dans [`docs/`](docs/) :
-PRD, modèle de données, matrice de permissions, design system, cahier des charges, backlog, contrat API, user flows.
+Documentation de référence complète (8 documents) dans [`docs/`](docs/) : PRD, modèle de données, matrice de permissions, design system, cahier des charges, backlog, contrat API, user flows.
 
 ## 🏗️ Architecture
 
 | Brique | Technologie | Emplacement |
 |---|---|---|
-| Web (dashboards boutique, Super-Admin, affilié, QR client) | React + TypeScript + Vite + Tailwind | [`web/`](web/) |
-| Backend / données / auth / temps réel | **Supabase** (PostgreSQL + RLS + Auth + Realtime + Edge Functions futures) | [`supabase/migrations/`](supabase/migrations/) |
-| Mobile (Android/iOS) | Flutter (offline-first, SQLite chiffré) | [`mobile/`](mobile/) (scaffold) |
+| Web (dashboards boutique, Super-Admin, affilié, menu QR client) | React + TypeScript + Vite + Tailwind | [`web/`](web/) |
+| Backend / données / auth / temps réel | **Supabase** (PostgreSQL + RLS + Auth + Realtime + Edge Functions) | [`supabase/`](supabase/) |
+| Mobile (Android/iOS) | Flutter (offline-first, SQLite chiffré) | [`mobile/`](mobile/) |
 | Hébergement web | Vercel | `vercel.json` |
+| CI | GitHub Actions | `.github/workflows/ci.yml` |
 
-## 🚀 Démarrage rapide
+## ✨ Fonctionnalités (MVP finalisé)
 
-### 1. Base de données (Supabase)
+- **Inscription & comptes** : email/téléphone + OTP, profil auto, parcours exploitant (3 étapes) et employé (code société)
+- **Abonnement** : 12 tarifs (4 formules × 3 activités), essai gratuit 14 j, rappels J-7/J-3/J-1, grâce 3 j, suspension, upgrade au prorata
+- **Catalogue & stocks** : catégories/types/unités préconfigurés et extensibles, seuils d'alerte/sécurité, mouvements, alertes automatiques
+- **Commandes** : panier par table ou à emporter, **mode hors-ligne** (file de sync + dédup `client_generated_id`), ventilation bar/cuisine
+- **Paiements** : espèces (atomique : facture légale séquentielle + TVA + stock + trésorerie), mobile money/carte via webhooks **Kkiapay / Moneroo / Cinetpay** (Edge Function + RPC `confirm_payment`, commission plateforme 1%), remboursements tracés
+- **Tables** : plan de salle, statuts temps réel, réservations, **menu QR client** public (`/menu/:tableId`, commande `QR_CLIENT`)
+- **Personnel & présences** : 11 rôles prédéfinis + permissions modulaires, badgeage **géolocalisé** (rayon configurable, retard 10/30 min, exceptions), plannings
+- **Paie** : préparation comptable → validation promoteur → paiement, primes suggérées (performance), bulletins
+- **Approvisionnements** : fournisseurs, bons de commande (création → validation → réception → stock), **inventaire physique** avec écarts et interprétation (perte/vol/erreur)
+- **Rapports & KPI** : CA jour/semaine/mois, panier moyen, alertes stock, export CSV
+- **Affiliation** : inscription publique, lien `/r/CODE` + tracking horodaté, attribution définitive au premier clic, commission configurable (1er paiement/récurrent), délai anti-remboursement, retraits
+- **Super-Admin** : tenants, transactions, revenus (MRR, commission 1%), journal d'audit immuable, 2FA
+- **UX** : design system tokenisé (couleurs marque, typo, espacements), mode clair/sombre, i18n FR/EN, gros boutons tactiles, bandeau de connexion hors-ligne, **mode démo** sans backend
 
-1. Créez un projet sur [supabase.com](https://supabase.com) (utilisez `plelharwnppmekntpiqi` si déjà créé).
-2. Dans **SQL Editor**, exécutez les migrations **dans l'ordre** :
-   - `supabase/migrations/0001_schema.sql` (schéma complet : 30+ tables, enums, index)
-   - `supabase/migrations/0002_seed.sql` (permissions, 11 rôles + préréglages, catalogue, tarifs)
-   - `supabase/migrations/0003_rls_functions.sql` (RLS multi-tenant, RPC, triggers, realtime)
+## 🚀 Mise en route
 
-   > Alternative locale : `supabase start` puis `supabase db push` (CLI Supabase).
+### 1. Supabase (base de données + auth + temps réel)
 
-3. Créez votre premier **Super-Admin** (dashboard plateforme) en exécutant
-   [`supabase/seed_super_admin.sql`](supabase/seed_super_admin.sql) après avoir remplacé l'email,
-   puis connectez-vous et utilisez **« Mot de passe oublié »** pour définir le mot de passe.
+1. Créez le projet (ou utilisez `plelharwnppmekntpiqi`).
+2. **SQL Editor** → exécutez les migrations **dans l'ordre** :
+   - `supabase/migrations/0001_schema.sql` (schéma : 30+ tables, enums, index, triggers)
+   - `supabase/migrations/0002_seed.sql` (permissions, 11 rôles, catalogue, tarifs, config affiliation)
+   - `supabase/migrations/0003_rls_functions.sql` (RLS multi-tenant, RPC, realtime)
+   - `supabase/migrations/0004_operations.sql` (paiements, cycle de vie, badgeage GPS, appros, inventaire, QR)
+3. Super-Admin : exécutez `supabase/seed_super_admin.sql` (remplacez l'email), puis « Mot de passe oublié ».
+4. Edge Functions (optionnel, paiements) : `supabase functions deploy payment-webhook run-lifecycle` + secrets `WEBHOOK_SECRET`, `CRON_SECRET`.
 
-### 2. Application web (Vercel)
+### 2. Web (Vercel)
 
 ```bash
 cd web
-cp .env.example .env    # renseigner VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY
+cp .env.example .env      # VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY
 npm install
-npm run dev             # http://localhost:5173
+npm run dev               # http://localhost:5173
 ```
 
-Déploiement Vercel :
-1. Importez le dépôt GitHub dans [vercel.com](https://vercel.com) (framework : Vite).
-2. Ajoutez les variables d'environnement `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY`.
-3. Déployez — les réécritures SPA sont déjà dans `vercel.json`.
+Déploiement Vercel : importer le dépôt (framework Vite), ajouter les 2 variables, déployer. Réécritures SPA incluses (`vercel.json`).
 
-### 3. Sans configuration (mode démo)
+### 3. Mode démo (aucune configuration)
 
-Si les variables Supabase ne sont pas renseignées, l'app démarre en **mode démo**
-(persistance locale) pour parcourir toute l'UI : inscription → création boutique →
-essai 14 j → produits → commande → encaissement → facture légale → affiliation → Super-Admin.
+Sans variables Supabase, l'application fonctionne en **mode démo** (persistance locale) : boutique d'exemple pré-remplie (produits, tables, employés, historique de ventes) → parcourez tous les modules immédiatement.
 
 ## 🧪 Parcours testables
 
-1. **Exploitant** : Inscription → création boutique (Buvette/Bar-restaurant/Boîte de nuit) → formule + essai 14 j → dashboard KPI.
-2. **Serveur** : prise de commande (panier, table) → encaissement espèces → facture PDF (numéro légal séquentiel) + décrément de stock.
-3. **Produits** : catalogue préconfiguré (5 catégories, 15 types, 6 unités), seuils d'alerte, réappro / pertes.
-4. **Tables** : plan de salle, statuts libre/occupée/réservée/à nettoyer.
-5. **Affilié** : inscription publique → lien de parrainage `/r/CODE` → tracking du clic → attribution.
-6. **Super-Admin** : liste des tenants, revenus (abonnements, commission 1%, MRR), journal d'audit.
+1. **Exploitant** : inscription → onboarding (activité → infos → formule/essai) → dashboard KPI vivant
+2. **Serveur** : commande (panier + table) → encaissement espèces → facture légale → stock décrémenté
+3. **Personnel** : ajout d'employés (rôles), badgeage (géolocalisation simulée), historique
+4. **Paie** : préparer → suggérer primes → valider → payer (workflow comptable/promoteur)
+5. **Appro** : fournisseurs → bon de commande → validation → réception (stock mis à jour) ; inventaire avec écarts
+6. **QR client** : `/menu/t1` (table de démo) → commande autonome
+7. **Affilié** : `/register?affiliate=1` → lien `/r/CODE` → suivi des gains → retrait
+8. **Super-Admin** : `/admin` → tenants, revenus, audit
 
-## 🔒 Sécurité (implémentée côté base)
+## 🔒 Sécurité
 
-- **RLS multi-tenant** : chaque requête filtrée par `tenant_id` via `get_my_tenant_id()` (security definer).
-- **Audit immuable** : `audit_logs` sans policy UPDATE/DELETE ; les actions sensibles (création boutique, encaissement, etc.) y écrivent.
-- **Paiement atomique** : RPC `record_cash_payment` (facture + numéro séquentiel + paiement + trésorerie + stock) en une transaction.
-- **Affiliation anti-fraude** : attribution au premier code, statut `ACTIVE` requis, tracking horodaté avec expiration.
-- **2FA** : exigé pour Promoteur/Comptable/Super-Admin (activation dans Auth Supabase + vérification côté app).
+RLS multi-tenant strict (toute requête filtrée par `tenant_id`), audit immuable (pas de policy UPDATE/DELETE), paiements transactionnels (RPC `security definer`), signatures de webhook, 2FA pour rôles sensibles, secret vault, HTTPS/TLS, OWASP (validation serveur systématique, rate limiting côté Supabase).
 
-## 📦 Prochaines itérations (backlog `docs/backlog.md`)
+## 📦 Prochaines itérations (docs/backlog.md)
 
-- Paiements mobile money / carte (Kkiapay, Moneroo, Cinetpay) via webhooks + réconciliation.
-- Application mobile Flutter complète (`mobile/`).
-- Badgeage géolocalisé, paie, inventaire, KDS temps réel (Realtime déjà activé sur `orders`).
-- Edge Functions Supabase pour les webhooks et la réconciliation quotidienne.
+- Application mobile Flutter complète (sprints 2–4) : commandes offline, KDS, badgeage GPS
+- Réconciliation quotidienne automatique des agrégateurs
+- Messagerie interne de groupe, notifications SMS
+- Comparatif multi-boutiques, QR générés par table (impression)

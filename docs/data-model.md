@@ -529,3 +529,16 @@ Role 1---N RolePermission ---N Permission
 ---
 
 *Ce document fait foi comme structure de base de données unique. Toute évolution de schéma en cours de développement doit être documentée ici avant implémentation, pour rester la source de vérité pour tous les agents.*
+
+## 28. Évolutions documentées (addendum)
+
+Conformément à la règle « toute évolution de schéma doit être documentée ici avant implémentation » :
+
+| Date | Changement | Justification |
+|---|---|---|
+| v1.0 | `companies.geo_lat` / `companies.geo_lng` (`numeric(9,6)`, nullable) | Lieu de travail enregistré pour la contrainte de géolocalisation du badgeage (rayon configurable via `platform_config.attendance.geo_radius_meters`) |
+| v1.0 | `products.section` (`ENUM(BAR, KITCHEN)`) | Ventilation automatique des lignes de commande par section, dérivée de la catégorie produit |
+| v1.0 | `company_counters` (tenant_id, invoice_counter) | Compteur séquentiel par boutique pour la numérotation légale des factures (`next_invoice_number`) |
+| v1.0 | Tables `leaves` (congés) et `reservations` | Workflow demande/approbation de congés et réservations de tables (spécifiés au cahier des charges §6.4/§6.6) |
+
+Fonctions RPC ajoutées (opérations transactionnelles côté serveur) : `start_payment`, `confirm_payment`, `refund_payment`, `create_affiliate_commission`, `check_in`, `check_out`, `validate_purchase_order`, `receive_purchase_order`, `complete_inventory`, `run_subscription_lifecycle`, `get_menu`, `create_qr_order`, `get_public_plans`, `track_referral_click`, `create_company`, `record_cash_payment`, `initialize_company`, `next_invoice_number`.

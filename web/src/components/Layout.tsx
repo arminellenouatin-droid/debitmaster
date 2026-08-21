@@ -3,6 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Package, ClipboardList, Grid3x3, Users, Megaphone, ShieldCheck,
   LogOut, Globe, Moon, Sun, Wifi, WifiOff, RefreshCw, Settings, HandCoins, Store,
+  Clock, Wallet, Truck, BarChart3,
 } from 'lucide-react'
 import { useI18n } from '../lib/i18n'
 import { getSession, signOut, type SessionUser, type Profile } from '../lib/api'
@@ -51,6 +52,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           { to: '/orders', icon: <ClipboardList className="w-5 h-5" />, label: t('orders') },
           { to: '/products', icon: <Package className="w-5 h-5" />, label: t('products') },
           { to: '/tables', icon: <Grid3x3 className="w-5 h-5" />, label: t('tables') },
+          { to: '/staff', icon: <Users className="w-5 h-5" />, label: t('staff') },
+          { to: '/attendance', icon: <Clock className="w-5 h-5" />, label: t('attendance') },
+          { to: '/payroll', icon: <Wallet className="w-5 h-5" />, label: t('payroll') },
+          { to: '/procurement', icon: <Truck className="w-5 h-5" />, label: t('procurement') },
+          { to: '/reports', icon: <BarChart3 className="w-5 h-5" />, label: t('reports') },
         ]),
     ...(isSuperAdmin ? [{ to: '/admin', icon: <ShieldCheck className="w-5 h-5" />, label: t('admin') }] : []),
     { to: '/profile', icon: <Settings className="w-5 h-5" />, label: t('profile') },

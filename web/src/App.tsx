@@ -10,10 +10,16 @@ import DashboardPage from './pages/DashboardPage'
 import ProductsPage from './pages/ProductsPage'
 import OrdersPage from './pages/OrdersPage'
 import TablesPage from './pages/TablesPage'
+import StaffPage from './pages/StaffPage'
+import AttendancePage from './pages/AttendancePage'
+import PayrollPage from './pages/PayrollPage'
+import ProcurementPage from './pages/ProcurementPage'
+import ReportsPage from './pages/ReportsPage'
 import AffiliatePage from './pages/AffiliatePage'
 import AdminPage from './pages/AdminPage'
 import ProfilePage from './pages/ProfilePage'
 import ReferralLanding from './pages/ReferralLanding'
+import QrMenuPage from './pages/QrMenuPage'
 
 export default function App() {
   return (
@@ -24,6 +30,7 @@ export default function App() {
           <Route path="/login" element={<AuthPages mode="login" />} />
           <Route path="/register" element={<AuthPages mode="register" />} />
           <Route path="/r/:code" element={<ReferralLanding />} />
+          <Route path="/menu/:tableId" element={<QrMenuPage />} />
 
           <Route
             path="/onboarding"
@@ -44,6 +51,26 @@ export default function App() {
           <Route
             path="/tables"
             element={<ProtectedRoute><Layout><TablesPage /></Layout></ProtectedRoute>}
+          />
+          <Route
+            path="/staff"
+            element={<ProtectedRoute><Layout><StaffPage /></Layout></ProtectedRoute>}
+          />
+          <Route
+            path="/attendance"
+            element={<ProtectedRoute><Layout><AttendancePage /></Layout></ProtectedRoute>}
+          />
+          <Route
+            path="/payroll"
+            element={<ProtectedRoute><Layout><PayrollPage /></Layout></ProtectedRoute>}
+          />
+          <Route
+            path="/procurement"
+            element={<ProtectedRoute><Layout><ProcurementPage /></Layout></ProtectedRoute>}
+          />
+          <Route
+            path="/reports"
+            element={<ProtectedRoute><Layout><ReportsPage /></Layout></ProtectedRoute>}
           />
           <Route
             path="/affiliate"

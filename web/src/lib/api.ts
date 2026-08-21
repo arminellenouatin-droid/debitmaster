@@ -6,9 +6,9 @@ import { isDemoMode, supabase } from './supabase'
 import { demoApi } from './demo'
 import { uid } from './format'
 import type {
-  ActivityType, AdminCompanyRow, AffiliateInfo, Category, Company, DiningTable,
-  Invoice, Kpis, Notification, Order, Pricing, Product, ProductType, Profile,
-  PublicPlans, Unit,
+  ActivityType, AdminCompanyRow, AffiliateInfo, AttendanceRecord, Category, Company, DiningTable,
+  Employee, Inventory, Invoice, Kpis, MenuItem, Notification, Order, Payroll, Pricing,
+  Product, ProductType, Profile, PublicPlans, PurchaseOrder, Supplier, Unit,
 } from './types'
 
 export type { Profile } from './types'
@@ -308,7 +308,7 @@ export async function createOrder(p: {
       order_items: p.items.map((it) => ({
         id: uid(), order_id: orderId, product_id: it.product_id, quantity: it.quantity,
         unit_price: it.unit_price, section: it.section, status: 'PENDING',
-        products: seedName('categories', null),
+        products: { name: db.products.find((pr) => pr.id === it.product_id)?.name ?? 'Produit' },
       })),
     }
     db.orders.unshift(order)
@@ -594,4 +594,443 @@ const ALL_PLATFORM_PERMISSIONS = [
 
 export function pricingFromPlans(plans: PublicPlans): Pricing {
   return plans.pricing
+}
+
+// ---------------------------------------------------------------------------
+// Personnel (employés)
+// ---------------------------------------------------------------------------
+export async function getEmployees(): Promise<Employee[]> {
+  if (isDemoMode) return demoApi.load().employees
+  const { data } = await supabase!
+    .from('employees')
+    .select('*, profiles(first_name,last_name,phone,email)')
+    .order('created_at')
+  return ((data as any[]) ?? []).map((e) => ({
+    id: e.id, tenant_id: e.tenant_id, user_id: e.user_id, position: e.position,
+    hourly_rate: e.hourly_rate, monthly_salary: e.monthly_salary, payment_method: e.payment_method,
+    status: e.status, created_at: e.created_at,
+    first_name: e.profiles?.first_name ?? null, last_name: e.profiles?.last_name ?? null,
+    phone: e.profiles?.phone ?? null, email: e.profiles?.email ?? null,
+  }))
+}
+
+export async function createEmployee(p: {
+  firstName: string; lastName: string; phone: string; position: string; monthlySalary: number
+}): Promise<{ error?: string }> {
+  if (isDemoMode) {
+    const db = demoApi.load()
+    const company = db.company
+    if (!company) return { error: 'Aucune boutique' }
+    const id = uid()
+    db.employees.push({
+      id, tenant_id: company.id, user_id: id, first_name: p.firstName, last_name: p.lastName,
+      phone: p.phone, position: p.position, monthly_salary: p.monthlySalary,
+      payment_method: 'MOBILE_MONEY', status: 'ACTIVE', created_at: new Date().toISOString(),
+    })
+    demoApi.save(db)
+    return {}
+  }
+  const me = (await supabase!.auth.getUser()).data.user
+  if (!me) return { error: 'Non authentifié' }
+  // Création directe : utilisateur auth + profil + fiche employé
+  const { data: created, error } = await supabase!.auth.admin.createUser({
+    email: `${p.phone.replace(/\D/g, '')}@staff.debitmanager.local`,
+    phone: p.phone,
+    email_confirm: true,
+    user_metadata: { first_name: p.firstName, last_name: p.lastName },
+  })
+  if (error) return { error: error.message }
+  const { error: empErr } = await supabase!.from('employees').insert({
+    user_id: created.user.id, position: p.position, monthly_salary: p.monthlySalary,
+  })
+  return { error: empErr?.message }
+}
+
+// ---------------------------------------------------------------------------
+// Présences (badgeage)
+// ---------------------------------------------------------------------------
+export async function getAttendance(): Promise<AttendanceRecord[]> {
+  if (isDemoMode) return demoApi.load().attendance.slice().sort((a, b) => b.check_in_at.localeCompare(a.check_in_at))
+  const { data } = await supabase!
+    .from('attendance')
+    .select('*, employees(position, profiles(first_name,last_name))')
+    .order('check_in_at', { ascending: false })
+    .limit(50)
+  return ((data as any[]) ?? []).map((a) => ({
+    id: a.id, employee_id: a.employee_id, tenant_id: a.tenant_id, check_in_at: a.check_in_at,
+    check_out_at: a.check_out_at, status: a.status, exception_reason: a.exception_reason,
+    first_name: a.employees?.profiles?.first_name ?? null,
+    last_name: a.employees?.profiles?.last_name ?? null,
+    position: a.employees?.position ?? null,
+  }))
+}
+
+export async function checkIn(): Promise<{ error?: string; status?: string }> {
+  if (isDemoMode) {
+    const db = demoApi.load()
+    const emp = db.employees[0]
+    if (!emp) return { error: 'Aucun profil employé' }
+    if (db.attendance.some((a) => a.employee_id === emp.id && !a.check_out_at && a.check_in_at.slice(0, 10) === new Date().toISOString().slice(0, 10))) {
+      return { error: 'Déjà pointé aujourd\'hui' }
+    }
+    db.attendance.unshift({
+      id: uid(), employee_id: emp.id, tenant_id: emp.tenant_id, check_in_at: new Date().toISOString(),
+      status: 'ON_TIME', first_name: emp.first_name, last_name: emp.last_name, position: emp.position,
+    })
+    demoApi.save(db)
+    return { status: 'ON_TIME' }
+  }
+  const lat = 6.37, lng = 2.39 // ex. Cotonou (le serveur compare au geo_lat/lng de la boutique)
+  const { data, error } = await supabase!.rpc('check_in', { p_lat: lat, p_lng: lng })
+  return { error: error?.message, status: (data as any)?.status }
+}
+
+export async function checkOut(): Promise<{ error?: string }> {
+  if (isDemoMode) {
+    const db = demoApi.load()
+    const emp = db.employees[0]
+    if (!emp) return {}
+    db.attendance = db.attendance.map((a) =>
+      a.employee_id === emp.id && !a.check_out_at && a.check_in_at.slice(0, 10) === new Date().toISOString().slice(0, 10)
+        ? { ...a, check_out_at: new Date().toISOString() } : a)
+    demoApi.save(db)
+    return {}
+  }
+  const { error } = await supabase!.rpc('check_out')
+  return { error: error?.message }
+}
+
+// ---------------------------------------------------------------------------
+// Paie
+// ---------------------------------------------------------------------------
+export async function getPayrolls(): Promise<Payroll[]> {
+  if (isDemoMode) return demoApi.load().payrolls
+  const { data } = await supabase!
+    .from('payrolls')
+    .select('*, employees(position, profiles(first_name,last_name))')
+    .order('period_year', { ascending: false })
+    .order('period_month', { ascending: false })
+  return ((data as any[]) ?? []).map((p) => ({
+    id: p.id, tenant_id: p.tenant_id, employee_id: p.employee_id, period_month: p.period_month,
+    period_year: p.period_year, base_amount: p.base_amount, bonus_amount: p.bonus_amount,
+    deduction_amount: p.deduction_amount, total_amount: p.total_amount, status: p.status,
+    payslip_pdf_url: p.payslip_pdf_url, created_at: p.created_at,
+    first_name: p.employees?.profiles?.first_name ?? null,
+    last_name: p.employees?.profiles?.last_name ?? null,
+    position: p.employees?.position ?? null,
+  }))
+}
+
+export async function preparePayrolls(month: number, year: number): Promise<{ error?: string; created: number }> {
+  if (isDemoMode) {
+    const db = demoApi.load()
+    const company = db.company
+    if (!company) return { error: 'Aucune boutique', created: 0 }
+    let created = 0
+    for (const emp of db.employees) {
+      if (db.payrolls.some((p) => p.employee_id === emp.id && p.period_month === month && p.period_year === year)) continue
+      db.payrolls.push({
+        id: uid(), tenant_id: company.id, employee_id: emp.id, period_month: month, period_year: year,
+        base_amount: emp.monthly_salary ?? 0, bonus_amount: 0, deduction_amount: 0,
+        total_amount: emp.monthly_salary ?? 0, status: 'DRAFT', created_at: new Date().toISOString(),
+        first_name: emp.first_name, last_name: emp.last_name, position: emp.position,
+      })
+      created++
+    }
+    demoApi.save(db)
+    return { created }
+  }
+  const employees = await getEmployees()
+  let created = 0
+  for (const emp of employees) {
+    if (emp.monthly_salary == null) continue
+    const { error } = await supabase!.from('payrolls').insert({
+      employee_id: emp.id, period_month: month, period_year: year,
+      base_amount: emp.monthly_salary, total_amount: emp.monthly_salary, status: 'DRAFT',
+    }).maybeSingle()
+    if (!error) created++
+  }
+  return { created }
+}
+
+export async function suggestBonuses(month: number, year: number): Promise<{ error?: string }> {
+  if (isDemoMode) {
+    const db = demoApi.load()
+    db.payrolls = db.payrolls.map((p) =>
+      p.period_month === month && p.period_year === year && p.status === 'DRAFT'
+        ? { ...p, bonus_amount: Math.round(p.base_amount * 0.1), total_amount: p.base_amount + Math.round(p.base_amount * 0.1) } : p)
+    demoApi.save(db)
+    return {}
+  }
+  const { data: list } = await supabase!.from('payrolls').select('id, base_amount')
+    .eq('period_month', month).eq('period_year', year).eq('status', 'DRAFT')
+  for (const p of (list as any[]) ?? []) {
+    const bonus = Math.round(p.base_amount * 0.1)
+    await supabase!.from('payrolls').update({ bonus_amount: bonus, total_amount: p.base_amount + bonus }).eq('id', p.id)
+  }
+  return {}
+}
+
+export async function validatePayrolls(month: number, year: number): Promise<{ error?: string }> {
+  if (isDemoMode) {
+    const db = demoApi.load()
+    db.payrolls = db.payrolls.map((p) =>
+      p.period_month === month && p.period_year === year && p.status === 'DRAFT'
+        ? { ...p, status: 'VALIDATED' } : p)
+    demoApi.save(db)
+    return {}
+  }
+  const { data: list } = await supabase!.from('payrolls').select('id')
+    .eq('period_month', month).eq('period_year', year).eq('status', 'DRAFT')
+  for (const p of (list as any[]) ?? []) {
+    await supabase!.from('payrolls').update({ status: 'VALIDATED' }).eq('id', p.id)
+  }
+  return {}
+}
+
+export async function payPayrolls(month: number, year: number): Promise<{ error?: string }> {
+  if (isDemoMode) {
+    const db = demoApi.load()
+    db.payrolls = db.payrolls.map((p) =>
+      p.period_month === month && p.period_year === year && p.status === 'VALIDATED'
+        ? { ...p, status: 'PAID' } : p)
+    db.notifications.unshift({ id: uid(), content: `Paie de ${month}/${year} payée ✅`, event_type: 'PAYROLL_PAID', read_at: null, created_at: new Date().toISOString() })
+    demoApi.save(db)
+    return {}
+  }
+  const { data: list } = await supabase!.from('payrolls').select('id, total_amount')
+    .eq('period_month', month).eq('period_year', year).eq('status', 'VALIDATED')
+  for (const p of (list as any[]) ?? []) {
+    const { data: pay } = await supabase!.rpc('start_payment', {
+      p_purpose: 'PAYROLL', p_reference_id: p.id, p_amount: p.total_amount, p_method: 'MOBILE_MONEY', p_aggregator: 'NONE',
+    })
+    if (pay?.id) await supabase!.rpc('confirm_payment', { p_payment_id: pay.id })
+  }
+  return {}
+}
+
+// ---------------------------------------------------------------------------
+// Approvisionnements : fournisseurs + bons de commande
+// ---------------------------------------------------------------------------
+export async function getSuppliers(): Promise<Supplier[]> {
+  if (isDemoMode) return demoApi.load().suppliers
+  const { data } = await supabase!.from('suppliers').select('*').order('name')
+  return (data as Supplier[]) ?? []
+}
+
+export async function createSupplier(p: { name: string; phone?: string }): Promise<{ error?: string }> {
+  if (isDemoMode) {
+    const db = demoApi.load()
+    const company = db.company
+    if (!company) return { error: 'Aucune boutique' }
+    db.suppliers.push({ id: uid(), tenant_id: company.id, name: p.name, phone: p.phone ?? null, created_at: new Date().toISOString() })
+    demoApi.save(db)
+    return {}
+  }
+  const { error } = await supabase!.from('suppliers').insert({ name: p.name, phone: p.phone ?? null })
+  return { error: error?.message }
+}
+
+export async function getPurchaseOrders(): Promise<PurchaseOrder[]> {
+  if (isDemoMode) return demoApi.load().purchaseOrders
+  const { data } = await supabase!
+    .from('purchase_orders')
+    .select('*, suppliers(name), purchase_order_items(*, products(name))')
+    .order('created_at', { ascending: false })
+  return (data as PurchaseOrder[]) ?? []
+}
+
+export async function createPurchaseOrder(p: {
+  supplier_id: string
+  items: { product_id: string; quantity: number; unit_price: number }[]
+}): Promise<{ error?: string }> {
+  if (isDemoMode) {
+    const db = demoApi.load()
+    const company = db.company
+    if (!company) return { error: 'Aucune boutique' }
+    const po: PurchaseOrder = {
+      id: uid(), tenant_id: company.id, supplier_id: p.supplier_id, status: 'DRAFT',
+      created_at: new Date().toISOString(),
+      purchase_order_items: p.items.map((it) => ({
+        id: uid(), purchase_order_id: '', product_id: it.product_id, quantity_ordered: it.quantity,
+        unit_price: it.unit_price,
+      })),
+    }
+    po.purchase_order_items!.forEach((it) => { it.purchase_order_id = po.id })
+    db.purchaseOrders.unshift(po)
+    demoApi.save(db)
+    return {}
+  }
+  const { data: po, error } = await supabase!.from('purchase_orders').insert({ supplier_id: p.supplier_id, status: 'DRAFT' }).select().single()
+  if (error) return { error: error.message }
+  const { error: itErr } = await supabase!.from('purchase_order_items').insert(
+    p.items.map((it) => ({ purchase_order_id: po.id, product_id: it.product_id, quantity_ordered: it.quantity, unit_price: it.unit_price })),
+  )
+  return { error: itErr?.message }
+}
+
+export async function validatePurchaseOrder(id: string): Promise<{ error?: string }> {
+  if (isDemoMode) {
+    const db = demoApi.load()
+    db.purchaseOrders = db.purchaseOrders.map((po) => (po.id === id && po.status === 'DRAFT' ? { ...po, status: 'VALIDATED' } : po))
+    demoApi.save(db)
+    return {}
+  }
+  const { error } = await supabase!.rpc('validate_purchase_order', { p_id: id })
+  return { error: error?.message }
+}
+
+export async function receivePurchaseOrder(id: string): Promise<{ error?: string }> {
+  if (isDemoMode) {
+    const db = demoApi.load()
+    const po = db.purchaseOrders.find((x) => x.id === id)
+    if (!po) return { error: 'Introuvable' }
+    for (const it of po.purchase_order_items ?? []) {
+      const qty = it.quantity_received ?? it.quantity_ordered
+      db.products = db.products.map((prod) => (prod.id === it.product_id ? { ...prod, current_stock: prod.current_stock + qty } : prod))
+    }
+    db.purchaseOrders = db.purchaseOrders.map((x) => (x.id === id ? { ...x, status: 'RECEIVED' } : x))
+    demoApi.save(db)
+    return {}
+  }
+  const { error } = await supabase!.rpc('receive_purchase_order', { p_id: id })
+  return { error: error?.message }
+}
+
+// ---------------------------------------------------------------------------
+// Inventaires
+// ---------------------------------------------------------------------------
+export async function getInventories(): Promise<Inventory[]> {
+  if (isDemoMode) return demoApi.load().inventories
+  const { data } = await supabase!
+    .from('inventories')
+    .select('*, inventory_lines(*, products(name))')
+    .order('performed_at', { ascending: false })
+  return (data as Inventory[]) ?? []
+}
+
+export async function startInventory(): Promise<{ error?: string }> {
+  if (isDemoMode) {
+    const db = demoApi.load()
+    const company = db.company
+    if (!company) return { error: 'Aucune boutique' }
+    const inv: Inventory = {
+      id: uid(), tenant_id: company.id, status: 'IN_PROGRESS', performed_at: new Date().toISOString(),
+      inventory_lines: db.products.filter((p) => p.is_active).map((p) => ({
+        id: uid(), inventory_id: '', product_id: p.id, theoretical_quantity: p.current_stock,
+        actual_quantity: p.current_stock, discrepancy: 0, interpretation: 'OK', products: { name: p.name },
+      })),
+    }
+    inv.inventory_lines!.forEach((l) => { l.inventory_id = inv.id })
+    db.inventories.unshift(inv)
+    demoApi.save(db)
+    return {}
+  }
+  const { data: inv, error } = await supabase!.from('inventories').insert({}).select().single()
+  if (error) return { error: error.message }
+  const { data: products } = await supabase!.from('products').select('id, current_stock').eq('is_active', true)
+  const { error: linesErr } = await supabase!.from('inventory_lines').insert(
+    (products as any[] ?? []).map((p) => ({ inventory_id: inv.id, product_id: p.id, theoretical_quantity: p.current_stock, actual_quantity: p.current_stock })),
+  )
+  return { error: linesErr?.message }
+}
+
+export async function saveInventoryLine(lineId: string, actual: number): Promise<{ error?: string }> {
+  if (isDemoMode) {
+    const db = demoApi.load()
+    db.inventories = db.inventories.map((inv) => ({
+      ...inv,
+      inventory_lines: inv.inventory_lines?.map((l) => (l.id === lineId ? { ...l, actual_quantity: actual, discrepancy: actual - l.theoretical_quantity } : l)),
+    }))
+    demoApi.save(db)
+    return {}
+  }
+  const { error } = await supabase!.from('inventory_lines').update({ actual_quantity: actual }).eq('id', lineId)
+  return { error: error?.message }
+}
+
+export async function completeInventory(id: string): Promise<{ error?: string }> {
+  if (isDemoMode) {
+    const db = demoApi.load()
+    db.inventories = db.inventories.map((inv) => {
+      if (inv.id !== id) return inv
+      const lines = inv.inventory_lines?.map((l) => {
+        const disc = (l.actual_quantity ?? l.theoretical_quantity) - l.theoretical_quantity
+        const pct = l.theoretical_quantity > 0 ? Math.abs(disc) / l.theoretical_quantity * 100 : 0
+        const interp = disc === 0 ? 'OK' : disc < 0 ? (pct <= 5 ? 'PROBABLE_LOSS' : 'PROBABLE_THEFT') : 'INPUT_ERROR'
+        if (disc < 0) {
+          db.products = db.products.map((prod) => prod.id === l.product_id ? { ...prod, current_stock: Math.max(0, prod.current_stock + disc) } : prod)
+        }
+        return { ...l, discrepancy: disc, interpretation: interp }
+      })
+      return { ...inv, status: 'COMPLETED', inventory_lines: lines }
+    })
+    demoApi.save(db)
+    return {}
+  }
+  const { error } = await supabase!.rpc('complete_inventory', { p_id: id })
+  return { error: error?.message }
+}
+
+// ---------------------------------------------------------------------------
+// QR menu client (public)
+// ---------------------------------------------------------------------------
+export async function getMenuByTable(tableId: string): Promise<{ table?: { number: string; status: string; qr_enabled: boolean } | null; items: MenuItem[] }> {
+  if (isDemoMode) {
+    const db = demoApi.load()
+    const table = db.tables.find((tb) => tb.id === tableId)
+    if (!table) return { table: null, items: [] }
+    const cats = demoApi.getCategories()
+    return {
+      table: { number: table.number, status: table.status, qr_enabled: table.qr_order_enabled },
+      items: db.products.filter((p) => p.is_active).map((p) => ({
+        product_id: p.id, name: p.name, price: p.price,
+        category: cats.find((c) => c.id === p.category_id)?.name ?? 'Autres', section: p.section,
+      })),
+    }
+  }
+  const { data, error } = await supabase!.rpc('get_menu', { p_table_id: tableId })
+  if (error) return { table: null, items: [] }
+  const { data: table } = await supabase!.from('dining_tables').select('number, status, qr_order_enabled').eq('id', tableId).single()
+  return { table: (table as any) ?? null, items: (data as MenuItem[]) ?? [] }
+}
+
+export async function createQrOrder(tableId: string, items: { product_id: string; quantity: number }[]): Promise<{ error?: string }> {
+  if (isDemoMode) {
+    const db = demoApi.load()
+    const table = db.tables.find((tb) => tb.id === tableId)
+    const company = db.company
+    if (!table || !company) return { error: 'Table introuvable' }
+    const order: Order = {
+      id: uid(), tenant_id: company.id, table_id: tableId, status: 'PENDING', source: 'QR_CLIENT',
+      offline_created: false, client_generated_id: uid(), created_at: new Date().toISOString(),
+      order_items: items.map((it) => {
+        const prod = db.products.find((p) => p.id === it.product_id)!
+        return { id: uid(), order_id: '', product_id: prod.id, quantity: it.quantity, unit_price: prod.price, section: prod.section, status: 'PENDING' }
+      }),
+    }
+    order.order_items!.forEach((o) => { o.order_id = order.id })
+    db.orders.unshift(order)
+    db.tables = db.tables.map((tb) => (tb.id === tableId ? { ...tb, status: 'OCCUPIED' } : tb))
+    demoApi.save(db)
+    return {}
+  }
+  const { error } = await supabase!.rpc('create_qr_order', { p_table_id: tableId, p_items: JSON.stringify(items) })
+  return { error: error?.message }
+}
+
+// ---------------------------------------------------------------------------
+// Rapports (export CSV)
+// ---------------------------------------------------------------------------
+export function exportInvoicesCsv(invoices: Invoice[]): void {
+  const header = 'Numéro;Date;Montant total;TVA;Pourboire;Statut\n'
+  const rows = invoices
+    .map((i) => [i.legal_sequential_number, i.created_at, i.total_amount, i.tax_amount, i.tip_amount, i.status].join(';'))
+    .join('\n')
+  const blob = new Blob(['\uFEFF' + header + rows], { type: 'text/csv;charset=utf-8' })
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(blob)
+  a.download = `debitmanager-factures-${new Date().toISOString().slice(0, 10)}.csv`
+  a.click()
+  URL.revokeObjectURL(a.href)
 }

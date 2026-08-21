@@ -182,3 +182,116 @@ export interface PublicPlans {
   pricing: Pricing
   trial_days: number
 }
+
+// ---------------------------------------------------------------------------
+// Personnel / Présences / Paie / Approvisionnements / Inventaire
+// ---------------------------------------------------------------------------
+export type EmployeeStatus = 'ACTIVE' | 'ON_LEAVE' | 'TERMINATED'
+
+export interface Employee {
+  id: string
+  tenant_id: string
+  user_id: string
+  position?: string | null
+  hourly_rate?: number | null
+  monthly_salary?: number | null
+  payment_method?: string | null
+  status: EmployeeStatus
+  created_at: string
+  first_name?: string | null
+  last_name?: string | null
+  phone?: string | null
+  email?: string | null
+}
+
+export interface AttendanceRecord {
+  id: string
+  employee_id: string
+  tenant_id: string
+  check_in_at: string
+  check_out_at?: string | null
+  status: 'ON_TIME' | 'LATE' | 'ABSENT' | 'EXCEPTION'
+  exception_reason?: string | null
+  first_name?: string | null
+  last_name?: string | null
+  position?: string | null
+}
+
+export type PayrollStatus = 'DRAFT' | 'PENDING_VALIDATION' | 'VALIDATED' | 'PAID'
+
+export interface Payroll {
+  id: string
+  tenant_id: string
+  employee_id: string
+  period_month: number
+  period_year: number
+  base_amount: number
+  bonus_amount: number
+  deduction_amount: number
+  total_amount: number
+  status: PayrollStatus
+  payslip_pdf_url?: string | null
+  created_at: string
+  first_name?: string | null
+  last_name?: string | null
+  position?: string | null
+}
+
+export interface Supplier {
+  id: string
+  tenant_id: string
+  name: string
+  phone?: string | null
+  email?: string | null
+  average_delivery_days?: number | null
+  created_at: string
+}
+
+export type PurchaseOrderStatus = 'DRAFT' | 'PENDING_VALIDATION' | 'VALIDATED' | 'SENT' | 'RECEIVED' | 'CANCELLED'
+
+export interface PurchaseOrderItem {
+  id: string
+  purchase_order_id: string
+  product_id: string
+  quantity_ordered: number
+  quantity_received?: number | null
+  unit_price: number
+  products?: { name: string } | null
+}
+
+export interface PurchaseOrder {
+  id: string
+  tenant_id: string
+  supplier_id?: string | null
+  status: PurchaseOrderStatus
+  created_at: string
+  suppliers?: { name: string } | null
+  purchase_order_items?: PurchaseOrderItem[]
+}
+
+export interface Inventory {
+  id: string
+  tenant_id: string
+  status: 'IN_PROGRESS' | 'COMPLETED'
+  performed_at: string
+  inventory_lines?: InventoryLine[]
+}
+
+export interface InventoryLine {
+  id: string
+  inventory_id: string
+  product_id: string
+  theoretical_quantity: number
+  actual_quantity?: number | null
+  discrepancy?: number | null
+  interpretation?: string | null
+  products?: { name: string } | null
+}
+
+export interface MenuItem {
+  product_id: string
+  name: string
+  price: number
+  category: string
+  section: Section
+}
