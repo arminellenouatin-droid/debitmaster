@@ -1,0 +1,49 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-size: 16px;
+  }
+  body {
+    @apply bg-bg text-ink dark:bg-bg dark:text-ink dark:antialiased;
+    font-family: 'Inter', 'Noto Sans', system-ui, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* Chiffres tabulaires pour les montants (design system §2) */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 font-semibold rounded-md h-12 px-6 text-base transition-colors select-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed;
+    min-height: 48px; /* zone tactile minimale */
+  }
+  .btn-primary {
+    @apply btn bg-primary text-white hover:bg-primary-dark;
+  }
+  .btn-secondary {
+    @apply btn bg-transparent text-primary border-2 border-primary hover:bg-primary-light;
+  }
+  .btn-danger {
+    @apply btn bg-danger text-white hover:opacity-90;
+  }
+  .btn-ghost {
+    @apply btn bg-transparent text-ink-secondary hover:bg-surface;
+  }
+  .card {
+    @apply bg-surface dark:bg-surface rounded-md shadow-card p-md;
+  }
+  .input {
+    @apply w-full h-12 rounded-sm border border-line dark:border-line bg-transparent px-4 text-base outline-none focus:border-primary dark:focus:border-primary placeholder:text-ink-disabled dark:placeholder:text-ink-darkDisabled;
+  }
+  .label {
+    @apply block text-caption font-semibold mb-1 text-ink-secondary dark:text-ink-darkSecondary;
+  }
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold;
+  }
+}

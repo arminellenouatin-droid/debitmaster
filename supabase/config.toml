@@ -1,0 +1,27 @@
+# Démarrage local Supabase (CLI)
+# https://supabase.com/docs/guides/cli
+
+project_id = "debitmanager"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+
+[db]
+port = 54322
+major_version = 15
+
+[auth]
+enabled = true
+site_url = "http://localhost:5173"
+additional_redirect_urls = ["https://*.vercel.app"]
+jwt_expiry = 3600
+enable_signup = true
+
+[auth.email]
+enable_signup = true
+enable_confirmations = true
+
+[auth.phone]
+enable_signup = true
