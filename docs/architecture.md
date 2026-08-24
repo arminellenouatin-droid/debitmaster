@@ -36,3 +36,8 @@ Les montants métier sont conservés dans leur devise source. Le prestataire de 
 ## Déploiement et reprise
 
 GitHub `main` est la source de vérité. Les branches de sprint passent par compilation, tests, revue et déploiement de prévisualisation avant production. Les migrations sont versionnées, appliquées séparément et réversibles lorsque possible. Avant toute migration de production, une sauvegarde vérifiée et un plan de retour arrière sont obligatoires.
+
+
+## Séparation avec Envol Africa Magazine
+
+DebitManager utilise exclusivement le projet Supabase `plelharwnppmekntpiqi`, accessible via `https://plelharwnppmekntpiqi.supabase.co`. Le projet Supabase EAM `rtfjwpytiuvoekomevpu` est une infrastructure différente, dédiée à Envol Africa Magazine et à son écosystème. Aucun script, client, variable d’environnement, migration, requête SQL, bucket ou déploiement DebitManager ne doit cibler le projet EAM. Avant toute opération distante, l’identifiant et l’URL du projet doivent être vérifiés.
