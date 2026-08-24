@@ -11,19 +11,21 @@ export const permissionCatalog = [
   { key: "team.manage", label: "Gérer l’équipe", group: "Équipe" },
   { key: "finance.view", label: "Consulter la trésorerie", group: "Finance" },
   { key: "reports.view", label: "Consulter les rapports", group: "Pilotage" },
+  { key: "messages.view", label: "Consulter les messages", group: "Messagerie" },
+  { key: "messages.send", label: "Envoyer des messages", group: "Messagerie" },
 ] as const;
 
 export const defaultRolePermissions: Record<string, string[]> = {
   SERVEUR: ["orders.view", "orders.create", "orders.deliver"],
-  SUPERVISEUR: ["orders.view", "orders.create", "orders.prepare", "orders.deliver", "stock.view", "team.view", "reports.view"],
+  SUPERVISEUR: ["orders.view", "orders.create", "orders.prepare", "orders.deliver", "stock.view", "team.view", "reports.view", "messages.view", "messages.send"],
   MAGASINIER: ["stock.view", "stock.adjust"],
   GERANT: permissionCatalog.map((permission) => permission.key),
   BARMAN: ["orders.view", "orders.create", "stock.view"],
-  SECRETAIRE: ["orders.view", "team.view", "reports.view"],
+  SECRETAIRE: ["orders.view", "team.view", "reports.view", "messages.view", "messages.send"],
   COMPTABLE: ["finance.view", "reports.view"],
   APPROVISIONNEMENT: ["stock.view", "stock.adjust", "reports.view"],
   CUISINIER: ["orders.view", "orders.prepare"],
-  CHEF_CUISINE: ["orders.view", "orders.prepare", "team.view", "reports.view"],
+  CHEF_CUISINE: ["orders.view", "orders.prepare", "team.view", "reports.view", "messages.view"],
   ADMINISTRATEUR: permissionCatalog.map((permission) => permission.key),
 };
 
