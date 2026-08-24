@@ -47,3 +47,28 @@
 - [ ] Revoir les alertes Supabase Auth et la fonction SECURITY DEFINER d’invitation.
 - [ ] Vérifier le rendu mobile des routes métier et les états vides/erreurs.
 - [ ] Préparer un rapport de validation et un commit séparé si des corrections sont nécessaires.
+
+## Nouveau lot — parcours établissement et équipe
+
+- [ ] Supprimer du dashboard propriétaire les blocs d’onboarding après création d’un établissement.
+- [ ] Afficher l’établissement sélectionné en contexte principal dans toutes les sections connectées.
+- [ ] Construire les KPI et graphiques réels du dashboard propriétaire : chiffre d’affaires, performances agents et présence.
+- [ ] Afficher le statut d’abonnement et les commandes tarifaires uniquement au propriétaire.
+- [ ] Séparer clairement les dashboards et droits Serveur/Serveuse, Gérant et Chef cuisine.
+- [ ] Ajouter la gestion des postes, rôles et affectations dans Personnel.
+- [ ] Ajouter l’affectation des tables et emplacements aux serveurs.
+- [ ] Réserver la création de produits et le paramétrage des prix aux rôles habilités.
+- [ ] Préparer la connexion par e-mail ou téléphone.
+- [ ] Concevoir la création de comptes équipe sans dépendance obligatoire à l’e-mail, avec mot de passe temporaire et changement obligatoire à la première connexion.
+- [ ] Encadrer l’inscription par code d’établissement sans permettre de contourner le tenant ou le RBAC.
+- [ ] Documenter les différences entre promoteur/propriétaire et comptes équipe.
+
+## Clarification confirmée — circuit de service et validation équipe
+
+- [ ] Autoriser uniquement Serveur/Serveuse à prendre une commande et à livrer le client.
+- [ ] Faire transiter les boissons par le Gérant avant remise au Serveur/Serveuse.
+- [ ] Créer immédiatement les comptes équipe saisis par le propriétaire.
+- [ ] Créer en attente les comptes ouverts avec un code établissement.
+- [ ] Ajouter la validation ou le refus de la demande par le propriétaire dans Personnel.
+- [ ] Bloquer la connexion métier et l’accès tenant avant validation propriétaire.
+- [ ] Activer le compte, le rôle et le changement de mot de passe initial après validation.

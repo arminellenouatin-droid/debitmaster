@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+
+<html class="light" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>DebitManager - Payment</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-tertiary-fixed": "#141d1b",
+                      "on-secondary-fixed": "#271900",
+                      "surface-container-high": "#e1e8fd",
+                      "surface-container": "#e9edff",
+                      "outline": "#707974",
+                      "on-error-container": "#93000a",
+                      "on-primary": "#ffffff",
+                      "tertiary-container": "#3b4542",
+                      "surface": "#f9f9ff",
+                      "surface-bright": "#f9f9ff",
+                      "surface-variant": "#dce2f7",
+                      "primary-fixed-dim": "#99d3ba",
+                      "on-tertiary-container": "#a7b2ae",
+                      "on-surface-variant": "#404944",
+                      "on-primary-fixed-variant": "#15503e",
+                      "outline-variant": "#bfc9c3",
+                      "secondary-fixed": "#ffdeaa",
+                      "inverse-on-surface": "#edf0ff",
+                      "on-tertiary-fixed-variant": "#3f4946",
+                      "on-background": "#141b2b",
+                      "primary-container": "#0f4c3a",
+                      "on-secondary": "#ffffff",
+                      "inverse-surface": "#293040",
+                      "inverse-primary": "#99d3ba",
+                      "tertiary": "#252f2c",
+                      "secondary-container": "#ffc55f",
+                      "on-error": "#ffffff",
+                      "on-secondary-container": "#755100",
+                      "background": "#f9f9ff",
+                      "on-secondary-fixed-variant": "#5f4100",
+                      "secondary-fixed-dim": "#f5bd58",
+                      "on-primary-container": "#82bba4",
+                      "secondary": "#7d5700",
+                      "surface-container-low": "#f1f3ff",
+                      "surface-dim": "#d3daef",
+                      "on-surface": "#141b2b",
+                      "primary": "#003426",
+                      "on-primary-fixed": "#002117",
+                      "surface-container-highest": "#dce2f7",
+                      "tertiary-fixed": "#dae5e0",
+                      "tertiary-fixed-dim": "#bec9c4",
+                      "primary-fixed": "#b4efd6",
+                      "error-container": "#ffdad6",
+                      "surface-container-lowest": "#ffffff",
+                      "surface-tint": "#306855",
+                      "error": "#ba1a1a",
+                      "on-tertiary": "#ffffff"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "base": "4px",
+                      "xs": "8px",
+                      "max-content-width": "1440px",
+                      "md": "24px",
+                      "sm": "16px",
+                      "lg": "32px",
+                      "xl": "48px",
+                      "sidebar-width": "260px"
+              },
+              "fontFamily": {
+                      "body-lg": ["Inter"],
+                      "body-md": ["Inter"],
+                      "headline-lg-mobile": ["Inter"],
+                      "display": ["Inter"],
+                      "headline-md": ["Inter"],
+                      "label-md": ["Inter"],
+                      "amount-md": ["Inter"],
+                      "headline-lg": ["Inter"]
+              },
+              "fontSize": {
+                      "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                      "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                      "display": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                      "amount-md": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                      "headline-lg": ["28px", {"lineHeight": "36px", "fontWeight": "700"}]
+              }
+            }
+          }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex flex-col md:flex-row antialiased">
+<!-- Payment is a linear/transactional flow, suppressing global navigation shell -->
+<main class="flex-1 w-full h-screen overflow-hidden flex flex-col relative bg-surface-container-lowest">
+<!-- Header -->
+<header class="h-[72px] flex items-center justify-between px-md md:px-lg border-b border-outline-variant bg-surface-container-lowest">
+<div class="flex items-center gap-xs">
+<button class="w-12 h-12 flex items-center justify-center rounded-full hover:bg-surface-variant transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+</button>
+<h1 class="font-headline-md text-headline-md text-on-surface">Paiement</h1>
+</div>
+<div class="text-on-surface-variant">
+                Commande #4092
+            </div>
+</header>
+<div class="flex-1 flex flex-col lg:flex-row overflow-y-auto">
+<!-- Left Panel: Summary & Methods -->
+<div class="flex-1 p-md lg:p-lg flex flex-col gap-lg border-b lg:border-b-0 lg:border-r border-outline-variant">
+<!-- Total Amount -->
+<div class="bg-primary/5 rounded-xl p-lg flex flex-col items-center justify-center text-center gap-sm">
+<span class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Total à payer</span>
+<h2 class="font-display text-display text-primary">25.500 FCFA</h2>
+</div>
+<!-- Payment Methods -->
+<div class="flex flex-col gap-sm">
+<h3 class="font-headline-md text-headline-md text-on-surface">Moyen de paiement</h3>
+<div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4 gap-sm">
+<!-- Cash -->
+<button class="flex flex-col items-center justify-center gap-xs p-md rounded-xl border-2 border-primary bg-primary/5 transition-all">
+<span class="material-symbols-outlined text-primary" data-icon="payments" style="font-variation-settings: 'FILL' 1; font-size: 32px;">payments</span>
+<span class="font-label-md text-label-md text-primary font-bold">Espèces</span>
+</button>
+<!-- Mobile Money -->
+<button class="flex flex-col items-center justify-center gap-xs p-md rounded-xl border border-outline-variant hover:border-outline hover:bg-surface-variant transition-all">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="phone_iphone" style="font-size: 32px;">phone_iphone</span>
+<span class="font-label-md text-label-md text-on-surface-variant font-bold text-center">Mobile Money</span>
+</button>
+<!-- Card -->
+<button class="flex flex-col items-center justify-center gap-xs p-md rounded-xl border border-outline-variant hover:border-outline hover:bg-surface-variant transition-all">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="credit_card" style="font-size: 32px;">credit_card</span>
+<span class="font-label-md text-label-md text-on-surface-variant font-bold">Carte</span>
+</button>
+<!-- Other -->
+<button class="flex flex-col items-center justify-center gap-xs p-md rounded-xl border border-outline-variant hover:border-outline hover:bg-surface-variant transition-all">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="more_horiz" style="font-size: 32px;">more_horiz</span>
+<span class="font-label-md text-label-md text-on-surface-variant font-bold">Autre</span>
+</button>
+</div>
+</div>
+<!-- Received Amount Input (Visual) -->
+<div class="flex flex-col gap-xs mt-auto">
+<label class="font-label-md text-label-md text-on-surface-variant">Montant reçu</label>
+<div class="relative">
+<input class="w-full bg-surface-container p-md rounded-lg font-headline-md text-headline-md text-on-surface border-none text-right pr-[60px] focus:ring-2 focus:ring-primary" readonly="" type="text" value="30.000"/>
+<span class="absolute right-md top-1/2 -translate-y-1/2 font-headline-md text-headline-md text-on-surface-variant">F</span>
+</div>
+<div class="flex justify-between items-center px-xs pt-xs">
+<span class="font-label-md text-label-md text-on-surface-variant">Rendu monnaie:</span>
+<span class="font-amount-md text-amount-md text-error">4.500 FCFA</span>
+</div>
+</div>
+</div>
+<!-- Right Panel: Numpad -->
+<div class="w-full lg:w-[400px] bg-surface-container-lowest p-md lg:p-lg flex flex-col gap-md">
+<!-- Quick Amounts -->
+<div class="grid grid-cols-3 gap-sm mb-md">
+<button class="py-sm px-xs rounded-lg border border-outline-variant bg-surface hover:bg-surface-variant text-on-surface font-amount-md text-amount-md transition-colors">26.000</button>
+<button class="py-sm px-xs rounded-lg border border-outline-variant bg-surface hover:bg-surface-variant text-on-surface font-amount-md text-amount-md transition-colors">30.000</button>
+<button class="py-sm px-xs rounded-lg border border-outline-variant bg-surface hover:bg-surface-variant text-on-surface font-amount-md text-amount-md transition-colors">50.000</button>
+</div>
+<!-- Numpad -->
+<div class="grid grid-cols-3 gap-sm flex-1">
+<button class="h-16 lg:h-auto rounded-xl bg-surface-container text-on-surface font-headline-lg text-headline-lg hover:bg-surface-container-highest transition-colors active:scale-95">1</button>
+<button class="h-16 lg:h-auto rounded-xl bg-surface-container text-on-surface font-headline-lg text-headline-lg hover:bg-surface-container-highest transition-colors active:scale-95">2</button>
+<button class="h-16 lg:h-auto rounded-xl bg-surface-container text-on-surface font-headline-lg text-headline-lg hover:bg-surface-container-highest transition-colors active:scale-95">3</button>
+<button class="h-16 lg:h-auto rounded-xl bg-surface-container text-on-surface font-headline-lg text-headline-lg hover:bg-surface-container-highest transition-colors active:scale-95">4</button>
+<button class="h-16 lg:h-auto rounded-xl bg-surface-container text-on-surface font-headline-lg text-headline-lg hover:bg-surface-container-highest transition-colors active:scale-95">5</button>
+<button class="h-16 lg:h-auto rounded-xl bg-surface-container text-on-surface font-headline-lg text-headline-lg hover:bg-surface-container-highest transition-colors active:scale-95">6</button>
+<button class="h-16 lg:h-auto rounded-xl bg-surface-container text-on-surface font-headline-lg text-headline-lg hover:bg-surface-container-highest transition-colors active:scale-95">7</button>
+<button class="h-16 lg:h-auto rounded-xl bg-surface-container text-on-surface font-headline-lg text-headline-lg hover:bg-surface-container-highest transition-colors active:scale-95">8</button>
+<button class="h-16 lg:h-auto rounded-xl bg-surface-container text-on-surface font-headline-lg text-headline-lg hover:bg-surface-container-highest transition-colors active:scale-95">9</button>
+<button class="h-16 lg:h-auto rounded-xl bg-surface-container text-on-surface font-headline-lg text-headline-lg hover:bg-surface-container-highest transition-colors active:scale-95">00</button>
+<button class="h-16 lg:h-auto rounded-xl bg-surface-container text-on-surface font-headline-lg text-headline-lg hover:bg-surface-container-highest transition-colors active:scale-95">0</button>
+<button class="h-16 lg:h-auto rounded-xl bg-error-container text-on-error-container flex items-center justify-center hover:bg-error-container/80 transition-colors active:scale-95">
+<span class="material-symbols-outlined" data-icon="backspace">backspace</span>
+</button>
+</div>
+<!-- Action Button -->
+<button class="mt-md w-full min-h-[64px] bg-primary text-on-primary rounded-xl font-headline-md text-headline-md flex items-center justify-center gap-xs hover:bg-primary/90 transition-colors active:scale-[0.98] shadow-sm">
+<span class="material-symbols-outlined" data-icon="print">print</span>
+                    Finaliser et Imprimer Reçu
+                </button>
+</div>
+</div>
+</main>
+</body></html>

@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+
+<html class="light" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Kitchen Display System - Maquis Master</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary-fixed": "#141d1b",
+                        "on-secondary-fixed": "#271900",
+                        "surface-container-high": "#e1e8fd",
+                        "surface-container": "#e9edff",
+                        "outline": "#707974",
+                        "on-error-container": "#93000a",
+                        "on-primary": "#ffffff",
+                        "tertiary-container": "#3b4542",
+                        "surface": "#f9f9ff",
+                        "surface-bright": "#f9f9ff",
+                        "surface-variant": "#dce2f7",
+                        "primary-fixed-dim": "#99d3ba",
+                        "on-tertiary-container": "#a7b2ae",
+                        "on-surface-variant": "#404944",
+                        "on-primary-fixed-variant": "#15503e",
+                        "outline-variant": "#bfc9c3",
+                        "secondary-fixed": "#ffdeaa",
+                        "inverse-on-surface": "#edf0ff",
+                        "on-tertiary-fixed-variant": "#3f4946",
+                        "on-background": "#141b2b",
+                        "primary-container": "#0f4c3a",
+                        "on-secondary": "#ffffff",
+                        "inverse-surface": "#293040",
+                        "inverse-primary": "#99d3ba",
+                        "tertiary": "#252f2c",
+                        "secondary-container": "#ffc55f",
+                        "on-error": "#ffffff",
+                        "on-secondary-container": "#755100",
+                        "background": "#f9f9ff",
+                        "on-secondary-fixed-variant": "#5f4100",
+                        "secondary-fixed-dim": "#f5bd58",
+                        "on-primary-container": "#82bba4",
+                        "secondary": "#7d5700",
+                        "surface-container-low": "#f1f3ff",
+                        "surface-dim": "#d3daef",
+                        "on-surface": "#141b2b",
+                        "primary": "#003426",
+                        "on-primary-fixed": "#002117",
+                        "surface-container-highest": "#dce2f7",
+                        "tertiary-fixed": "#dae5e0",
+                        "tertiary-fixed-dim": "#bec9c4",
+                        "primary-fixed": "#b4efd6",
+                        "error-container": "#ffdad6",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-tint": "#306855",
+                        "error": "#ba1a1a",
+                        "on-tertiary": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "base": "4px",
+                        "xs": "8px",
+                        "max-content-width": "1440px",
+                        "md": "24px",
+                        "sm": "16px",
+                        "lg": "32px",
+                        "xl": "48px",
+                        "sidebar-width": "260px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "display": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "label-md": ["Inter"],
+                        "amount-md": ["Inter"],
+                        "headline-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                        "display": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500" }],
+                        "amount-md": ["18px", { "lineHeight": "24px", "fontWeight": "600" }],
+                        "headline-lg": ["28px", { "lineHeight": "36px", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .icon-filled {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen">
+<!-- TopNavBar -->
+<header class="fixed top-0 left-0 right-0 h-[72px] bg-surface-container-lowest border-b border-outline-variant shadow-sm z-30 flex justify-between items-center px-lg w-full">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary text-[32px] icon-filled" data-icon="restaurant">restaurant</span>
+<span class="font-headline-md text-headline-md font-bold text-primary">Maquis Master KDS</span>
+</div>
+<div class="flex items-center gap-md">
+<div class="flex items-center gap-xs px-sm py-xs bg-surface-container-high rounded-full">
+<span class="w-3 h-3 bg-[#4ade80] rounded-full"></span>
+<span class="font-label-md text-label-md text-on-surface">En Ligne</span>
+</div>
+<div class="flex gap-sm">
+<button class="p-xs text-on-surface-variant hover:bg-surface-container-high rounded-full transition-colors cursor-pointer active:opacity-80">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas (No SideNav for KDS focus mode) -->
+<main class="pt-[72px] min-h-screen flex flex-col">
+<!-- Queue Header -->
+<div class="px-lg py-md border-b border-outline-variant bg-surface flex justify-between items-center shrink-0">
+<div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface">Cuisine / Bar</h1>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">Gérez les commandes en temps réel.</p>
+</div>
+<div class="flex gap-sm">
+<button class="flex items-center gap-xs px-sm py-xs bg-surface-container border border-outline-variant rounded-lg font-label-md text-label-md hover:bg-surface-container-high transition-colors text-on-surface">
+<span class="material-symbols-outlined" data-icon="filter_list">filter_list</span>
+                    Filtrer: Tout
+                </button>
+</div>
+</div>
+<!-- Kanban Board -->
+<div class="flex-1 overflow-x-auto overflow-y-hidden p-lg">
+<div class="flex gap-md h-full min-w-max items-start">
+<!-- Column: Nouvelle -->
+<div class="w-[380px] h-full flex flex-col bg-surface-container-low rounded-xl border border-outline-variant">
+<div class="p-sm border-b border-outline-variant flex justify-between items-center bg-surface-container rounded-t-xl shrink-0">
+<h2 class="font-headline-md text-headline-md text-on-surface flex items-center gap-xs">
+                            Nouvelle
+                            <span class="bg-primary text-on-primary font-label-md text-label-md px-2 py-0.5 rounded-full">3</span>
+</h2>
+</div>
+<div class="flex-1 overflow-y-auto p-sm space-y-sm">
+<!-- Ticket 1 -->
+<div class="bg-surface-container-lowest rounded-lg border border-outline-variant shadow-sm p-sm">
+<div class="flex justify-between items-start mb-sm border-b border-outline-variant pb-xs">
+<div>
+<span class="font-headline-md text-headline-md text-primary font-bold">#1042</span>
+<div class="font-label-md text-label-md text-on-surface-variant mt-1">Table 12 • Intérieur</div>
+</div>
+<div class="flex items-center gap-1 text-[#ef4444] font-label-md text-label-md bg-[#fef2f2] px-2 py-1 rounded-md">
+<span class="material-symbols-outlined text-[16px]" data-icon="timer">timer</span>
+                                    05:23
+                                </div>
+</div>
+<ul class="space-y-xs font-body-md text-body-md text-on-surface mb-md">
+<li class="flex justify-between items-center">
+<span><span class="font-bold mr-2">2x</span>Poulet Yassa</span>
+</li>
+<li class="flex justify-between items-center text-on-error-container bg-error-container/30 px-2 py-1 rounded">
+<span><span class="font-bold mr-2">1x</span>Alloco (Sans piment)</span>
+</li>
+<li class="flex justify-between items-center">
+<span><span class="font-bold mr-2">3x</span>Bière Locale 50cl</span>
+</li>
+</ul>
+<button class="w-full bg-primary-container text-on-primary-container font-label-md text-label-md py-sm rounded-lg hover:bg-primary hover:text-on-primary transition-colors flex justify-center items-center gap-xs">
+<span class="material-symbols-outlined" data-icon="play_arrow">play_arrow</span>
+                                Démarrer
+                            </button>
+</div>
+</div>
+</div>
+<!-- Column: En préparation -->
+<div class="w-[380px] h-full flex flex-col bg-surface-container-low rounded-xl border border-outline-variant">
+<div class="p-sm border-b border-outline-variant flex justify-between items-center bg-secondary-container/20 rounded-t-xl shrink-0">
+<h2 class="font-headline-md text-headline-md text-on-secondary-container flex items-center gap-xs">
+                            En préparation
+                            <span class="bg-secondary text-on-secondary font-label-md text-label-md px-2 py-0.5 rounded-full">2</span>
+</h2>
+</div>
+<div class="flex-1 overflow-y-auto p-sm space-y-sm">
+<!-- Ticket 2 -->
+<div class="bg-surface-container-lowest rounded-lg border-2 border-secondary/50 shadow-sm p-sm">
+<div class="flex justify-between items-start mb-sm border-b border-outline-variant pb-xs">
+<div>
+<span class="font-headline-md text-headline-md text-secondary font-bold">#1040</span>
+<div class="font-label-md text-label-md text-on-surface-variant mt-1">Table 4 • Terrasse</div>
+</div>
+<div class="flex items-center gap-1 text-[#f59e0b] font-label-md text-label-md bg-[#fffbeb] px-2 py-1 rounded-md">
+<span class="material-symbols-outlined text-[16px]" data-icon="timer">timer</span>
+                                    12:45
+                                </div>
+</div>
+<ul class="space-y-xs font-body-md text-body-md text-on-surface mb-md">
+<li class="flex justify-between items-center">
+<span class="line-through text-on-surface-variant"><span class="font-bold mr-2">1x</span>Poisson Braisé</span>
+<span class="material-symbols-outlined text-[#4ade80]" data-icon="check_circle">check_circle</span>
+</li>
+<li class="flex justify-between items-center">
+<span><span class="font-bold mr-2">2x</span>Attiéké</span>
+</li>
+</ul>
+<button class="w-full bg-secondary text-on-secondary font-headline-md text-headline-md py-md rounded-lg hover:bg-secondary-fixed-variant transition-colors flex justify-center items-center gap-sm h-16 shadow-md active:scale-[0.98]">
+<span class="material-symbols-outlined icon-filled" data-icon="done_all">done_all</span>
+                                Commande prête
+                            </button>
+</div>
+</div>
+</div>
+<!-- Column: Prête -->
+<div class="w-[380px] h-full flex flex-col bg-surface-container-low rounded-xl border border-outline-variant opacity-80">
+<div class="p-sm border-b border-outline-variant flex justify-between items-center bg-primary-fixed/20 rounded-t-xl shrink-0">
+<h2 class="font-headline-md text-headline-md text-primary-container flex items-center gap-xs">
+                            Prête
+                            <span class="bg-primary-container text-on-primary-container font-label-md text-label-md px-2 py-0.5 rounded-full">4</span>
+</h2>
+</div>
+<div class="flex-1 overflow-y-auto p-sm space-y-sm">
+<!-- Ticket 3 -->
+<div class="bg-surface-container-lowest rounded-lg border border-outline-variant p-sm opacity-75">
+<div class="flex justify-between items-start mb-sm border-b border-outline-variant pb-xs">
+<div>
+<span class="font-headline-md text-headline-md text-on-surface-variant font-bold">#1038</span>
+<div class="font-label-md text-label-md text-on-surface-variant mt-1">Bar</div>
+</div>
+<div class="flex items-center gap-1 text-[#4ade80] font-label-md text-label-md">
+<span class="material-symbols-outlined text-[16px]" data-icon="check">check</span>
+                                    18:02
+                                </div>
+</div>
+<ul class="space-y-xs font-body-md text-body-md text-on-surface-variant mb-md">
+<li><span class="font-bold mr-2">4x</span>Cocktail Maison</li>
+</ul>
+<div class="text-center font-label-md text-label-md text-on-surface-variant bg-surface-container-high py-2 rounded">
+                                En attente du serveur
+                            </div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

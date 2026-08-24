@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Maquis Master - Shop Creation</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-tertiary-fixed": "#141d1b",
+                      "on-secondary-fixed": "#271900",
+                      "surface-container-high": "#e1e8fd",
+                      "surface-container": "#e9edff",
+                      "outline": "#707974",
+                      "on-error-container": "#93000a",
+                      "on-primary": "#ffffff",
+                      "tertiary-container": "#3b4542",
+                      "surface": "#f9f9ff",
+                      "surface-bright": "#f9f9ff",
+                      "surface-variant": "#dce2f7",
+                      "primary-fixed-dim": "#99d3ba",
+                      "on-tertiary-container": "#a7b2ae",
+                      "on-surface-variant": "#404944",
+                      "on-primary-fixed-variant": "#15503e",
+                      "outline-variant": "#bfc9c3",
+                      "secondary-fixed": "#ffdeaa",
+                      "inverse-on-surface": "#edf0ff",
+                      "on-tertiary-fixed-variant": "#3f4946",
+                      "on-background": "#141b2b",
+                      "primary-container": "#0f4c3a",
+                      "on-secondary": "#ffffff",
+                      "inverse-surface": "#293040",
+                      "inverse-primary": "#99d3ba",
+                      "tertiary": "#252f2c",
+                      "secondary-container": "#ffc55f",
+                      "on-error": "#ffffff",
+                      "on-secondary-container": "#755100",
+                      "background": "#f9f9ff",
+                      "on-secondary-fixed-variant": "#5f4100",
+                      "secondary-fixed-dim": "#f5bd58",
+                      "on-primary-container": "#82bba4",
+                      "secondary": "#7d5700",
+                      "surface-container-low": "#f1f3ff",
+                      "surface-dim": "#d3daef",
+                      "on-surface": "#141b2b",
+                      "primary": "#003426",
+                      "on-primary-fixed": "#002117",
+                      "surface-container-highest": "#dce2f7",
+                      "tertiary-fixed": "#dae5e0",
+                      "tertiary-fixed-dim": "#bec9c4",
+                      "primary-fixed": "#b4efd6",
+                      "error-container": "#ffdad6",
+                      "surface-container-lowest": "#ffffff",
+                      "surface-tint": "#306855",
+                      "error": "#ba1a1a",
+                      "on-tertiary": "#ffffff"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "base": "4px",
+                      "xs": "8px",
+                      "max-content-width": "1440px",
+                      "md": "24px",
+                      "sm": "16px",
+                      "lg": "32px",
+                      "xl": "48px",
+                      "sidebar-width": "260px"
+              },
+              "fontFamily": {
+                      "body-lg": ["Inter"],
+                      "body-md": ["Inter"],
+                      "headline-lg-mobile": ["Inter"],
+                      "display": ["Inter"],
+                      "headline-md": ["Inter"],
+                      "label-md": ["Inter"],
+                      "amount-md": ["Inter"],
+                      "headline-lg": ["Inter"]
+              },
+              "fontSize": {
+                      "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                      "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                      "display": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                      "amount-md": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                      "headline-lg": ["28px", {"lineHeight": "36px", "fontWeight": "700"}]
+              }
+            }
+          }
+        }
+    </script>
+<style>
+        .step-transition {
+            transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+        }
+        .hidden-step {
+            opacity: 0;
+            transform: translateX(20px);
+            pointer-events: none;
+            position: absolute;
+            visibility: hidden;
+        }
+        .active-step {
+            opacity: 1;
+            transform: translateX(0);
+            position: relative;
+            visibility: visible;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md antialiased min-h-screen flex flex-col items-center py-xl px-4 sm:px-lg">
+<!-- Header / Brand -->
+<header class="w-full max-w-3xl mb-lg text-center flex flex-col items-center">
+<div class="flex items-center justify-center gap-sm mb-sm">
+<span class="material-symbols-outlined text-primary text-display" data-icon="local_bar" style="font-variation-settings: 'FILL' 1;">local_bar</span>
+<h1 class="font-headline-lg text-headline-lg text-primary">Maquis Master</h1>
+</div>
+<p class="font-body-lg text-body-lg text-on-surface-variant">Set up your new venue in a few simple steps.</p>
+</header>
+<!-- Main Container -->
+<main class="w-full max-w-3xl bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant p-lg md:p-xl flex flex-col gap-lg">
+<!-- Progress Indicator -->
+<nav aria-label="Progress" class="w-full">
+<ol class="flex items-center w-full" role="list">
+<!-- Step 1 Indicator -->
+<li class="relative pr-8 sm:pr-20">
+<div aria-hidden="true" class="absolute inset-0 flex items-center">
+<div class="h-0.5 w-full bg-primary" id="line-1"></div>
+</div>
+<a class="relative flex h-8 w-8 items-center justify-center rounded-full bg-primary hover:bg-primary-container step-indicator" data-step="1" href="#" id="ind-1">
+<span class="material-symbols-outlined text-on-primary text-[16px]" data-icon="check" style="font-variation-settings: 'FILL' 1;">check</span>
+</a>
+</li>
+<!-- Step 2 Indicator -->
+<li class="relative pr-8 sm:pr-20">
+<div aria-hidden="true" class="absolute inset-0 flex items-center">
+<div class="h-0.5 w-full bg-surface-variant transition-colors duration-300" id="line-2"></div>
+</div>
+<a class="relative flex h-8 w-8 items-center justify-center rounded-full bg-surface-variant border-2 border-surface-variant hover:border-outline step-indicator transition-colors duration-300" data-step="2" href="#" id="ind-2">
+<span class="font-label-md text-label-md text-on-surface-variant" id="ind-text-2">2</span>
+</a>
+</li>
+<!-- Step 3 Indicator -->
+<li class="relative">
+<a class="relative flex h-8 w-8 items-center justify-center rounded-full bg-surface-variant border-2 border-surface-variant hover:border-outline step-indicator transition-colors duration-300" data-step="3" href="#" id="ind-3">
+<span class="font-label-md text-label-md text-on-surface-variant" id="ind-text-3">3</span>
+</a>
+</li>
+</ol>
+<div class="flex justify-between mt-sm text-on-surface-variant font-label-md text-label-md w-full max-w-[280px] sm:max-w-[420px]">
+<span>Activity Type</span>
+<span class="ml-4">Company Info</span>
+<span class="mr-[-20px]">Subscription</span>
+</div>
+</nav>
+<!-- Form Steps Container -->
+<div class="relative w-full overflow-hidden min-h-[400px]">
+<!-- Step 1: Activity Type -->
+<div class="step-transition active-step w-full flex flex-col gap-md" id="step-1">
+<h2 class="font-headline-md text-headline-md text-on-surface">Select your activity type</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Choose the category that best describes your business.</p>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-md mt-sm">
+<!-- Option A -->
+<label class="cursor-pointer relative flex flex-col items-center justify-center p-md bg-surface border-2 border-outline-variant rounded-lg hover:border-primary hover:bg-surface-container transition-all group">
+<input checked="" class="sr-only peer" name="activity_type" type="radio" value="buvette"/>
+<div class="absolute top-sm right-sm w-5 h-5 rounded-full border-2 border-outline-variant peer-checked:border-primary peer-checked:bg-primary flex items-center justify-center">
+<div class="w-2.5 h-2.5 rounded-full bg-on-primary hidden peer-checked:block"></div>
+</div>
+<span class="material-symbols-outlined text-[48px] text-primary mb-sm opacity-80 group-hover:opacity-100" data-icon="storefront">storefront</span>
+<span class="font-headline-md text-[18px] text-center font-semibold text-on-surface">Buvette</span>
+<span class="font-label-md text-label-md text-on-surface-variant text-center mt-xs">Small local bar</span>
+<div class="peer-checked:absolute peer-checked:inset-0 peer-checked:border-2 peer-checked:border-primary peer-checked:rounded-lg pointer-events-none"></div>
+</label>
+<!-- Option B -->
+<label class="cursor-pointer relative flex flex-col items-center justify-center p-md bg-surface border-2 border-outline-variant rounded-lg hover:border-primary hover:bg-surface-container transition-all group">
+<input class="sr-only peer" name="activity_type" type="radio" value="bar_restaurant"/>
+<div class="absolute top-sm right-sm w-5 h-5 rounded-full border-2 border-outline-variant peer-checked:border-primary peer-checked:bg-primary flex items-center justify-center">
+<div class="w-2.5 h-2.5 rounded-full bg-on-primary hidden peer-checked:block"></div>
+</div>
+<span class="material-symbols-outlined text-[48px] text-primary mb-sm opacity-80 group-hover:opacity-100" data-icon="restaurant">restaurant</span>
+<span class="font-headline-md text-[18px] text-center font-semibold text-on-surface">Bar-Restaurant</span>
+<span class="font-label-md text-label-md text-on-surface-variant text-center mt-xs">Dining and drinks</span>
+<div class="peer-checked:absolute peer-checked:inset-0 peer-checked:border-2 peer-checked:border-primary peer-checked:rounded-lg pointer-events-none"></div>
+</label>
+<!-- Option C -->
+<label class="cursor-pointer relative flex flex-col items-center justify-center p-md bg-surface border-2 border-outline-variant rounded-lg hover:border-primary hover:bg-surface-container transition-all group">
+<input class="sr-only peer" name="activity_type" type="radio" value="lounge"/>
+<div class="absolute top-sm right-sm w-5 h-5 rounded-full border-2 border-outline-variant peer-checked:border-primary peer-checked:bg-primary flex items-center justify-center">
+<div class="w-2.5 h-2.5 rounded-full bg-on-primary hidden peer-checked:block"></div>
+</div>
+<span class="material-symbols-outlined text-[48px] text-primary mb-sm opacity-80 group-hover:opacity-100" data-icon="nightlife">nightlife</span>
+<span class="font-headline-md text-[18px] text-center font-semibold text-on-surface">Lounge / Club</span>
+<span class="font-label-md text-label-md text-on-surface-variant text-center mt-xs">Premium nightlife</span>
+<div class="peer-checked:absolute peer-checked:inset-0 peer-checked:border-2 peer-checked:border-primary peer-checked:rounded-lg pointer-events-none"></div>
+</label>
+</div>
+<div class="flex justify-end mt-lg">
+<button class="min-h-[48px] px-lg bg-primary text-on-primary font-label-md text-label-md rounded hover:bg-primary-container transition-colors flex items-center gap-xs" onclick="nextStep(2)" type="button">
+                        Continue
+                        <span class="material-symbols-outlined" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- Step 2: Company Info -->
+<div class="step-transition hidden-step w-full flex flex-col gap-md" id="step-2">
+<h2 class="font-headline-md text-headline-md text-on-surface">Company Information</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Enter the details for your establishment.</p>
+<div class="flex flex-col gap-sm mt-sm">
+<div class="flex flex-col gap-xs">
+<label class="font-label-md text-label-md text-on-surface" for="company_name">Business Name *</label>
+<input class="w-full px-md py-sm border border-outline-variant rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-surface transition-colors" id="company_name" placeholder="e.g. Le Grand Maquis" type="text"/>
+</div>
+<div class="flex flex-col gap-xs">
+<label class="font-label-md text-label-md text-on-surface" for="owner_name">Owner/Manager Name *</label>
+<input class="w-full px-md py-sm border border-outline-variant rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-surface transition-colors" id="owner_name" placeholder="Full Name" type="text"/>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-sm">
+<div class="flex flex-col gap-xs">
+<label class="font-label-md text-label-md text-on-surface" for="phone">Phone Number *</label>
+<input class="w-full px-md py-sm border border-outline-variant rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-surface transition-colors" id="phone" placeholder="+225 ..." type="tel"/>
+</div>
+<div class="flex flex-col gap-xs">
+<label class="font-label-md text-label-md text-on-surface" for="city">City/Location *</label>
+<input class="w-full px-md py-sm border border-outline-variant rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-surface transition-colors" id="city" placeholder="Abidjan" type="text"/>
+</div>
+</div>
+</div>
+<div class="flex justify-between mt-lg">
+<button class="min-h-[48px] px-lg bg-surface text-primary border border-primary font-label-md text-label-md rounded hover:bg-surface-container transition-colors flex items-center gap-xs" onclick="prevStep(1)" type="button">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+                        Back
+                    </button>
+<button class="min-h-[48px] px-lg bg-primary text-on-primary font-label-md text-label-md rounded hover:bg-primary-container transition-colors flex items-center gap-xs" onclick="nextStep(3)" type="button">
+                        Continue
+                        <span class="material-symbols-outlined" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- Step 3: Subscription & Payment -->
+<div class="step-transition hidden-step w-full flex flex-col gap-md" id="step-3">
+<h2 class="font-headline-md text-headline-md text-on-surface">Subscription &amp; Payment</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Choose a plan and payment method to finalize setup.</p>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-md mt-sm">
+<!-- Plan A -->
+<label class="cursor-pointer relative flex flex-col p-md bg-surface border-2 border-outline-variant rounded-lg hover:border-primary transition-all group">
+<input checked="" class="sr-only peer" name="plan" type="radio" value="monthly"/>
+<div class="flex justify-between items-start mb-sm">
+<span class="font-headline-md text-[18px] font-semibold text-on-surface">Monthly Pro</span>
+<div class="w-5 h-5 rounded-full border-2 border-outline-variant peer-checked:border-primary peer-checked:bg-primary flex items-center justify-center">
+<div class="w-2.5 h-2.5 rounded-full bg-on-primary hidden peer-checked:block"></div>
+</div>
+</div>
+<span class="font-amount-md text-amount-md text-primary mb-xs">15,000 CFA <span class="text-label-md text-on-surface-variant font-normal">/mo</span></span>
+<ul class="font-label-md text-label-md text-on-surface-variant space-y-1">
+<li class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px] text-primary" data-icon="check_circle">check_circle</span> Unlimited Orders</li>
+<li class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px] text-primary" data-icon="check_circle">check_circle</span> Basic Reporting</li>
+</ul>
+<div class="peer-checked:absolute peer-checked:inset-0 peer-checked:border-2 peer-checked:border-primary peer-checked:bg-primary-fixed-dim/5 peer-checked:rounded-lg pointer-events-none"></div>
+</label>
+<!-- Plan B -->
+<label class="cursor-pointer relative flex flex-col p-md bg-surface border-2 border-outline-variant rounded-lg hover:border-primary transition-all group">
+<input class="sr-only peer" name="plan" type="radio" value="annual"/>
+<div class="absolute -top-3 right-4 bg-secondary-container text-on-secondary-container font-label-md text-[12px] px-2 py-0.5 rounded-full">Save 20%</div>
+<div class="flex justify-between items-start mb-sm">
+<span class="font-headline-md text-[18px] font-semibold text-on-surface">Annual Master</span>
+<div class="w-5 h-5 rounded-full border-2 border-outline-variant peer-checked:border-primary peer-checked:bg-primary flex items-center justify-center">
+<div class="w-2.5 h-2.5 rounded-full bg-on-primary hidden peer-checked:block"></div>
+</div>
+</div>
+<span class="font-amount-md text-amount-md text-primary mb-xs">144,000 CFA <span class="text-label-md text-on-surface-variant font-normal">/yr</span></span>
+<ul class="font-label-md text-label-md text-on-surface-variant space-y-1">
+<li class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px] text-primary" data-icon="check_circle">check_circle</span> All Pro Features</li>
+<li class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px] text-primary" data-icon="check_circle">check_circle</span> Advanced Analytics</li>
+</ul>
+<div class="peer-checked:absolute peer-checked:inset-0 peer-checked:border-2 peer-checked:border-primary peer-checked:bg-primary-fixed-dim/5 peer-checked:rounded-lg pointer-events-none"></div>
+</label>
+</div>
+<div class="mt-md">
+<h3 class="font-label-md text-label-md text-on-surface mb-sm">Payment Method</h3>
+<div class="flex gap-md">
+<label class="cursor-pointer flex items-center gap-xs p-sm bg-surface border border-outline-variant rounded-lg hover:bg-surface-container">
+<input checked="" class="accent-primary" name="payment" type="radio" value="momo"/>
+<span class="font-label-md text-label-md">Mobile Money</span>
+<span class="material-symbols-outlined text-primary text-[20px]" data-icon="phone_iphone">phone_iphone</span>
+</label>
+<label class="cursor-pointer flex items-center gap-xs p-sm bg-surface border border-outline-variant rounded-lg hover:bg-surface-container">
+<input class="accent-primary" name="payment" type="radio" value="card"/>
+<span class="font-label-md text-label-md">Credit Card</span>
+<span class="material-symbols-outlined text-primary text-[20px]" data-icon="credit_card">credit_card</span>
+</label>
+</div>
+</div>
+<div class="flex justify-between mt-lg">
+<button class="min-h-[48px] px-lg bg-surface text-primary border border-primary font-label-md text-label-md rounded hover:bg-surface-container transition-colors flex items-center gap-xs" onclick="prevStep(2)" type="button">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+                        Back
+                    </button>
+<button class="min-h-[48px] px-lg bg-primary text-on-primary font-label-md text-label-md rounded hover:bg-primary-container transition-colors flex items-center gap-xs" type="button">
+                        Complete Setup
+                        <span class="material-symbols-outlined" data-icon="check_circle">check_circle</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+<script>
+        function nextStep(step) {
+            // Hide all steps
+            document.querySelectorAll('.step-transition').forEach(el => {
+                el.classList.remove('active-step');
+                el.classList.add('hidden-step');
+            });
+            // Show target step
+            document.getElementById(`step-${step}`).classList.remove('hidden-step');
+            document.getElementById(`step-${step}`).classList.add('active-step');
+
+            // Update indicators
+            updateIndicators(step);
+        }
+
+        function prevStep(step) {
+             // Hide all steps
+            document.querySelectorAll('.step-transition').forEach(el => {
+                el.classList.remove('active-step');
+                el.classList.add('hidden-step');
+            });
+            // Show target step
+            document.getElementById(`step-${step}`).classList.remove('hidden-step');
+            document.getElementById(`step-${step}`).classList.add('active-step');
+
+            // Update indicators
+            updateIndicators(step);
+        }
+
+        function updateIndicators(currentStep) {
+            for (let i = 1; i <= 3; i++) {
+                const ind = document.getElementById(`ind-${i}`);
+                const line = document.getElementById(`line-${i}`); // line-3 doesn't exist, which is fine
+                const text = document.getElementById(`ind-text-${i}`);
+                
+                if (i < currentStep) {
+                    // Completed
+                    ind.className = "relative flex h-8 w-8 items-center justify-center rounded-full bg-primary hover:bg-primary-container step-indicator transition-colors duration-300";
+                    ind.innerHTML = `<span class="material-symbols-outlined text-on-primary text-[16px]" data-icon="check" style="font-variation-settings: 'FILL' 1;">check</span>`;
+                    if (line) line.className = "h-0.5 w-full bg-primary transition-colors duration-300";
+                } else if (i === currentStep) {
+                    // Active
+                    ind.className = "relative flex h-8 w-8 items-center justify-center rounded-full bg-primary hover:bg-primary-container step-indicator transition-colors duration-300";
+                    ind.innerHTML = `<span class="font-label-md text-label-md text-on-primary">${i}</span>`;
+                    if (line) line.className = "h-0.5 w-full bg-surface-variant transition-colors duration-300"; // Line after active is incomplete
+                } else {
+                    // Inactive
+                    ind.className = "relative flex h-8 w-8 items-center justify-center rounded-full bg-surface-variant border-2 border-surface-variant hover:border-outline step-indicator transition-colors duration-300";
+                    ind.innerHTML = `<span class="font-label-md text-label-md text-on-surface-variant">${i}</span>`;
+                     if (line) line.className = "h-0.5 w-full bg-surface-variant transition-colors duration-300";
+                }
+            }
+        }
+    </script>
+</body></html>

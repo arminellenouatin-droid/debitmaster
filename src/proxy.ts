@@ -20,11 +20,20 @@ export async function proxy(request: NextRequest) {
   });
 
   const { data: { user } } = await supabase.auth.getUser();
-  if (request.nextUrl.pathname.startsWith("/dashboard") && !user) {
-    const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = "/connexion";
-    redirectUrl.searchParams.set("next", request.nextUrl.pathname);
-    return NextResponse.redirect(redirectUrl);
+  if (request.nextUrl.pathname.startsWith("/dashboard")) {
+    if (!user) {
+      const redirectUrl = request.nextUrl.clone();
+      redirectUrl.pathname = "/connexion";
+      redirectUrl.searchParams.set("next", request.nextUrl.pathname);
+      return NextResponse.redirect(redirectUrl);
+    }
+    const { data: accessRequest } = await supabase.from("employee_access_requests").select("status").eq("user_id", user.id).order("requested_at", { ascending: false }).limit(1).maybeSingle();
+    if (accessRequest && accessRequest.status !== "APPROVED") {
+      const redirectUrl = request.nextUrl.clone();
+      redirectUrl.pathname = "/connexion";
+      redirectUrl.searchParams.set("error", accessRequest.status === "PENDING" ? "validation_en_attente" : "acces_refuse");
+      return NextResponse.redirect(redirectUrl);
+    }
   }
   return response;
 }
