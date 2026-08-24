@@ -1,0 +1,36 @@
+// DebitManager tenant API: toutes les opérations sont bornées par l’utilisateur Supabase courant.
+import { NextResponse } from "next/server";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+
+const activityTypes = ["BUVETTE", "BAR_RESTAURANT", "NIGHTCLUB_LOUNGE"] as const;
+
+export async function GET() {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const { data: auth } = await supabase.auth.getUser();
+    if (!auth.user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
+    const { data, error } = await supabase.from("companies").select("id,name,activity_type,country,currency,language,status,created_at").eq("owner_user_id", auth.user.id).is("deleted_at", null).order("created_at", { ascending: false }).limit(20);
+    if (error) return NextResponse.json({ error: "Impossible de charger vos établissements." }, { status: 500 });
+    return NextResponse.json({ companies: data ?? [] });
+  } catch {
+    return NextResponse.json({ error: "Service temporairement indisponible." }, { status: 500 });
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+    const name = typeof body.name === "string" ? body.name.trim() : "";
+    const activityType = typeof body.activityType === "string" ? body.activityType : "";
+    if (name.length < 2 || !activityTypes.includes(activityType as (typeof activityTypes)[number])) return NextResponse.json({ error: "Nom et type d’établissement valides requis." }, { status: 400 });
+
+    const supabase = await createSupabaseServerClient();
+    const { data: auth } = await supabase.auth.getUser();
+    if (!auth.user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
+    const { data, error } = await supabase.from("companies").insert({ name, activity_type: activityType, owner_user_id: auth.user.id }).select("id,name,activity_type,country,currency,language,status,created_at").single();
+    if (error) return NextResponse.json({ error: "Impossible de créer l’établissement. Vérifiez les permissions du tenant." }, { status: 400 });
+    return NextResponse.json({ company: data }, { status: 201 });
+  } catch {
+    return NextResponse.json({ error: "Requête invalide." }, { status: 400 });
+  }
+}
