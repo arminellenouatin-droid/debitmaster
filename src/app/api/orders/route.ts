@@ -1,15 +1,17 @@
 // DebitManager orders API: commande et lignes vérifiées ensemble sur le même tenant avant insertion.
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
-import { getOwnedTenantIds } from "@/lib/tenants";
+import { getAuthorizationContext, can } from "@/lib/authorization";
 
 type OrderLine = { productId: string; quantity: number };
 
 export async function GET(request: Request) {
   try {
     const tenantId = new URL(request.url).searchParams.get("tenantId") ?? "";
-    const { supabase, user, tenantIds } = await getOwnedTenantIds();
+    const context = await getAuthorizationContext();
+    const { supabase, user, tenantIds } = context;
     if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
+    if (!can(context, "orders.view")) return NextResponse.json({ error: "Permission insuffisante pour consulter les commandes." }, { status: 403 });
     if (tenantId && !tenantIds.includes(tenantId)) return NextResponse.json({ error: "Établissement non autorisé." }, { status: 403 });
     const query = supabase.from("orders").select("id,tenant_id,order_number,table_label,server_name,status,total_amount,currency,created_at,order_items(id,product_id,product_name,quantity,unit_price,total_price)").order("created_at", { ascending: false }).limit(50);
     const { data, error } = await (tenantId ? query.eq("tenant_id", tenantId) : query.in("tenant_id", tenantIds));
@@ -25,8 +27,10 @@ export async function POST(request: Request) {
     const tableLabel = typeof body.tableLabel === "string" ? body.tableLabel.trim().slice(0, 80) : null;
     const lines = Array.isArray(body.lines) ? body.lines as OrderLine[] : [];
     if (!tenantId || !lines.length || lines.length > 50) return NextResponse.json({ error: "Établissement et au moins une ligne de commande requis." }, { status: 400 });
-    const { supabase, user, tenantIds } = await getOwnedTenantIds();
+    const context = await getAuthorizationContext();
+    const { supabase, user, tenantIds } = context;
     if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
+    if (!can(context, "orders.create")) return NextResponse.json({ error: "Permission insuffisante pour créer une commande." }, { status: 403 });
     if (!tenantIds.includes(tenantId)) return NextResponse.json({ error: "Établissement non autorisé." }, { status: 403 });
     const normalizedLines = lines.map((line) => ({ productId: typeof line.productId === "string" ? line.productId : "", quantity: Number(line.quantity) })).filter((line) => line.productId && Number.isInteger(line.quantity) && line.quantity > 0 && line.quantity <= 999);
     if (normalizedLines.length !== lines.length) return NextResponse.json({ error: "Chaque ligne doit contenir un produit et une quantité valide." }, { status: 400 });

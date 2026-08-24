@@ -31,7 +31,9 @@ Les sessions utilisent des cookies sécurisés, HttpOnly, SameSite approprié et
 
 ## Paiements
 
-Les montants métier sont conservés dans leur devise source. Le prestataire de paiement reçoit uniquement les paramètres nécessaires. Les webhooks sont vérifiés, idempotents et rapprochés par une référence interne. Aucune donnée complète de carte bancaire n’est stockée.
+Moneroo est l’unique agrégateur de paiement de DebitManager. Les montants métier sont conservés dans leur devise source et le prestataire reçoit uniquement les paramètres nécessaires. Les webhooks Moneroo seront vérifiés, idempotents et rapprochés par une référence interne. Aucune donnée complète de carte bancaire ne sera stockée. KKiaPay et CinetPay sont hors périmètre.
+
+DebitManager est une application web responsive mobile-first. Les parcours doivent fonctionner sur téléphone, tablette et ordinateur à partir d’une même base web ; une application mobile native n’est pas prévue dans ce périmètre.
 
 ## Déploiement et reprise
 

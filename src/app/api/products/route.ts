@@ -1,14 +1,16 @@
 // DebitManager catalogue API: produit validé côté serveur, catégorie et tenant contrôlés avant insertion.
 import { NextResponse } from "next/server";
-import { getOwnedTenantIds } from "@/lib/tenants";
+import { getAuthorizationContext, can } from "@/lib/authorization";
 
 const productTypes = ["UNIT", "SERVICE", "MENU"] as const;
 
 export async function GET(request: Request) {
   try {
     const tenantId = new URL(request.url).searchParams.get("tenantId") ?? "";
-    const { supabase, user, tenantIds } = await getOwnedTenantIds();
+    const context = await getAuthorizationContext();
+    const { supabase, user, tenantIds } = context;
     if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
+    if (!can(context, "stock.view") && !can(context, "products.manage")) return NextResponse.json({ error: "Permission insuffisante pour consulter le catalogue." }, { status: 403 });
     if (tenantId && !tenantIds.includes(tenantId)) return NextResponse.json({ error: "Établissement non autorisé." }, { status: 403 });
     const query = supabase.from("products").select("id,tenant_id,category_id,name,product_type,unit,price,current_stock,alert_threshold,safety_threshold,image_url,created_at").is("deleted_at", null).order("name").limit(100);
     const { data, error } = await (tenantId ? query.eq("tenant_id", tenantId) : query.in("tenant_id", tenantIds));
@@ -31,8 +33,10 @@ export async function POST(request: Request) {
     const alertThreshold = Number(body.alertThreshold ?? 10);
     const safetyThreshold = Number(body.safetyThreshold ?? 5);
     if (!tenantId || name.length < 2 || !productTypes.includes(productType as (typeof productTypes)[number]) || !Number.isInteger(price) || price < 0 || !Number.isInteger(currentStock) || currentStock < 0 || !Number.isInteger(alertThreshold) || alertThreshold < 0 || !Number.isInteger(safetyThreshold) || safetyThreshold < 0) return NextResponse.json({ error: "Nom, type et valeurs de stock valides requis." }, { status: 400 });
-    const { supabase, user, tenantIds } = await getOwnedTenantIds();
+    const context = await getAuthorizationContext();
+    const { supabase, user, tenantIds } = context;
     if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
+    if (!can(context, "products.manage")) return NextResponse.json({ error: "Permission insuffisante pour gérer le catalogue." }, { status: 403 });
     if (!tenantIds.includes(tenantId)) return NextResponse.json({ error: "Établissement non autorisé." }, { status: 403 });
     if (categoryId) { const { data: category } = await supabase.from("categories").select("id").eq("id", categoryId).eq("tenant_id", tenantId).maybeSingle(); if (!category) return NextResponse.json({ error: "Catégorie non autorisée." }, { status: 403 }); }
     const { data, error } = await supabase.from("products").insert({ tenant_id: tenantId, category_id: categoryId, name, product_type: productType, price, current_stock: currentStock, alert_threshold: alertThreshold, safety_threshold: safetyThreshold }).select("id,tenant_id,category_id,name,product_type,unit,price,current_stock,alert_threshold,safety_threshold,image_url,created_at").single();
