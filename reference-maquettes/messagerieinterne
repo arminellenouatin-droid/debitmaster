@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+
+<html class="light" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>DebitManager Pro - Messages</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary-fixed": "#141d1b",
+                        "on-secondary-fixed": "#271900",
+                        "surface-container-high": "#e1e8fd",
+                        "surface-container": "#e9edff",
+                        "outline": "#707974",
+                        "on-error-container": "#93000a",
+                        "on-primary": "#ffffff",
+                        "tertiary-container": "#3b4542",
+                        "surface": "#f9f9ff",
+                        "surface-bright": "#f9f9ff",
+                        "surface-variant": "#dce2f7",
+                        "primary-fixed-dim": "#99d3ba",
+                        "on-tertiary-container": "#a7b2ae",
+                        "on-surface-variant": "#404944",
+                        "on-primary-fixed-variant": "#15503e",
+                        "outline-variant": "#bfc9c3",
+                        "secondary-fixed": "#ffdeaa",
+                        "inverse-on-surface": "#edf0ff",
+                        "on-tertiary-fixed-variant": "#3f4946",
+                        "on-background": "#141b2b",
+                        "primary-container": "#0f4c3a",
+                        "on-secondary": "#ffffff",
+                        "inverse-surface": "#293040",
+                        "inverse-primary": "#99d3ba",
+                        "tertiary": "#252f2c",
+                        "secondary-container": "#ffc55f",
+                        "on-error": "#ffffff",
+                        "on-secondary-container": "#755100",
+                        "background": "#f9f9ff",
+                        "on-secondary-fixed-variant": "#5f4100",
+                        "secondary-fixed-dim": "#f5bd58",
+                        "on-primary-container": "#82bba4",
+                        "secondary": "#7d5700",
+                        "surface-container-low": "#f1f3ff",
+                        "surface-dim": "#d3daef",
+                        "on-surface": "#141b2b",
+                        "primary": "#003426",
+                        "on-primary-fixed": "#002117",
+                        "surface-container-highest": "#dce2f7",
+                        "tertiary-fixed": "#dae5e0",
+                        "tertiary-fixed-dim": "#bec9c4",
+                        "primary-fixed": "#b4efd6",
+                        "error-container": "#ffdad6",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-tint": "#306855",
+                        "error": "#ba1a1a",
+                        "on-tertiary": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "base": "4px",
+                        "xs": "8px",
+                        "max-content-width": "1440px",
+                        "md": "24px",
+                        "sm": "16px",
+                        "lg": "32px",
+                        "xl": "48px",
+                        "sidebar-width": "260px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "display": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "label-md": ["Inter"],
+                        "amount-md": ["Inter"],
+                        "headline-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                        "display": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500" }],
+                        "amount-md": ["18px", { "lineHeight": "24px", "fontWeight": "600" }],
+                        "headline-lg": ["28px", { "lineHeight": "36px", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        
+        /* Custom scrollbar for message area */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #bfc9c3; /* outline-variant */
+            border-radius: 20px;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex antialiased">
+<!-- SideNavBar -->
+<nav class="hidden md:flex fixed left-0 top-0 h-full w-[260px] bg-primary dark:bg-primary-container text-on-primary dark:text-on-primary-container font-body-md text-body-md border-r border-outline-variant dark:border-outline shadow-sm flex-col p-md z-50">
+<!-- Brand -->
+<div class="mb-lg px-2">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-surface-container-lowest flex items-center justify-center overflow-hidden shrink-0">
+<img alt="Bar Maquis Master Logo" class="w-full h-full object-cover" data-alt="A minimalist and elegant corporate logo for a high-end restaurant management system. The logo features abstract geometric shapes in deep green and gold on a pristine white background. The lighting is bright and modern, conveying efficiency and premium hospitality." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCPuInH9Z5Xuk01qJyWh-G1hlSfqCSyYFRNDRgOrj8GeJPsE1VFLzfxWZk8rD0-JBto4CIVcgILb1UXEhJ4ZS9lysWyaJs7ZCS9WS2U6H_1o46DSb_UmrSq-hDxqOPfY_ZxetyfNNA8ZOQKnY9thEG_tRO3LHDsg3m-Gm2E4b2ztWB2PwnFqPw0NMOKnYKVdhLUJVFlP46MSnjbC4ktcSgPplU6OosQ9-56GgGSeNGTn4RDMQUnCaMt"/>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-on-primary dark:text-on-primary-container tracking-tight">Maquis Master</h1>
+<p class="font-label-md text-label-md text-on-primary/70">DebitManager Pro</p>
+</div>
+</div>
+</div>
+<!-- Navigation Links -->
+<div class="flex-1 flex flex-col gap-1 overflow-y-auto custom-scrollbar">
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-dim/20 transition-all duration-200 active:scale-95 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-dim/20 transition-all duration-200 active:scale-95 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="table_restaurant">table_restaurant</span>
+<span>Tables</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-dim/20 transition-all duration-200 active:scale-95 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="receipt_long">receipt_long</span>
+<span>Orders</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-dim/20 transition-all duration-200 active:scale-95 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span>Stock</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-dim/20 transition-all duration-200 active:scale-95 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span>Personnel</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-dim/20 transition-all duration-200 active:scale-95 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+<span>Finance</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 bg-secondary-container text-on-secondary-container rounded-lg font-bold transition-all duration-200 active:scale-95" href="#">
+<span class="material-symbols-outlined fill" data-icon="chat" data-weight="fill">chat</span>
+<span>Messages</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-dim/20 transition-all duration-200 active:scale-95 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span>Settings</span>
+</a>
+</div>
+<!-- Footer Links -->
+<div class="mt-auto pt-md flex flex-col gap-1 border-t border-on-primary/10">
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-dim/20 transition-all duration-200 active:scale-95 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+<span>Support</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-dim/20 transition-all duration-200 active:scale-95 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+<span>Logout</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Wrapper -->
+<div class="flex-1 md:ml-[260px] flex flex-col h-screen overflow-hidden">
+<!-- TopNavBar -->
+<header class="hidden md:flex fixed top-0 right-0 h-[72px] left-[260px] bg-surface-container-lowest dark:bg-inverse-surface text-on-surface dark:text-inverse-on-surface font-headline-md text-headline-md border-b border-outline-variant dark:border-outline shadow-sm justify-between items-center px-lg w-[calc(100%-260px)] z-40">
+<!-- Page Title / Product Name -->
+<div class="flex items-center gap-4">
+<h2 class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed">DebitManager</h2>
+</div>
+<!-- Actions & Profile -->
+<div class="flex items-center gap-sm">
+<!-- Online Status Indicator (as per Style Guidance) -->
+<div class="flex items-center gap-2 mr-2 px-3 py-1.5 bg-surface-container-low rounded-full border border-outline-variant">
+<div class="w-2.5 h-2.5 rounded-full bg-[#10b981]"></div>
+<span class="font-label-md text-label-md text-on-surface-variant">Online</span>
+</div>
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-colors cursor-pointer active:opacity-80">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="w-10 h-10 rounded-full overflow-hidden border border-outline-variant hover:bg-surface-container-high transition-colors cursor-pointer active:opacity-80 ml-2">
+<img alt="User Avatar" class="w-full h-full object-cover" data-alt="A professional headshot of a confident restaurant manager in a softly lit, modern dining room. The lighting is warm and inviting, complementing the sleek corporate UI aesthetic. High quality, sharp focus." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAtZLRqXk4HeOfGcUNL1jSgVWcJbkC75X1LquCojw5AwIhN4UpoETqnddmTa9NHpu3sg7TviH7rr4EyLO4bolXweOzdnmOYEm_-g0wvW6HJv4iBPk3bKK-SkgLPHAjMcXUGuWyBAL-TOvQhfmcpwtJG4QbfIjc8mPz9Nvsjx6BBxsciNs1ONIVmWAEUpj1F7a21lH4cJKb-D5ysGIPfvxlY35Vp9_g2oG5gh3-J-RFiGUjeKFvOjlAH"/>
+</button>
+</div>
+</header>
+<!-- Main Workspace (Messages) -->
+<main class="flex-1 mt-[72px] flex overflow-hidden bg-surface relative z-0">
+<!-- Conversations Sidebar -->
+<div class="w-[320px] shrink-0 border-r border-outline-variant bg-surface-container-lowest flex flex-col h-full z-10">
+<!-- Sidebar Header -->
+<div class="p-sm border-b border-outline-variant">
+<h3 class="font-headline-md text-headline-md text-on-surface mb-sm">Messages</h3>
+<!-- Search -->
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant group-focus-within:text-primary transition-colors" data-icon="search">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-surface-container-low border border-outline-variant rounded-lg font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" placeholder="Rechercher..." type="text"/>
+</div>
+</div>
+<!-- Global Alert Button -->
+<div class="p-sm border-b border-outline-variant">
+<button class="w-full bg-error text-on-error font-label-md text-label-md font-semibold py-3 px-4 rounded-lg flex items-center justify-center gap-2 hover:bg-error/90 active:scale-95 transition-all shadow-[0px_2px_4px_rgba(0,0,0,0.1)]">
+<span class="material-symbols-outlined" data-icon="campaign">campaign</span>
+                        Envoyer une alerte générale
+                    </button>
+</div>
+<!-- Chat List -->
+<div class="flex-1 overflow-y-auto custom-scrollbar">
+<!-- Groups Section -->
+<div class="py-2">
+<div class="px-sm py-2">
+<span class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider text-xs">Groupes</span>
+</div>
+<!-- Active Group -->
+<button class="w-full text-left px-sm py-3 bg-surface-container-high border-l-4 border-primary flex items-center gap-3 hover:bg-surface-container-high transition-colors">
+<div class="w-12 h-12 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined" data-icon="restaurant">restaurant</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-baseline mb-0.5">
+<span class="font-label-md text-label-md font-bold text-on-surface truncate">Équipe Salle</span>
+<span class="text-xs text-on-surface-variant">12:05</span>
+</div>
+<p class="font-body-md text-body-md text-sm text-on-surface-variant truncate">Jean: La table 4 a besoin d'eau.</p>
+</div>
+</button>
+<button class="w-full text-left px-sm py-3 border-l-4 border-transparent flex items-center gap-3 hover:bg-surface-container transition-colors">
+<div class="w-12 h-12 rounded-full bg-tertiary-container text-on-tertiary-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined" data-icon="soup_kitchen">soup_kitchen</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-baseline mb-0.5">
+<span class="font-label-md text-label-md font-semibold text-on-surface truncate">Cuisine</span>
+<span class="text-xs text-on-surface-variant">11:30</span>
+</div>
+<p class="font-body-md text-body-md text-sm text-on-surface-variant truncate">Chef: Plus de saumon pour ce midi.</p>
+</div>
+</button>
+<button class="w-full text-left px-sm py-3 border-l-4 border-transparent flex items-center gap-3 hover:bg-surface-container transition-colors">
+<div class="w-12 h-12 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined" data-icon="admin_panel_settings">admin_panel_settings</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-baseline mb-0.5">
+<span class="font-label-md text-label-md font-semibold text-on-surface truncate">Admin</span>
+<span class="text-xs text-on-surface-variant">Hier</span>
+</div>
+<p class="font-body-md text-body-md text-sm text-on-surface-variant truncate">Clôture de caisse validée.</p>
+</div>
+</button>
+</div>
+<!-- Individuals Section -->
+<div class="py-2 border-t border-outline-variant/50 mt-2">
+<div class="px-sm py-2">
+<span class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider text-xs">Individuels</span>
+</div>
+<button class="w-full text-left px-sm py-3 border-l-4 border-transparent flex items-center gap-3 hover:bg-surface-container transition-colors">
+<div class="w-12 h-12 rounded-full overflow-hidden shrink-0 border border-outline-variant">
+<img alt="Marc" class="w-full h-full object-cover" data-alt="A bright, clear photo of a young male waiter smiling in a modern restaurant setting. The lighting is soft and natural. He is wearing a crisp white shirt and a dark apron, embodying high-end hospitality." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBF4s_n4maiek6keWGJif1K-f7VpgkjUEm_gs3lV_2KzGzsb9-LoxtCqAmPS1CgXqyku9sSTSL0zgvGPyB-23KZsVpu8wqUQIpgdg2FH7uMebeB3sbtJ0BGoBVMCoLTtzMgyw4blW4BL4_3guqXXlU8S-A49wjRAyrEiJ-UlNCTFXEXjEMTX6VdRvWtEfdB-GG3htpOED_9ZahQ77iNUtXdhCPuNBQaS9G4MXLiQa6wUil55y5hdSQH"/>
+</div>
+<div class="flex-1 min-w-0 relative">
+<div class="flex justify-between items-baseline mb-0.5">
+<span class="font-label-md text-label-md font-semibold text-on-surface truncate">Marc (Serveur)</span>
+<span class="text-xs text-primary font-medium">09:15</span>
+</div>
+<p class="font-body-md text-body-md text-sm text-on-surface font-medium truncate pr-6">Je prends mon service dans 10min.</p>
+<!-- Unread Badge -->
+<div class="absolute right-0 bottom-0.5 w-5 h-5 bg-primary rounded-full flex items-center justify-center text-[10px] font-bold text-on-primary">1</div>
+</div>
+</button>
+<button class="w-full text-left px-sm py-3 border-l-4 border-transparent flex items-center gap-3 hover:bg-surface-container transition-colors opacity-70">
+<div class="w-12 h-12 rounded-full overflow-hidden shrink-0 border border-outline-variant grayscale">
+<img alt="Sophie" class="w-full h-full object-cover" data-alt="A portrait of a female sommelier in a dimly lit, elegant wine cellar. She looks focused and professional. The overall tone is sophisticated and matches a corporate UI palette." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBUXbZqKkVvjPBVOFmfBF8e7hsz1hhYAJoQ7jxr81Z-uNvVgOLUQxd7wFqynwrqjSjPovFv9-e1PWLFfJPgiMl8jnl6UgSdarZpXIFyjKKrco0yKjF7OXe7yDG393gzYn96uRrmbu-fRJ15PpWl98MFgZ6K78F_yw1b3t2EdwB986JgzB11USkzaoSdd4HvTAimGO_bffdSQkTQOu5PL1h7CVBWUXM0Hj31H5pG_eAD9viWt5GqVw2f"/>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-baseline mb-0.5">
+<span class="font-label-md text-label-md font-semibold text-on-surface truncate">Sophie (Sommelier)</span>
+<span class="text-xs text-on-surface-variant">Hier</span>
+</div>
+<p class="font-body-md text-body-md text-sm text-on-surface-variant truncate">Merci pour la confirmation.</p>
+</div>
+</button>
+</div>
+</div>
+</div>
+<!-- Active Chat Window -->
+<div class="flex-1 flex flex-col bg-surface-container-lowest">
+<!-- Chat Header -->
+<div class="h-20 border-b border-outline-variant px-lg flex items-center justify-between bg-surface-container-lowest shadow-[0px_2px_4px_rgba(0,0,0,0.02)] z-10">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined" data-icon="restaurant">restaurant</span>
+</div>
+<div>
+<h2 class="font-headline-md text-headline-md text-on-surface">Équipe Salle</h2>
+<p class="font-label-md text-label-md text-on-surface-variant font-normal">8 membres en ligne</p>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined" data-icon="search">search</span>
+</button>
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+</div>
+<!-- Chat Messages Area -->
+<div class="flex-1 overflow-y-auto p-lg flex flex-col gap-sm custom-scrollbar bg-surface-container-lowest">
+<!-- Date Divider -->
+<div class="flex items-center justify-center my-2">
+<span class="bg-surface-container-low px-4 py-1 rounded-full text-xs font-label-md text-on-surface-variant border border-outline-variant/30">Aujourd'hui</span>
+</div>
+<!-- Received Message -->
+<div class="flex gap-3 max-w-[80%]">
+<div class="w-8 h-8 rounded-full overflow-hidden shrink-0 mt-1 border border-outline-variant">
+<img alt="Avatar" class="w-full h-full object-cover" data-alt="A small avatar showing a professional, smiling waitress in a bright, modern restaurant setting. Clean corporate style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuADKUX1GITHReg7WvWdiQ-MaP3-ahXWiCziKQtqT6O8gNVV7eboOFw2RAyS6KOLnTFYCMy3mgv4JVnfquL6pRY18X3eid1_feVeEcRoozOJrHw30U9ZWPS-5ddHoZjfe8YYSHFtnJDCoM_a9K5s1RbVK_m3cNu8mUxwe7dzEizgMKYwtHUgqgX0Gb4ebXX3pzB5hx_7o9SDI0P7Z2QqE1QSNZr-3SeH7css9XJR1CnkOJmWNUE2yNsB"/>
+</div>
+<div class="flex flex-col gap-1">
+<div class="flex items-baseline gap-2 ml-1">
+<span class="font-label-md text-label-md text-on-surface">Marie</span>
+<span class="text-xs text-on-surface-variant">11:42</span>
+</div>
+<div class="bg-surface-container p-3 rounded-2xl rounded-tl-sm text-on-surface font-body-md text-body-md shadow-sm border border-outline-variant/20">
+                                La table 12 vient d'arriver. Je m'en occupe.
+                            </div>
+</div>
+</div>
+<!-- System Message (Status Badge style) -->
+<div class="flex justify-center my-2">
+<div class="flex items-center gap-2 bg-surface-container-high px-3 py-1.5 rounded-lg border border-outline-variant/50">
+<span class="material-symbols-outlined text-sm text-primary" data-icon="info">info</span>
+<span class="text-xs font-label-md font-semibold text-on-surface uppercase tracking-wide">Rappel : Réunion de service à 11h45</span>
+</div>
+</div>
+<!-- Sent Message -->
+<div class="flex gap-3 max-w-[80%] self-end flex-row-reverse">
+<!-- No avatar for sent messages usually, to save space, but keeping structure -->
+<div class="flex flex-col gap-1 items-end">
+<div class="flex items-baseline gap-2 mr-1 flex-row-reverse">
+<span class="text-xs text-on-surface-variant">11:45</span>
+</div>
+<div class="bg-primary text-on-primary p-3 rounded-2xl rounded-tr-sm font-body-md text-body-md shadow-sm">
+                                Parfait, n'oublie pas de leur proposer le menu du jour.
+                            </div>
+</div>
+</div>
+<!-- Received Message with Image Attachment -->
+<div class="flex gap-3 max-w-[80%]">
+<div class="w-8 h-8 rounded-full overflow-hidden shrink-0 mt-1 border border-outline-variant">
+<img alt="Avatar" class="w-full h-full object-cover" data-alt="A small avatar showing a busy male waiter in a crisp uniform. Warm lighting, modern corporate aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBppF6EtRBt8HxOMgrUQ6Abyp5exajm7W1DuRLH7d9gk0UeHbniuCU8j-wHcbrtdbWanlTbCHbll_-mPilaG83DCzk7_y-cT4jdzYo6rzvKczLknML2_vGObzeS1LCchaMOX-q2rw6ObO88BX8mQxkpiht48jAMWBmaIAC5LhOxzIpqKdmUfU_0Fd3A2x_aK_iLjrgMRSB5NdyfR78RiWhwbM5aE7Znr3PepFH-ywlGP8a3ohVKftOQ"/>
+</div>
+<div class="flex flex-col gap-1">
+<div class="flex items-baseline gap-2 ml-1">
+<span class="font-label-md text-label-md text-on-surface">Jean</span>
+<span class="text-xs text-on-surface-variant">12:05</span>
+</div>
+<div class="bg-surface-container p-3 rounded-2xl rounded-tl-sm text-on-surface font-body-md text-body-md shadow-sm border border-outline-variant/20">
+                                La table 4 a besoin d'eau et d'une chaise haute supplémentaire.
+                                
+                                <!-- Attached Image -->
+<div class="mt-2 rounded-lg overflow-hidden border border-outline-variant/30 w-48 h-32">
+<img alt="Table 4" class="w-full h-full object-cover" data-alt="A clean, well-lit photo of a restaurant table set for lunch in a high-end establishment. The setting is modern with white tablecloths and sleek cutlery. Represents a typical photo sent by staff." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAhkhN8AETO3Pdc7Nor4A3UfZmrWJVkOILMkKfOkmH2Z8OgZLIwXy8EzHZRP_Y8siUG_ZptBbbUeDGIp_wZ3fwz-2eW7JZcGzmURNTTXH10vAKa0gO-faHCuAmtsl4O9DGIJGPFheiXAcEoJWGyZhjgBZpy-NE6Wd7YT_MkCHn3uElf7nHYFqs1G67qZBg4yMaqcLcp7riQQL18uIA33WJ4zblTIF3XF7nS8xCbc5guRhKPPs3gf7y5"/>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Message Input Area -->
+<div class="p-4 border-t border-outline-variant bg-surface-container-lowest">
+<div class="bg-surface-container-low border border-outline-variant rounded-xl flex items-end p-2 shadow-sm focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all">
+<!-- Attachment Buttons -->
+<div class="flex gap-1 mb-1">
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-colors hover:text-primary">
+<span class="material-symbols-outlined" data-icon="add_circle">add_circle</span>
+</button>
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-colors hover:text-primary">
+<span class="material-symbols-outlined" data-icon="image">image</span>
+</button>
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-colors hover:text-primary">
+<span class="material-symbols-outlined" data-icon="attach_file">attach_file</span>
+</button>
+</div>
+<!-- Text Area -->
+<textarea class="flex-1 bg-transparent border-none focus:ring-0 resize-none font-body-md text-body-md text-on-surface py-3 px-2 max-h-32 overflow-y-auto custom-scrollbar" placeholder="Écrire un message à l'Équipe Salle..." rows="1" style="min-height: 48px;"></textarea>
+<!-- Send Button -->
+<button class="w-12 h-12 rounded-full bg-primary text-on-primary flex items-center justify-center hover:bg-primary/90 active:scale-95 transition-all mb-0.5 shadow-[0px_2px_4px_rgba(0,0,0,0.1)] shrink-0 ml-2">
+<span class="material-symbols-outlined" data-icon="send">send</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

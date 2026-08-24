@@ -49,7 +49,7 @@ export async function POST(request: Request) {
   } catch { return NextResponse.json({ error: "Requête invalide." }, { status: 400 }); }
 }
 
-const orderStatuses = ["PENDING", "IN_PROGRESS", "READY", "DELIVERED"] as const;
+const orderStatuses = ["PENDING", "IN_PREPARATION", "READY", "HANDED_OFF", "DELIVERED"] as const;
 
 type OrderStatus = (typeof orderStatuses)[number];
 
@@ -66,7 +66,12 @@ export async function PATCH(request: Request) {
     if (!tenantIds.includes(tenantId)) return NextResponse.json({ error: "Établissement non autorisé." }, { status: 403 });
     const { data: current, error: currentError } = await supabase.from("orders").select("id,status").eq("id", orderId).eq("tenant_id", tenantId).maybeSingle();
     if (currentError || !current) return NextResponse.json({ error: "Commande introuvable dans cet établissement." }, { status: 404 });
-    const transitionPermissions: Record<string, string> = { "PENDING->IN_PROGRESS": "orders.prepare", "IN_PROGRESS->READY": "orders.prepare", "READY->DELIVERED": "orders.deliver" };
+    const transitionPermissions: Record<string, string> = {
+      "PENDING->IN_PREPARATION": "orders.prepare",
+      "IN_PREPARATION->READY": "orders.prepare",
+      "READY->HANDED_OFF": "orders.handoff",
+      "HANDED_OFF->DELIVERED": "orders.deliver",
+    };
     const permission = transitionPermissions[`${current.status}->${status}`];
     if (!permission) return NextResponse.json({ error: "Transition de commande non autorisée." }, { status: 400 });
     if (!can(context, permission)) return NextResponse.json({ error: "Permission insuffisante pour modifier cette étape de commande." }, { status: 403 });

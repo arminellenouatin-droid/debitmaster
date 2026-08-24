@@ -7,19 +7,20 @@ type Company = { id: string; name: string };
 type OrderItem = { id: string; product_name: string; quantity: number };
 type Order = { id: string; order_number: string; table_label: string | null; status: string; created_at: string; order_items?: OrderItem[] };
 
-type StatusKey = "PENDING" | "IN_PROGRESS" | "READY";
+type StatusKey = "PENDING" | "IN_PREPARATION" | "READY" | "HANDED_OFF";
 
 const columns: { key: StatusKey; label: string; tone: string }[] = [
-  { key: "PENDING", label: "À préparer", tone: "border-[var(--line)]" },
-  { key: "IN_PROGRESS", label: "En préparation", tone: "border-[var(--secondary-container)]" },
-  { key: "READY", label: "Prêtes", tone: "border-[var(--primary-container)]" },
+  { key: "PENDING", label: "À prendre en charge", tone: "border-[var(--line)]" },
+  { key: "IN_PREPARATION", label: "En préparation", tone: "border-[var(--secondary-container)]" },
+  { key: "READY", label: "Prêtes à remettre", tone: "border-[var(--primary-container)]" },
+  { key: "HANDED_OFF", label: "Remises au service", tone: "border-[var(--accent)]" },
 ];
 
 const normalizeStatus = (status: string) => status.toUpperCase().replaceAll("-", "_");
-const nextStatus = (status: string) => (status === "PENDING" ? "IN_PROGRESS" : status === "IN_PROGRESS" ? "READY" : "DELIVERED");
-const nextLabel = (status: string) => (status === "PENDING" ? "Prendre en charge" : status === "IN_PROGRESS" ? "Marquer prête" : "Remettre au service");
+const nextStatus = (status: string) => (status === "PENDING" ? "IN_PREPARATION" : status === "IN_PREPARATION" ? "READY" : status === "READY" ? "HANDED_OFF" : "DELIVERED");
+const nextLabel = (status: string) => (status === "PENDING" ? "Prendre en charge" : status === "IN_PREPARATION" ? "Marquer prête" : status === "READY" ? "Remettre au service" : "Confirmer la livraison");
 
-export function KitchenClient({ canPrepare, canDeliver }: { canPrepare: boolean; canDeliver: boolean }) {
+export function KitchenClient({ canPrepare, canHandoff, canDeliver }: { canPrepare: boolean; canHandoff: boolean; canDeliver: boolean }) {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [tenantId, setTenantId] = useState("");
   const [orders, setOrders] = useState<Order[]>([]);
@@ -69,7 +70,7 @@ export function KitchenClient({ canPrepare, canDeliver }: { canPrepare: boolean;
   }, [tenantId]);
 
   const grouped = useMemo(() => {
-    const result: Record<StatusKey, Order[]> = { PENDING: [], IN_PROGRESS: [], READY: [] };
+    const result: Record<StatusKey, Order[]> = { PENDING: [], IN_PREPARATION: [], READY: [], HANDED_OFF: [] };
     for (const order of orders) {
       const key = normalizeStatus(order.status) as StatusKey;
       if (result[key]) result[key].push(order);
@@ -80,7 +81,7 @@ export function KitchenClient({ canPrepare, canDeliver }: { canPrepare: boolean;
   async function changeStatus(order: Order) {
     const currentStatus = normalizeStatus(order.status);
     const status = nextStatus(currentStatus);
-    const allowed = currentStatus === "READY" ? canDeliver : canPrepare;
+    const allowed = currentStatus === "READY" ? canHandoff : currentStatus === "HANDED_OFF" ? canDeliver : canPrepare;
     if (!allowed) {
       setError("Votre rôle ne permet pas de faire avancer cette commande.");
       return;
@@ -97,7 +98,7 @@ export function KitchenClient({ canPrepare, canDeliver }: { canPrepare: boolean;
       const result = await response.json();
       if (!response.ok) throw new Error(result.error ?? "Impossible de modifier le statut.");
       setOrders((current) => current.map((item) => (item.id === order.id ? { ...item, status: result.order.status } : item)));
-      setMessage(`${order.order_number} est maintenant « ${status === "IN_PROGRESS" ? "en préparation" : status === "READY" ? "prête" : "livrée"} ».`);
+      setMessage(`${order.order_number} est maintenant « ${status === "IN_PREPARATION" ? "en préparation" : status === "READY" ? "prête" : status === "HANDED_OFF" ? "remise au service" : "livrée"} ».`);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Impossible de modifier le statut.");
     } finally {
@@ -111,7 +112,7 @@ export function KitchenClient({ canPrepare, canDeliver }: { canPrepare: boolean;
         <div>
           <p className="text-xs font-black uppercase tracking-[0.18em] text-[var(--secondary)]">Cuisine & bar</p>
           <h1 className="mt-3 text-4xl font-black tracking-[-0.04em] text-[var(--primary)]">File d’attente</h1>
-          <p className="mt-3 text-sm leading-6 text-[var(--muted)]">Une lecture rapide des commandes à préparer et à remettre au service.</p>
+          <p className="mt-3 text-sm leading-6 text-[var(--muted)]">Le gérant et la cuisine préparent, puis remettent la commande au service. Le serveur est le seul rôle qui confirme la livraison au client.</p>
         </div>
         <div className="flex items-center gap-3">
           {companies.length > 1 && (
@@ -131,14 +132,14 @@ export function KitchenClient({ canPrepare, canDeliver }: { canPrepare: boolean;
       {loading ? (
         <div className="mt-4 rounded-xl border border-[var(--line)] bg-[var(--surface)] p-12 text-center text-sm font-bold text-[var(--muted)]">Chargement de la file…</div>
       ) : (
-        <div className="mt-4 grid gap-4 lg:grid-cols-3">
+        <div className="mt-4 grid gap-4 lg:grid-cols-4">
           {columns.map((column) => (
             <section key={column.key} className={`min-h-80 rounded-xl border-2 ${column.tone} bg-[var(--surface)] p-4`}>
               <div className="flex items-center justify-between border-b border-[var(--line)] pb-4"><h2 className="font-black text-[var(--primary)]">{column.label}</h2><span className="flex h-7 min-w-7 items-center justify-center rounded-full bg-[var(--surface-muted)] px-2 text-xs font-black text-[var(--primary)]">{grouped[column.key].length}</span></div>
               <div className="mt-4 space-y-3">
                 {grouped[column.key].length ? grouped[column.key].map((order) => {
                   const currentStatus = normalizeStatus(order.status);
-                  const canChange = currentStatus === "READY" ? canDeliver : canPrepare;
+                  const canChange = currentStatus === "READY" ? canHandoff : currentStatus === "HANDED_OFF" ? canDeliver : canPrepare;
                   return (
                     <article key={order.id} className="rounded-lg border border-[var(--line)] bg-[var(--background)] p-4">
                       <div className="flex items-start justify-between gap-3"><div><p className="text-sm font-black text-[var(--primary)]">{order.order_number}</p><p className="mt-1 text-xs font-bold text-[var(--muted)]">{order.table_label ?? "Sans table"}</p></div><span className="text-xs font-black text-[var(--secondary)]">{new Date(order.created_at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}</span></div>

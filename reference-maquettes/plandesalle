@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Floor Plan - DebitManager Pro</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-tertiary-fixed": "#141d1b",
+                      "on-secondary-fixed": "#271900",
+                      "surface-container-high": "#e1e8fd",
+                      "surface-container": "#e9edff",
+                      "outline": "#707974",
+                      "on-error-container": "#93000a",
+                      "on-primary": "#ffffff",
+                      "tertiary-container": "#3b4542",
+                      "surface": "#f9f9ff",
+                      "surface-bright": "#f9f9ff",
+                      "surface-variant": "#dce2f7",
+                      "primary-fixed-dim": "#99d3ba",
+                      "on-tertiary-container": "#a7b2ae",
+                      "on-surface-variant": "#404944",
+                      "on-primary-fixed-variant": "#15503e",
+                      "outline-variant": "#bfc9c3",
+                      "secondary-fixed": "#ffdeaa",
+                      "inverse-on-surface": "#edf0ff",
+                      "on-tertiary-fixed-variant": "#3f4946",
+                      "on-background": "#141b2b",
+                      "primary-container": "#0f4c3a",
+                      "on-secondary": "#ffffff",
+                      "inverse-surface": "#293040",
+                      "inverse-primary": "#99d3ba",
+                      "tertiary": "#252f2c",
+                      "secondary-container": "#ffc55f",
+                      "on-error": "#ffffff",
+                      "on-secondary-container": "#755100",
+                      "background": "#f9f9ff",
+                      "on-secondary-fixed-variant": "#5f4100",
+                      "secondary-fixed-dim": "#f5bd58",
+                      "on-primary-container": "#82bba4",
+                      "secondary": "#7d5700",
+                      "surface-container-low": "#f1f3ff",
+                      "surface-dim": "#d3daef",
+                      "on-surface": "#141b2b",
+                      "primary": "#003426",
+                      "on-primary-fixed": "#002117",
+                      "surface-container-highest": "#dce2f7",
+                      "tertiary-fixed": "#dae5e0",
+                      "tertiary-fixed-dim": "#bec9c4",
+                      "primary-fixed": "#b4efd6",
+                      "error-container": "#ffdad6",
+                      "surface-container-lowest": "#ffffff",
+                      "surface-tint": "#306855",
+                      "error": "#ba1a1a",
+                      "on-tertiary": "#ffffff"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "base": "4px",
+                      "xs": "8px",
+                      "max-content-width": "1440px",
+                      "md": "24px",
+                      "sm": "16px",
+                      "lg": "32px",
+                      "xl": "48px",
+                      "sidebar-width": "260px"
+              },
+              "fontFamily": {
+                      "body-lg": ["Inter"],
+                      "body-md": ["Inter"],
+                      "headline-lg-mobile": ["Inter"],
+                      "display": ["Inter"],
+                      "headline-md": ["Inter"],
+                      "label-md": ["Inter"],
+                      "amount-md": ["Inter"],
+                      "headline-lg": ["Inter"]
+              },
+              "fontSize": {
+                      "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                      "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                      "display": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                      "amount-md": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                      "headline-lg": ["28px", {"lineHeight": "36px", "fontWeight": "700"}]
+              }
+            }
+          }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+          font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .icon-filled {
+           font-variation-settings: 'FILL' 1;
+        }
+        
+        /* Table Status Colors */
+        .table-libre { @apply bg-primary text-on-primary border-primary; }
+        .table-occupee { @apply bg-error text-on-error border-error; }
+        .table-reservee { @apply bg-secondary-container text-on-secondary-container border-secondary-container; }
+        
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md h-screen flex overflow-hidden">
+<!-- SideNavBar -->
+<nav class="hidden md:flex flex-col h-full p-md bg-primary dark:bg-primary-container fixed left-0 top-0 h-full w-[260px] border-r border-outline-variant dark:border-outline shadow-sm z-20">
+<div class="mb-lg px-4 flex items-center gap-3">
+<img alt="Bar Maquis Master Logo" class="w-10 h-10 rounded-lg object-cover" data-alt="A sleek, minimalist logo design for a premium hospitality software. The logo features abstract geometric shapes in deep green and subtle gold tones, set against a pristine white background. High contrast, sharp edges, modern corporate aesthetic. High resolution, 4k quality." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCN78FheF58DkQCATcNtygK1bdEwOV8RoBAVav1HLWynhj1pJw5sNsWrCba5vTWXafGsxh3c2XCcdECmnfXKwmpvUQUQ8LdYbjf8I39S4Qszyr8uVw_5k8y0Z_yH5TgtACh1pXb_9AlsFmEFZw-NBsynRwvXrtehH41BFXUzSlou0-dmn7cUKEYZcOXyCdY3wmnS-rHymL4GjULIYkAuNpfp0P4cwtTOt-F0kYElnFe2-QBFMYZyf-i"/>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-on-primary dark:text-on-primary-container truncate">Maquis Master</h1>
+<p class="font-label-md text-label-md text-on-primary/70">DebitManager Pro</p>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-dim/20 transition-all duration-200 active:scale-95 rounded-lg font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 bg-secondary-container text-on-secondary-container rounded-lg font-bold font-body-md text-body-md shadow-sm" href="#">
+<span class="material-symbols-outlined icon-filled" data-icon="table_restaurant" data-weight="fill">table_restaurant</span>
+<span>Tables</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-dim/20 transition-all duration-200 active:scale-95 rounded-lg font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined" data-icon="receipt_long">receipt_long</span>
+<span>Orders</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-dim/20 transition-all duration-200 active:scale-95 rounded-lg font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span>Stock</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-dim/20 transition-all duration-200 active:scale-95 rounded-lg font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span>Personnel</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-dim/20 transition-all duration-200 active:scale-95 rounded-lg font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+<span>Finance</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-dim/20 transition-all duration-200 active:scale-95 rounded-lg font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined" data-icon="chat">chat</span>
+<span>Messages</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-dim/20 transition-all duration-200 active:scale-95 rounded-lg font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span>Settings</span>
+</a>
+</div>
+<div class="mt-auto pt-4 border-t border-on-primary/10 space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-dim/20 transition-all duration-200 active:scale-95 rounded-lg font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+<span>Support</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-dim/20 transition-all duration-200 active:scale-95 rounded-lg font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+<span>Logout</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col md:ml-[260px] h-full overflow-hidden relative bg-surface">
+<!-- TopNavBar -->
+<header class="flex justify-between items-center px-lg w-full fixed top-0 right-0 h-[72px] md:left-[260px] bg-surface-container-lowest dark:bg-inverse-surface border-b border-outline-variant dark:border-outline shadow-sm z-10 transition-all">
+<!-- Mobile Menu Toggle (Visible only on small screens) -->
+<button class="md:hidden p-2 text-on-surface hover:bg-surface-container-high rounded-full transition-colors cursor-pointer active:opacity-80">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<!-- Brand / Title -->
+<div class="flex items-center gap-4">
+<span class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed hidden md:block">DebitManager</span>
+<h2 class="font-headline-md text-headline-md md:hidden font-bold">Tables</h2>
+</div>
+<!-- Actions -->
+<div class="flex items-center gap-2">
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-high rounded-full transition-colors cursor-pointer active:opacity-80 relative">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="absolute top-1.5 right-1.5 w-2 h-2 bg-error rounded-full"></span>
+</button>
+<div class="h-8 w-px bg-outline-variant mx-2"></div>
+<div class="flex items-center gap-3 cursor-pointer p-1 pr-3 rounded-full hover:bg-surface-container-high transition-colors active:opacity-80">
+<img alt="User Avatar" class="w-8 h-8 rounded-full object-cover" data-alt="A professional headshot of a restaurant manager in a smartly tailored dark suit. The background is a soft, blurred bar setting with warm ambient lighting. The lighting on the face is crisp and flattering, high-end photography style, medium close-up." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDiVagRyxIghr0qrU8-uMo0_mQEmQWfKhTFLFl2dazXGlIrXUAHySVWhhV3mO6xlzGVwwJWoxaUVk7A9DL3372VNKhgQuW9-JChFqWs9qagYBDQ9cCwkYrUk5IJ5rIssSKCtMoteRAVpTEzcxQLn4B1bm6x6YdjueCcswfz9x3ZAYiCqZ2SiaJsxB2hjCInZqMFXttXXIGTpiDjai6fvh9JpYaXeHxyqSUSa26KCFSRX9LiD34g0e2X"/>
+<span class="font-label-md text-label-md hidden sm:block">Admin</span>
+</div>
+</div>
+</header>
+<!-- Page Content -->
+<div class="flex-1 mt-[72px] p-md lg:p-lg overflow-y-auto">
+<!-- Top Controls: Area Tabs & Legend -->
+<div class="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 mb-lg">
+<!-- Area Toggles -->
+<div class="flex bg-surface-container-low p-1 rounded-lg border border-outline-variant/30">
+<button class="px-6 py-2 rounded-md bg-surface-container-lowest text-primary font-label-md text-label-md shadow-sm transition-all">Salle VIP</button>
+<button class="px-6 py-2 rounded-md text-on-surface-variant hover:bg-surface-container-highest font-label-md text-label-md transition-all">Terrasse</button>
+<button class="px-6 py-2 rounded-md text-on-surface-variant hover:bg-surface-container-highest font-label-md text-label-md transition-all">Bar</button>
+</div>
+<!-- Legend -->
+<div class="flex items-center gap-6 bg-surface-container-lowest p-3 rounded-lg border border-outline-variant shadow-sm text-sm font-label-md text-label-md">
+<div class="flex items-center gap-2">
+<div class="w-4 h-4 rounded table-libre"></div>
+<span>Libre</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-4 h-4 rounded table-occupee"></div>
+<span>Occupée</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-4 h-4 rounded table-reservee"></div>
+<span>Réservée</span>
+</div>
+</div>
+</div>
+<!-- Floor Plan Canvas -->
+<div class="relative bg-surface-container-lowest border border-outline-variant rounded-xl shadow-sm p-8 min-h-[600px] overflow-x-auto">
+<!-- Room Label -->
+<div class="absolute top-4 left-6 text-on-surface-variant font-label-md text-label-md uppercase tracking-wider opacity-50">Salle VIP Layout</div>
+<!-- Grid Container (Simulating absolute positioning on a floor plan for structural variety) -->
+<div class="relative w-full min-w-[800px] h-[500px]">
+<!-- Table 1: Occupied -->
+<div class="absolute top-10 left-10 w-32 h-32 rounded-full table-occupee shadow-md flex flex-col items-center justify-center cursor-pointer hover:ring-4 hover:ring-error/30 transition-all group">
+<span class="font-headline-md text-headline-md">T1</span>
+<span class="font-label-md text-label-md mt-1 opacity-90">01:45</span>
+<span class="material-symbols-outlined absolute top-2 right-2 text-sm opacity-0 group-hover:opacity-100 transition-opacity">info</span>
+</div>
+<!-- Table 2: Free -->
+<div class="absolute top-10 left-60 w-32 h-32 rounded-lg table-libre shadow-sm flex flex-col items-center justify-center cursor-pointer hover:ring-4 hover:ring-primary/30 transition-all">
+<span class="font-headline-md text-headline-md">T2</span>
+<span class="font-label-md text-label-md mt-1 opacity-70">4 seats</span>
+</div>
+<!-- Table 3: Reserved -->
+<div class="absolute top-10 left-[440px] w-48 h-32 rounded-lg table-reservee shadow-sm flex flex-col items-center justify-center cursor-pointer hover:ring-4 hover:ring-secondary-container/50 transition-all">
+<span class="font-headline-md text-headline-md">T3</span>
+<span class="font-label-md text-label-md mt-1 opacity-90">19:30</span>
+<span class="text-xs mt-1">Dubois (6)</span>
+</div>
+<!-- Long Table: Occupied -->
+<div class="absolute top-60 left-10 w-64 h-24 rounded-lg table-occupee shadow-md flex items-center justify-between px-8 cursor-pointer hover:ring-4 hover:ring-error/30 transition-all">
+<span class="font-headline-md text-headline-md">L1</span>
+<div class="text-right">
+<span class="font-amount-md text-amount-md block">124.50 €</span>
+<span class="font-label-md text-label-md opacity-90">00:30</span>
+</div>
+</div>
+<!-- Table 4: Free -->
+<div class="absolute top-60 left-[340px] w-32 h-32 rounded-full table-libre shadow-sm flex flex-col items-center justify-center cursor-pointer hover:ring-4 hover:ring-primary/30 transition-all">
+<span class="font-headline-md text-headline-md">T4</span>
+<span class="font-label-md text-label-md mt-1 opacity-70">2 seats</span>
+</div>
+<!-- Table 5: Free -->
+<div class="absolute top-60 left-[510px] w-32 h-32 rounded-full table-libre shadow-sm flex flex-col items-center justify-center cursor-pointer hover:ring-4 hover:ring-primary/30 transition-all">
+<span class="font-headline-md text-headline-md">T5</span>
+<span class="font-label-md text-label-md mt-1 opacity-70">2 seats</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Tooltip / Card Overlay (Example state for clicking T1) -->
+<!-- Positioned absolutely over the main area to simulate a popover -->
+<div class="fixed top-[200px] left-[320px] md:left-[580px] w-80 bg-surface-container-lowest border border-outline-variant rounded-xl shadow-xl z-30 overflow-hidden flex flex-col">
+<!-- Header -->
+<div class="bg-error text-on-error p-4 flex justify-between items-center">
+<div class="flex items-center gap-2">
+<span class="font-headline-md text-headline-md">Table T1</span>
+<span class="bg-on-error/20 px-2 py-0.5 rounded text-xs font-semibold">Occupée</span>
+</div>
+<button class="text-on-error hover:bg-on-error/20 p-1 rounded-full transition-colors">
+<span class="material-symbols-outlined text-sm">close</span>
+</button>
+</div>
+<!-- Content -->
+<div class="p-4 space-y-4">
+<div class="flex justify-between items-center pb-2 border-b border-outline-variant">
+<span class="text-on-surface-variant font-label-md text-label-md">Time Seated</span>
+<span class="text-on-surface font-body-md text-body-md font-semibold">01:45</span>
+</div>
+<div class="space-y-2">
+<span class="text-on-surface-variant font-label-md text-label-md block">Order Summary</span>
+<div class="flex justify-between items-center text-sm">
+<span class="text-on-surface">2x Mojito</span>
+<span class="text-on-surface font-semibold">18.00 €</span>
+</div>
+<div class="flex justify-between items-center text-sm">
+<span class="text-on-surface">1x Tapas Mix</span>
+<span class="text-on-surface font-semibold">12.50 €</span>
+</div>
+<div class="flex justify-between items-center text-sm">
+<span class="text-on-surface">1x Sparkling Water</span>
+<span class="text-on-surface font-semibold">4.00 €</span>
+</div>
+</div>
+<div class="pt-2 border-t border-outline-variant flex justify-between items-center">
+<span class="font-headline-md text-headline-md text-on-surface">Total</span>
+<span class="font-amount-md text-amount-md text-primary">34.50 €</span>
+</div>
+</div>
+<!-- Actions -->
+<div class="p-4 bg-surface-container-low border-t border-outline-variant grid grid-cols-2 gap-2">
+<button class="py-2 px-4 rounded-lg border border-outline text-on-surface hover:bg-surface-container transition-colors font-label-md text-label-md">Add Item</button>
+<button class="py-2 px-4 rounded-lg bg-primary text-on-primary hover:bg-primary-container hover:text-on-primary-container transition-colors font-label-md text-label-md">Checkout</button>
+</div>
+</div>
+</body></html>

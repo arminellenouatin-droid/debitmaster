@@ -32,9 +32,11 @@ export async function POST(request: Request) {
     const activityType = typeof body.activityType === "string" ? body.activityType : "";
     if (name.length < 2 || !activityTypes.includes(activityType as (typeof activityTypes)[number])) return NextResponse.json({ error: "Nom et type d’établissement valides requis." }, { status: 400 });
 
-    const supabase = await createSupabaseServerClient();
-    const { data: auth } = await supabase.auth.getUser();
-    if (!auth.user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
+    const context = await getAuthorizationContext();
+    if (!context.user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
+    if (context.employeeId) return NextResponse.json({ error: "Seul le propriétaire peut créer un établissement." }, { status: 403 });
+    const supabase = context.supabase;
+    const auth = { user: context.user };
     const uniqueCode = `DM${randomBytes(4).toString("hex").toUpperCase()}`;
     const { data, error } = await supabase.from("companies").insert({ name, activity_type: activityType, unique_code: uniqueCode, owner_user_id: auth.user.id }).select("id,name,activity_type,country,currency,language,status,created_at").single();
     if (error) {
