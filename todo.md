@@ -113,3 +113,24 @@
 - [ ] Faire recevoir au Chef cuisine les commandes de nourriture dans le KDS cuisine.
 - [ ] Ajouter au Superviseur le contrôle de fin de journée : ventes réelles, stocks restants et activité du Magasinier.
 - [ ] Tester les restrictions RBAC et l’affichage mobile de chaque rôle.
+
+
+## Lot diagnostic définitif login serveuse
+
+- [ ] Reproduire le refus avec le numéro de test sur la production réellement déployée.
+- [ ] Vérifier que la production utilise la correction de résolution téléphone et identifier sa version.
+- [ ] Comparer sans exposition le numéro, l’identifiant Auth technique, le mot de passe et le profil employé.
+- [ ] Corriger la donnée ou le code responsable du refus.
+- [ ] Retester le login téléphone et l’accès tenant après correction.
+
+
+## Lot serveur/serveuse et reversement établissement
+
+- [x] Limiter le dashboard serveur/serveuse à sa zone, ses tables, ses ventes, ses horaires, son repos et ses commissions.
+- [x] Ajouter les onglets Commandes, Ventes et Profil avec filtrage par utilisateur connecté.
+- [x] Permettre la sélection ou la création d’un client depuis une commande.
+- [x] Brancher le règlement cash et Mobile Money via Moneroo sur les commandes de la serveuse.
+- [x] Créer le reversement propriétaire-promoteur sans montant minimum.
+- [x] Imposer une fenêtre de vérification de quatre heures avant validation d’un reversement établissement.
+- [x] Déduire la commission SaaS avant le montant reversable et conserver une trace auditable.
+- [ ] Tester les rôles, l’isolation des ventes et le parcours mobile en conditions connectées.
