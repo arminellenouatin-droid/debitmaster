@@ -24,7 +24,8 @@ export function InscriptionForm() {
     event.preventDefault(); setError(""); setMessage(""); setPending(true);
     try {
       const endpoint = mode === "OWNER" ? "/api/auth/signup" : "/api/team/access-request";
-      const response = await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
+      const affiliateCode = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("ref")?.trim().toUpperCase() ?? "" : "";
+      const response = await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(mode === "OWNER" ? { ...form, affiliateCode } : form) });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error ?? "Inscription impossible.");
       if (mode === "STAFF") { setStep(2); setMessage(`Votre demande pour ${result.companyName} est en attente de validation par le propriétaire.`); return; }

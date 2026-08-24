@@ -1,8 +1,10 @@
 // DebitManager tenant API: toutes les opérations sont bornées par l’utilisateur Supabase courant.
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { randomBytes } from "node:crypto";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getAuthorizationContext } from "@/lib/authorization";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 const activityTypes = ["BUVETTE", "BAR_RESTAURANT", "NIGHTCLUB_LOUNGE"] as const;
 
@@ -38,13 +40,23 @@ export async function POST(request: Request) {
     const supabase = context.supabase;
     const auth = { user: context.user };
     const uniqueCode = `DM${randomBytes(4).toString("hex").toUpperCase()}`;
-    const { data, error } = await supabase.from("companies").insert({ name, activity_type: activityType, unique_code: uniqueCode, owner_user_id: auth.user.id }).select("id,name,activity_type,country,currency,language,status,created_at").single();
+    const cookieStore = await cookies();
+    const referralCode = cookieStore.get("dm_affiliate_ref")?.value?.trim().toUpperCase() || "";
+    const admin = referralCode ? createSupabaseAdminClient() : null;
+    const { data: affiliate } = admin ? await admin.from("platform_affiliates").select("id,code").eq("code", referralCode).eq("status", "ACTIVE").maybeSingle() : { data: null };
+    const { data, error } = await supabase.from("companies").insert({ name, activity_type: activityType, unique_code: uniqueCode, owner_user_id: auth.user.id, affiliate_id: affiliate?.id ?? null }).select("id,name,activity_type,country,currency,language,status,created_at,affiliate_id").single();
     if (error) {
       console.error("[companies.POST] Supabase insert failed", { code: error.code, hint: error.hint, message: error.message });
       const diagnostic = error.code === "42501" ? "TENANT_PERMISSION_DENIED" : error.code === "23505" ? "COMPANY_CODE_ALREADY_EXISTS" : error.code === "23502" ? "COMPANY_REQUIRED_FIELD_MISSING" : error.code === "23514" ? "COMPANY_INVALID_VALUE" : error.code === "23503" ? "COMPANY_REFERENCE_INVALID" : "COMPANY_CREATE_FAILED";
       return NextResponse.json({ error: "Impossible de créer l’établissement. Vérifiez les permissions du tenant.", diagnostic }, { status: 400 });
     }
-    return NextResponse.json({ company: data }, { status: 201 });
+    if (data && affiliate && admin) {
+      const { error: attributionError } = await admin.from("affiliate_attributions").insert({ affiliate_id: affiliate.id, tenant_id: data.id, attribution_code: affiliate.code });
+      if (attributionError) console.error("[companies.POST] affiliate attribution failed", { code: attributionError.code });
+    }
+    const response = NextResponse.json({ company: data, affiliateAttributed: Boolean(affiliate) }, { status: 201 });
+    if (referralCode) response.cookies.set("dm_affiliate_ref", "", { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", maxAge: 0, path: "/" });
+    return response;
   } catch {
     return NextResponse.json({ error: "Requête invalide." }, { status: 400 });
   }

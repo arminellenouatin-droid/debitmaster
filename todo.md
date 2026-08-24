@@ -72,3 +72,15 @@
 - [ ] Ajouter la validation ou le refus de la demande par le propriétaire dans Personnel.
 - [ ] Bloquer la connexion métier et l’accès tenant avant validation propriétaire.
 - [ ] Activer le compte, le rôle et le changement de mot de passe initial après validation.
+
+## Lot super-administration SaaS et affiliation
+
+- [x] Auditer le fichier `codesecret debitmaster` sans exposer les secrets et vérifier la configuration Supabase/Moneroo.
+- [x] Créer un rôle super-administrateur SaaS séparé des propriétaires d’établissements.
+- [x] Ajouter les tables globales pour abonnements, affiliations, liens de parrainage, attributions, commissions et demandes de remboursement.
+- [x] Ajouter l’interface master pour les revenus d’abonnement, établissements, affiliés et validations de remboursements.
+- [x] Ajouter le dashboard affilié avec établissements attribués, état d’abonnement, commissions et seuil de demande à 20 000 XOF.
+- [x] Brancher l’attribution par lien affilié sur la création d’établissement et le règlement d’abonnement Moneroo.
+- [x] Garantir l’idempotence des webhooks Moneroo et empêcher toute commission sans paiement confirmé.
+- [ ] Tester les calculs de commission, l’isolation RLS, les rôles et les parcours responsive.
+- [ ] Préparer une pull request dédiée et attendre la validation manuelle avant la production.

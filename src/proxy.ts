@@ -20,7 +20,9 @@ export async function proxy(request: NextRequest) {
   });
 
   const { data: { user } } = await supabase.auth.getUser();
-  if (request.nextUrl.pathname.startsWith("/dashboard")) {
+  const { data: profile } = user ? await supabase.from("profiles").select("user_type,role,status").eq("id", user.id).maybeSingle() : { data: null };
+  const isPlatformAdmin = (candidate: { user_type?: string | null; role?: string | null; status?: string | null } | null) => candidate?.user_type === "SUPER_ADMIN" && candidate.role === "MASTER_ADMIN" && candidate.status === "ACTIVE";
+  if (request.nextUrl.pathname.startsWith("/dashboard") || request.nextUrl.pathname.startsWith("/admin") || request.nextUrl.pathname.startsWith("/affilie")) {
     if (!user) {
       const redirectUrl = request.nextUrl.clone();
       redirectUrl.pathname = "/connexion";
@@ -28,6 +30,18 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(redirectUrl);
     }
     const { data: accessRequest } = await supabase.from("employee_access_requests").select("status").eq("user_id", user.id).order("requested_at", { ascending: false }).limit(1).maybeSingle();
+    if (request.nextUrl.pathname.startsWith("/admin") && !isPlatformAdmin(profile)) {
+      const redirectUrl = request.nextUrl.clone();
+      redirectUrl.pathname = "/connexion";
+      redirectUrl.searchParams.set("error", "acces_master_requis");
+      return NextResponse.redirect(redirectUrl);
+    }
+    if (request.nextUrl.pathname.startsWith("/affilie") && !(profile?.user_type === "AFFILIATE" && profile.status === "ACTIVE")) {
+      const redirectUrl = request.nextUrl.clone();
+      redirectUrl.pathname = "/connexion";
+      redirectUrl.searchParams.set("error", "acces_affilie_requis");
+      return NextResponse.redirect(redirectUrl);
+    }
     if (accessRequest && accessRequest.status !== "APPROVED") {
       const redirectUrl = request.nextUrl.clone();
       redirectUrl.pathname = "/connexion";
