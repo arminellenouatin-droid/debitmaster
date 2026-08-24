@@ -5,6 +5,7 @@ const navigation = [
   ["⌂", "Dashboard", "/dashboard"],
   ["▦", "Tables", "/dashboard/tables"],
   ["＋", "Orders", "/dashboard/orders"],
+  ["◉", "Cuisine", "/dashboard/kitchen"],
   ["▤", "Stock", "/dashboard/stock"],
   ["♙", "Personnel", "/dashboard/personnel"],
   ["◫", "Finance", "/dashboard/finance"],
