@@ -1,5 +1,6 @@
 // DebitManager invitation API: records a pending invite without pretending that an email was sent.
 import { NextResponse } from "next/server";
+import { createHash, randomBytes } from "node:crypto";
 import { getOwnedTenantIds } from "@/lib/tenants";
 import { roleLabels } from "@/lib/staff-permissions";
 
@@ -29,8 +30,11 @@ export async function POST(request: Request) {
     const { supabase, user, tenantIds } = await getOwnedTenantIds();
     if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
     if (!tenantIds.includes(tenantId)) return NextResponse.json({ error: "Établissement non autorisé." }, { status: 403 });
-    const { data, error } = await supabase.from("employee_invitations").insert({ tenant_id: tenantId, email, first_name: firstName, last_name: lastName, position, invited_by: user.id }).select("id,tenant_id,email,first_name,last_name,position,status,expires_at,created_at").single();
+    const rawToken = randomBytes(32).toString("hex");
+    const tokenHash = createHash("sha256").update(rawToken).digest("hex");
+    const { data, error } = await supabase.from("employee_invitations").insert({ tenant_id: tenantId, email, first_name: firstName, last_name: lastName, position, invited_by: user.id, token_hash: tokenHash }).select("id,tenant_id,email,first_name,last_name,position,status,expires_at,created_at").single();
     if (error) return NextResponse.json({ error: "Impossible d’enregistrer l’invitation." }, { status: 400 });
-    return NextResponse.json({ invitation: data, delivery: "PENDING_EMAIL_CONFIGURATION" }, { status: 201 });
+    const origin = new URL(request.url).origin;
+    return NextResponse.json({ invitation: data, delivery: "PENDING_EMAIL_CONFIGURATION", invitePath: `/invitation/accept?token=${rawToken}`, inviteUrl: `${origin}/invitation/accept?token=${rawToken}` }, { status: 201 });
   } catch { return NextResponse.json({ error: "Requête invalide." }, { status: 400 }); }
 }

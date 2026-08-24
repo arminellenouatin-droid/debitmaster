@@ -1,14 +1,16 @@
 // DebitManager stock API: lecture et mouvements bornés par les établissements possédés par la session.
 import { NextResponse } from "next/server";
-import { getOwnedTenantIds } from "@/lib/tenants";
+import { getAuthorizationContext, can } from "@/lib/authorization";
 
 const movementTypes = ["IN_PURCHASE", "OUT_SALE", "OUT_LOSS", "OUT_BREAKAGE", "OUT_EXPIRY", "ADJUSTMENT"] as const;
 
 export async function GET(request: Request) {
   try {
     const tenantId = new URL(request.url).searchParams.get("tenantId") ?? "";
-    const { supabase, user, tenantIds } = await getOwnedTenantIds();
+    const context = await getAuthorizationContext();
+    const { supabase, user, tenantIds } = context;
     if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
+    if (!can(context, "stock.view")) return NextResponse.json({ error: "Permission insuffisante pour consulter le stock." }, { status: 403 });
     if (tenantId && !tenantIds.includes(tenantId)) return NextResponse.json({ error: "Établissement non autorisé." }, { status: 403 });
     const query = supabase.from("products").select("id,tenant_id,name,product_type,unit,current_stock,alert_threshold,safety_threshold").is("deleted_at", null).order("name").limit(100);
     const { data, error } = await (tenantId ? query.eq("tenant_id", tenantId) : query.in("tenant_id", tenantIds));
@@ -26,8 +28,10 @@ export async function POST(request: Request) {
     const quantity = Number(body.quantity);
     const reason = typeof body.reason === "string" ? body.reason.trim().slice(0, 240) : null;
     if (!tenantId || !productId || !movementTypes.includes(movementType as (typeof movementTypes)[number]) || !Number.isInteger(quantity) || quantity <= 0) return NextResponse.json({ error: "Produit, type de mouvement et quantité positive requis." }, { status: 400 });
-    const { supabase, user, tenantIds } = await getOwnedTenantIds();
+    const context = await getAuthorizationContext();
+    const { supabase, user, tenantIds } = context;
     if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
+    if (!can(context, "stock.adjust")) return NextResponse.json({ error: "Permission insuffisante pour modifier le stock." }, { status: 403 });
     if (!tenantIds.includes(tenantId)) return NextResponse.json({ error: "Établissement non autorisé." }, { status: 403 });
     const { data: product } = await supabase.from("products").select("id,current_stock").eq("id", productId).eq("tenant_id", tenantId).is("deleted_at", null).maybeSingle();
     if (!product) return NextResponse.json({ error: "Produit non autorisé." }, { status: 403 });
