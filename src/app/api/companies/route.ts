@@ -30,7 +30,11 @@ export async function POST(request: Request) {
     if (!auth.user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
     const uniqueCode = `DM-${randomBytes(6).toString("hex").toUpperCase()}`;
     const { data, error } = await supabase.from("companies").insert({ name, activity_type: activityType, unique_code: uniqueCode, owner_user_id: auth.user.id }).select("id,name,activity_type,country,currency,language,status,created_at").single();
-    if (error) return NextResponse.json({ error: "Impossible de créer l’établissement. Vérifiez les permissions du tenant." }, { status: 400 });
+    if (error) {
+      console.error("[companies.POST] Supabase insert failed", { code: error.code, hint: error.hint, message: error.message });
+      const diagnostic = error.code === "42501" ? "TENANT_PERMISSION_DENIED" : error.code === "23505" ? "COMPANY_CODE_ALREADY_EXISTS" : error.code === "23502" ? "COMPANY_REQUIRED_FIELD_MISSING" : error.code === "23514" ? "COMPANY_INVALID_VALUE" : error.code === "23503" ? "COMPANY_REFERENCE_INVALID" : "COMPANY_CREATE_FAILED";
+      return NextResponse.json({ error: "Impossible de créer l’établissement. Vérifiez les permissions du tenant.", diagnostic }, { status: 400 });
+    }
     return NextResponse.json({ company: data }, { status: 201 });
   } catch {
     return NextResponse.json({ error: "Requête invalide." }, { status: 400 });
