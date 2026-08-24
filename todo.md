@@ -134,3 +134,20 @@
 - [x] Imposer une fenêtre de vérification de quatre heures avant validation d’un reversement établissement.
 - [x] Déduire la commission SaaS avant le montant reversable et conserver une trace auditable.
 - [ ] Tester les rôles, l’isolation des ventes et le parcours mobile en conditions connectées.
+
+
+## Nouvelle clarification — dashboard Gérant et droits conditionnels
+
+- [x] Afficher au Gérant la situation de toutes les serveuses : ventes, commissions, repos, zones, tables servies, jours et heures de service.
+- [x] Ajouter au Gérant les indicateurs globaux de ventes et de stocks disponibles à son niveau.
+- [x] Construire l’onglet Commandes Gérant avec toutes les commandes des serveuses et les transitions `PENDING → IN_PREPARATION → READY → HANDED_OFF → DELIVERED`.
+- [x] Enregistrer l’identité de la serveuse lors de la prise en charge d’une commande et empêcher qu’une autre serveuse la revendique.
+- [x] Afficher Plan de salle au Gérant seulement si l’Administrateur lui accorde la permission correspondante.
+- [x] Afficher Gestion des serveuses au Gérant seulement si l’Administrateur lui accorde la permission correspondante.
+- [x] Permettre, sous permission, l’affectation des zones, tables, horaires et jours de repos.
+- [x] Rendre l’onglet Profil disponible à tous les rôles avec des droits limités à leur propre profil.
+- [ ] Tester la matrice Gérant sans droit, Gérant avec droit et Administrateur avant fusion.
+- [x] Ajouter la migration d’audit `received_by_user_id`, `received_at`, `delivered_by_user_id` et `delivered_at` sur les commandes.
+- [x] Ajouter l’API et l’interface propriétaire pour accorder les droits `tables.view` et `team.manage` au Gérant.
+- [x] Vérifier `pnpm typecheck`, `pnpm build` et le lint ciblé des fichiers du lot.
+- [ ] Réaliser les scénarios métier connectés sur le preview avec des comptes de test.

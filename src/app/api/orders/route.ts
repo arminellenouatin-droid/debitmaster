@@ -13,7 +13,7 @@ export async function GET(request: Request) {
     if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
     if (!can(context, "orders.view")) return NextResponse.json({ error: "Permission insuffisante pour consulter les commandes." }, { status: 403 });
     if (tenantId && !tenantIds.includes(tenantId)) return NextResponse.json({ error: "Établissement non autorisé." }, { status: 403 });
-    let query = supabase.from("orders").select("id,tenant_id,order_number,table_label,customer_id,server_user_id,server_name,status,total_amount,currency,created_at,order_items(id,product_id,product_name,quantity,unit_price,total_price)").order("created_at", { ascending: false }).limit(50);
+    let query = supabase.from("orders").select("id,tenant_id,order_number,table_label,customer_id,server_user_id,server_name,received_by_user_id,received_at,delivered_by_user_id,delivered_at,status,total_amount,currency,created_at,order_items(id,product_id,product_name,quantity,unit_price,total_price)").order("created_at", { ascending: false }).limit(50);
     query = tenantId ? query.eq("tenant_id", tenantId) : query.in("tenant_id", tenantIds);
     if (context.role === "SERVEUR") query = query.eq("server_user_id", user.id);
     const { data, error } = await query;
@@ -71,18 +71,21 @@ export async function PATCH(request: Request) {
     const { supabase, user, tenantIds } = context;
     if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
     if (!tenantIds.includes(tenantId)) return NextResponse.json({ error: "Établissement non autorisé." }, { status: 403 });
-    const { data: current, error: currentError } = await supabase.from("orders").select("id,status").eq("id", orderId).eq("tenant_id", tenantId).maybeSingle();
+    const { data: current, error: currentError } = await supabase.from("orders").select("id,status,server_user_id,received_by_user_id").eq("id", orderId).eq("tenant_id", tenantId).maybeSingle();
     if (currentError || !current) return NextResponse.json({ error: "Commande introuvable dans cet établissement." }, { status: 404 });
     const transitionPermissions: Record<string, string> = {
       "PENDING->IN_PREPARATION": "orders.prepare",
       "IN_PREPARATION->READY": "orders.prepare",
-      "READY->HANDED_OFF": "orders.handoff",
+      "READY->HANDED_OFF": "orders.receive",
       "HANDED_OFF->DELIVERED": "orders.deliver",
     };
     const permission = transitionPermissions[`${current.status}->${status}`];
     if (!permission) return NextResponse.json({ error: "Transition de commande non autorisée." }, { status: 400 });
-    if (!can(context, permission)) return NextResponse.json({ error: "Permission insuffisante pour modifier cette étape de commande." }, { status: 403 });
-    const { data, error } = await supabase.from("orders").update({ status, updated_at: new Date().toISOString() }).eq("id", orderId).eq("tenant_id", tenantId).eq("status", current.status).select("id,tenant_id,order_number,table_label,customer_id,server_user_id,server_name,status,total_amount,currency,created_at,updated_at").single();
+    const canTransition = permission === "orders.receive" ? can(context, "orders.receive") || can(context, "orders.handoff") : can(context, permission);
+    if (!canTransition) return NextResponse.json({ error: "Permission insuffisante pour modifier cette étape de commande." }, { status: 403 });
+    if (status === "HANDED_OFF" && context.role === "SERVEUR" && current.server_user_id !== user.id) return NextResponse.json({ error: "Cette commande n’est pas attribuée à votre service." }, { status: 403 });
+    const auditFields = status === "HANDED_OFF" ? { received_by_user_id: user.id, received_at: new Date().toISOString() } : status === "DELIVERED" ? { delivered_by_user_id: user.id, delivered_at: new Date().toISOString() } : {};
+    const { data, error } = await supabase.from("orders").update({ status, ...auditFields, updated_at: new Date().toISOString() }).eq("id", orderId).eq("tenant_id", tenantId).eq("status", current.status).select("id,tenant_id,order_number,table_label,customer_id,server_user_id,server_name,received_by_user_id,received_at,delivered_by_user_id,delivered_at,status,total_amount,currency,created_at,updated_at").single();
     if (error || !data) return NextResponse.json({ error: "La commande a changé entre-temps. Actualisez la file cuisine." }, { status: 409 });
     return NextResponse.json({ order: data });
   } catch { return NextResponse.json({ error: "Requête invalide." }, { status: 400 }); }
