@@ -20,7 +20,11 @@ export async function GET(request: Request) {
     }
     const { data, error } = await query;
     if (error) return NextResponse.json({ error: "Impossible de charger le stock." }, { status: 500 });
-    return NextResponse.json({ stock: data ?? [] });
+    let movementQuery = supabase.from("stock_movements").select("id,tenant_id,product_id,movement_type,quantity,reason,destination,created_at,products(name,unit,stock_family)").order("created_at", { ascending: false }).limit(20);
+    movementQuery = tenantId ? movementQuery.eq("tenant_id", tenantId) : movementQuery.in("tenant_id", tenantIds);
+    const { data: movements, error: movementError } = await movementQuery;
+    if (movementError) return NextResponse.json({ error: "Impossible de charger les mouvements de stock." }, { status: 500 });
+    return NextResponse.json({ stock: data ?? [], movements: movements ?? [] });
   } catch { return NextResponse.json({ error: "Service temporairement indisponible." }, { status: 500 }); }
 }
 
@@ -32,7 +36,10 @@ export async function POST(request: Request) {
     const movementType = typeof body.movementType === "string" ? body.movementType : "";
     const quantity = Number(body.quantity);
     const reason = typeof body.reason === "string" ? body.reason.trim().slice(0, 240) : null;
+    const destination = typeof body.destination === "string" ? body.destination : null;
     if (!tenantId || !productId || !movementTypes.includes(movementType as (typeof movementTypes)[number]) || !Number.isInteger(quantity) || quantity <= 0) return NextResponse.json({ error: "Produit, type de mouvement et quantité positive requis." }, { status: 400 });
+    if (movementType === "OUT_SALE" && destination !== "BAR" && destination !== "CUISINE") return NextResponse.json({ error: "Une sortie doit être destinée au bar ou à la cuisine." }, { status: 400 });
+    if (movementType !== "OUT_SALE" && destination !== null) return NextResponse.json({ error: "La destination ne s’applique qu’aux sorties vers le bar ou la cuisine." }, { status: 400 });
     const context = await getAuthorizationContext();
     const { supabase, user, tenantIds } = context;
     if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
@@ -47,7 +54,7 @@ export async function POST(request: Request) {
     }
     const signedQuantity = movementType === "IN_PURCHASE" || movementType === "ADJUSTMENT" ? quantity : -quantity;
     if (product.current_stock + signedQuantity < 0) return NextResponse.json({ error: "Stock insuffisant pour ce mouvement." }, { status: 400 });
-    const { data: movement, error: movementError } = await supabase.from("stock_movements").insert({ tenant_id: tenantId, product_id: productId, movement_type: movementType, quantity: signedQuantity, reason, responsible_user_id: user.id }).select("id,tenant_id,product_id,movement_type,quantity,reason,created_at").single();
+    const { data: movement, error: movementError } = await supabase.from("stock_movements").insert({ tenant_id: tenantId, product_id: productId, movement_type: movementType, quantity: signedQuantity, reason, destination, responsible_user_id: user.id }).select("id,tenant_id,product_id,movement_type,quantity,reason,destination,created_at").single();
     if (movementError) return NextResponse.json({ error: "Impossible d’enregistrer le mouvement." }, { status: 400 });
     const { error: productError } = await supabase.from("products").update({ current_stock: product.current_stock + signedQuantity, updated_at: new Date().toISOString() }).eq("id", productId).eq("tenant_id", tenantId);
     if (productError) return NextResponse.json({ error: "Mouvement enregistré mais mise à jour du stock incomplète. Vérifiez ce produit." }, { status: 500 });
