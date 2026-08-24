@@ -1,8 +1,7 @@
 // DebitManager auth API: email or phone login, with server-side approval enforcement for staff accounts.
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { normalizePhoneIdentifier } from "@/lib/auth-identifiers";
+import { normalizePhoneIdentifier, syntheticEmailForPhone } from "@/lib/auth-identifiers";
 
 function normalizePhone(value: string) { return normalizePhoneIdentifier(value); }
 
@@ -19,16 +18,7 @@ export async function POST(request: Request) {
 
     const supabase = await createSupabaseServerClient();
     let authInput: { email: string; password: string } | { phone: string; password: string } = email ? { email, password } : { phone, password };
-    if (phone) {
-      try {
-        const admin = createSupabaseAdminClient();
-        const { data: users } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
-        const match = users?.users.find((candidate) => normalizePhone(candidate.phone ?? "") === phone);
-        if (match?.email) authInput = { email: match.email, password };
-      } catch (lookupError) {
-        console.error("[auth.login] phone lookup unavailable", lookupError instanceof Error ? lookupError.message : "unknown_error");
-      }
-    }
+    if (phone) authInput = { email: syntheticEmailForPhone(phone), password };
     const { data, error } = await supabase.auth.signInWithPassword(authInput);
     if (error || !data.user) return NextResponse.json({ error: "Identifiant ou mot de passe incorrect." }, { status: 401 });
 
