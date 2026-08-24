@@ -1,13 +1,11 @@
 // DebitManager staff access: a company code creates a pending request, never an active tenant session.
 import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { normalizePhoneIdentifier, syntheticEmailForPhone } from "@/lib/auth-identifiers";
 
 const positions = ["SERVEUR", "SUPERVISEUR", "MAGASINIER", "GERANT", "BARMAN", "SECRETAIRE", "COMPTABLE", "APPROVISIONNEMENT", "CUISINIER", "CHEF_CUISINE"] as const;
 
-function normalizePhone(value: string) {
-  const phone = value.trim().replace(/[\s().-]/g, "");
-  return /^\+[1-9]\d{7,14}$/.test(phone) ? phone : "";
-}
+function normalizePhone(value: string) { return normalizePhoneIdentifier(value); }
 
 export async function POST(request: Request) {
   try {
@@ -24,7 +22,7 @@ export async function POST(request: Request) {
     const { data: company, error: companyError } = await admin.from("companies").select("id,name").eq("unique_code", companyCode).is("deleted_at", null).maybeSingle();
     if (companyError || !company) return NextResponse.json({ error: "Code établissement invalide." }, { status: 400 });
 
-    const { data: authData, error: authError } = await admin.auth.admin.createUser({ phone, password, phone_confirm: true, user_metadata: { first_name: firstName, last_name: lastName, account_type: "STAFF_PENDING" } });
+    const { data: authData, error: authError } = await admin.auth.admin.createUser({ email: syntheticEmailForPhone(phone), phone, password, email_confirm: true, phone_confirm: true, user_metadata: { first_name: firstName, last_name: lastName, account_type: "STAFF_PENDING" } });
     if (authError || !authData.user) return NextResponse.json({ error: "Impossible de créer ce compte téléphone. Vérifiez que le numéro n’est pas déjà utilisé." }, { status: 400 });
 
     const { error: profileError } = await admin.from("profiles").upsert({ id: authData.user.id, tenant_id: null, first_name: firstName, last_name: lastName, phone, user_type: "TENANT_STAFF", role: position, status: "PENDING" });

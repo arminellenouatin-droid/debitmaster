@@ -1,11 +1,10 @@
 // DebitManager auth API: email or phone login, with server-side approval enforcement for staff accounts.
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { normalizePhoneIdentifier } from "@/lib/auth-identifiers";
 
-function normalizePhone(value: string) {
-  const phone = value.trim().replace(/[\s().-]/g, "");
-  return /^\+[1-9]\d{7,14}$/.test(phone) ? phone : "";
-}
+function normalizePhone(value: string) { return normalizePhoneIdentifier(value); }
 
 export async function POST(request: Request) {
   try {
@@ -19,7 +18,18 @@ export async function POST(request: Request) {
     if (!password) return NextResponse.json({ error: "Renseignez votre mot de passe." }, { status: 400 });
 
     const supabase = await createSupabaseServerClient();
-    const { data, error } = await supabase.auth.signInWithPassword(email ? { email, password } : { phone, password });
+    let authInput: { email: string; password: string } | { phone: string; password: string } = email ? { email, password } : { phone, password };
+    if (phone) {
+      try {
+        const admin = createSupabaseAdminClient();
+        const { data: users } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+        const match = users?.users.find((candidate) => normalizePhone(candidate.phone ?? "") === phone);
+        if (match?.email) authInput = { email: match.email, password };
+      } catch (lookupError) {
+        console.error("[auth.login] phone lookup unavailable", lookupError instanceof Error ? lookupError.message : "unknown_error");
+      }
+    }
+    const { data, error } = await supabase.auth.signInWithPassword(authInput);
     if (error || !data.user) return NextResponse.json({ error: "Identifiant ou mot de passe incorrect." }, { status: 401 });
 
     const { data: employee } = await supabase.from("employees").select("status,must_change_password").eq("user_id", data.user.id).is("deleted_at", null).maybeSingle();

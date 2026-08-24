@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getAuthorizationContext, can } from "@/lib/authorization";
+import { normalizePhoneIdentifier, syntheticEmailForPhone } from "@/lib/auth-identifiers";
 
 const positions = [
   "SERVEUR",
@@ -17,10 +18,7 @@ const positions = [
   "ADMINISTRATEUR",
 ] as const;
 
-function normalizePhone(value: string) {
-  const phone = value.trim().replace(/[\s().-]/g, "");
-  return /^\+[1-9]\d{7,14}$/.test(phone) ? phone : "";
-}
+function normalizePhone(value: string) { return normalizePhoneIdentifier(value); }
 
 function isOwner(context: Awaited<ReturnType<typeof getAuthorizationContext>>, tenantId: string) {
   return Boolean(context.user && !context.employeeId && context.tenantIds.includes(tenantId));
@@ -62,7 +60,7 @@ export async function POST(request: Request) {
     if (!isOwner(context, tenantId)) return NextResponse.json({ error: "Seul le propriétaire peut créer directement un compte équipe." }, { status: 403 });
 
     const admin = createSupabaseAdminClient();
-    const { data: authData, error: authError } = await admin.auth.admin.createUser({ phone, password, phone_confirm: true, user_metadata: { first_name: firstName, last_name: lastName, account_type: "STAFF" } });
+    const { data: authData, error: authError } = await admin.auth.admin.createUser({ email: syntheticEmailForPhone(phone), phone, password, email_confirm: true, phone_confirm: true, user_metadata: { first_name: firstName, last_name: lastName, account_type: "STAFF" } });
     if (authError || !authData.user) return NextResponse.json({ error: "Impossible de créer le compte téléphone. Vérifiez que ce numéro n’est pas déjà utilisé." }, { status: 400 });
 
     const profile = await admin.from("profiles").upsert({ id: authData.user.id, tenant_id: tenantId, first_name: firstName, last_name: lastName, phone, user_type: "TENANT_STAFF", role: position, status: "ACTIVE" }).select("id,tenant_id,first_name,last_name,phone,role,status").single();
