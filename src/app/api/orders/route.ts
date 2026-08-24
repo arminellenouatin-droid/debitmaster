@@ -48,3 +48,30 @@ export async function POST(request: Request) {
     return NextResponse.json({ order: { ...order, order_items: insertedLines ?? [] } }, { status: 201 });
   } catch { return NextResponse.json({ error: "Requête invalide." }, { status: 400 }); }
 }
+
+const orderStatuses = ["PENDING", "IN_PROGRESS", "READY", "DELIVERED"] as const;
+
+type OrderStatus = (typeof orderStatuses)[number];
+
+export async function PATCH(request: Request) {
+  try {
+    const body = await request.json();
+    const tenantId = typeof body.tenantId === "string" ? body.tenantId : "";
+    const orderId = typeof body.orderId === "string" ? body.orderId : "";
+    const status = typeof body.status === "string" ? body.status : "";
+    if (!tenantId || !orderId || !orderStatuses.includes(status as OrderStatus)) return NextResponse.json({ error: "Commande, établissement et statut valide requis." }, { status: 400 });
+    const context = await getAuthorizationContext();
+    const { supabase, user, tenantIds } = context;
+    if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
+    if (!tenantIds.includes(tenantId)) return NextResponse.json({ error: "Établissement non autorisé." }, { status: 403 });
+    const { data: current, error: currentError } = await supabase.from("orders").select("id,status").eq("id", orderId).eq("tenant_id", tenantId).maybeSingle();
+    if (currentError || !current) return NextResponse.json({ error: "Commande introuvable dans cet établissement." }, { status: 404 });
+    const transitionPermissions: Record<string, string> = { "PENDING->IN_PROGRESS": "orders.prepare", "IN_PROGRESS->READY": "orders.prepare", "READY->DELIVERED": "orders.deliver" };
+    const permission = transitionPermissions[`${current.status}->${status}`];
+    if (!permission) return NextResponse.json({ error: "Transition de commande non autorisée." }, { status: 400 });
+    if (!can(context, permission)) return NextResponse.json({ error: "Permission insuffisante pour modifier cette étape de commande." }, { status: 403 });
+    const { data, error } = await supabase.from("orders").update({ status, updated_at: new Date().toISOString() }).eq("id", orderId).eq("tenant_id", tenantId).eq("status", current.status).select("id,tenant_id,order_number,table_label,server_name,status,total_amount,currency,created_at,updated_at").single();
+    if (error || !data) return NextResponse.json({ error: "La commande a changé entre-temps. Actualisez la file cuisine." }, { status: 409 });
+    return NextResponse.json({ order: data });
+  } catch { return NextResponse.json({ error: "Requête invalide." }, { status: 400 }); }
+}
