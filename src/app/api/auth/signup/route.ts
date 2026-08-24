@@ -30,7 +30,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ user: data.user, invitationAccepted: true, needsEmailConfirmation: false });
     }
     return NextResponse.json({ user: data.user, needsEmailConfirmation: !data.session, invitationPending: /^[a-f0-9]{64}$/i.test(invitationToken) });
-  } catch {
-    return NextResponse.json({ error: "Impossible de terminer l’inscription pour le moment." }, { status: 500 });
+  } catch (cause) {
+    const detail = cause instanceof Error ? cause.message : "unknown_error";
+    console.error("[DebitManager signup] server failure:", detail);
+    const configurationError = detail.startsWith("Configuration Supabase absente");
+    return NextResponse.json({ error: configurationError ? "Le service d’inscription n’est pas encore configuré sur la production." : "Impossible de terminer l’inscription pour le moment." }, { status: configurationError ? 503 : 500 });
   }
 }
