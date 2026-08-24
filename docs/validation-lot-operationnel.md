@@ -23,3 +23,7 @@ Ces contrôles confirment les garde-fous de forme et d’authentification sans c
 ## Erreurs runtime Vercel observées sur les dernières 24 heures
 
 Le regroupement Vercel signale deux groupes historiques sur d’anciens déploiements : neuf erreurs `companies.POST` liées à une valeur dépassant `varchar(10)` sur le déploiement `dpl_BTgCzS7ytnGbrQCNdh2rAZY2Sh43`, et six erreurs d’inscription indiquant une configuration Supabase absente sur le déploiement `dpl_4FMRZzbuKen3fLET5MfRB2yfFiEu`. Ces erreurs précèdent les corrections déjà fusionnées et ne correspondent pas au dernier déploiement production contrôlé après la PR #12. Elles restent conservées comme trace de diagnostic afin de vérifier qu’elles ne réapparaissent pas.
+
+## Contrôle sécurité post-PR #13
+
+Après la fusion de la PR #13 et le déploiement production, aucun runtime error n’a été trouvé sur la dernière heure. L’audit Supabase ne signale plus l’ancien RPC `accept_employee_invitation(text)` exécutable par `authenticated` : ce RPC historique a été supprimé par la migration `remove_legacy_invitation_rpc_20260824`. Il reste une seule recommandation Supabase Auth, non applicative : activer la protection contre les mots de passe compromis dans le tableau de bord Auth. Référence : https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection.
