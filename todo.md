@@ -25,3 +25,14 @@
 - [ ] Exécuter TypeScript, build production et tests disponibles.
 - [ ] Vérifier les liens internes, états d’erreur et absence de données fictives.
 - [ ] Préparer un commit et une pull request séparés pour revue GitOps.
+
+## Lot de finalisation en cours
+
+- [x] Vérifier le schéma et les contraintes disponibles pour les tables de salle et les statuts de commande.
+- [x] Ajouter une table persistante de salle avec tenant_id, libellé, zone et statut.
+- [x] Ajouter les routes sécurisées de lecture, création et mise à jour des tables.
+- [x] Ajouter la mise à jour de statut des commandes KDS avec orders.prepare et orders.deliver.
+- [x] Brancher les actions du KDS sur les routes de statut et gérer les erreurs de permission.
+- [x] Vérifier la migration de messagerie et préparer un contrôle d’application Supabase.
+- [x] Préparer le contrat Moneroo, le retour de paiement et le webhook sans simuler de succès.
+- [x] Exécuter les tests TypeScript, build, sécurité tenant et responsive avant livraison.
