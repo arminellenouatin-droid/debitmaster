@@ -102,3 +102,14 @@
 - [ ] Vérifier si le fournisseur téléphone Supabase est activé et si la route login utilise une stratégie compatible.
 - [ ] Corriger le compte ou le routeur sans exposer le mot de passe.
 - [ ] Tester la connexion serveuse en local et en production avec contrôle du tenant et du rôle.
+
+
+## Lot rôles stocks, cuisine et supervision
+
+- [ ] Limiter le Magasinier aux stocks autorisés : boissons, vivres cuisine ou les deux.
+- [ ] Ajouter l’entrée en stock, la réception des livraisons et la préparation des sorties quotidiennes.
+- [ ] Ajouter la remise des stocks boissons au Gérant et la remise des vivres au Chef cuisine.
+- [ ] Réserver au Gérant la distribution des stocks de vente aux serveuses/serveurs.
+- [ ] Faire recevoir au Chef cuisine les commandes de nourriture dans le KDS cuisine.
+- [ ] Ajouter au Superviseur le contrôle de fin de journée : ventes réelles, stocks restants et activité du Magasinier.
+- [ ] Tester les restrictions RBAC et l’affichage mobile de chaque rôle.
