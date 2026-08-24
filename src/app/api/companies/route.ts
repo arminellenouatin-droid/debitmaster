@@ -28,7 +28,7 @@ export async function POST(request: Request) {
     const supabase = await createSupabaseServerClient();
     const { data: auth } = await supabase.auth.getUser();
     if (!auth.user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
-    const uniqueCode = `DM-${randomBytes(6).toString("hex").toUpperCase()}`;
+    const uniqueCode = `DM${randomBytes(4).toString("hex").toUpperCase()}`;
     const { data, error } = await supabase.from("companies").insert({ name, activity_type: activityType, unique_code: uniqueCode, owner_user_id: auth.user.id }).select("id,name,activity_type,country,currency,language,status,created_at").single();
     if (error) {
       console.error("[companies.POST] Supabase insert failed", { code: error.code, hint: error.hint, message: error.message });
