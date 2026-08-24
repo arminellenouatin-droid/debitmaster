@@ -1,4 +1,5 @@
 // DebitManager auth API: inscription serveur, validation d’entrée et session stockée par Supabase SSR.
+import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -9,6 +10,7 @@ export async function POST(request: Request) {
     const password = typeof body.password === "string" ? body.password : "";
     const firstName = typeof body.firstName === "string" ? body.firstName.trim() : "";
     const lastName = typeof body.lastName === "string" ? body.lastName.trim() : "";
+    const invitationToken = typeof body.invitationToken === "string" ? body.invitationToken.trim() : "";
 
     if (!email || !email.includes("@") || password.length < 8 || !firstName || !lastName) {
       return NextResponse.json({ error: "Renseignez un nom complet, un e-mail valide et un mot de passe d’au moins 8 caractères." }, { status: 400 });
@@ -22,7 +24,12 @@ export async function POST(request: Request) {
     });
 
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
-    return NextResponse.json({ user: data.user, needsEmailConfirmation: !data.session });
+    if (data.session && /^[a-f0-9]{64}$/i.test(invitationToken)) {
+      const { error: invitationError } = await supabase.rpc("accept_employee_invitation", { p_token_hash: createHash("sha256").update(invitationToken).digest("hex") });
+      if (invitationError) return NextResponse.json({ user: data.user, invitationPending: true, error: "Compte créé. Connectez-vous avec cette adresse puis revenez sur le lien d’invitation pour finaliser le rattachement." }, { status: 202 });
+      return NextResponse.json({ user: data.user, invitationAccepted: true, needsEmailConfirmation: false });
+    }
+    return NextResponse.json({ user: data.user, needsEmailConfirmation: !data.session, invitationPending: /^[a-f0-9]{64}$/i.test(invitationToken) });
   } catch {
     return NextResponse.json({ error: "Impossible de terminer l’inscription pour le moment." }, { status: 500 });
   }
