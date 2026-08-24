@@ -1,0 +1,32 @@
+// DebitManager authorization vocabulary: UI labels are not authorization; API policies remain the enforcement boundary.
+export const permissionCatalog = [
+  { key: "orders.view", label: "Consulter les commandes", group: "Commandes" },
+  { key: "orders.create", label: "Créer une commande", group: "Commandes" },
+  { key: "orders.prepare", label: "Préparer une commande", group: "Commandes" },
+  { key: "orders.deliver", label: "Livrer une commande", group: "Commandes" },
+  { key: "stock.view", label: "Consulter le stock", group: "Stocks" },
+  { key: "stock.adjust", label: "Ajuster le stock", group: "Stocks" },
+  { key: "products.manage", label: "Gérer les produits", group: "Catalogue" },
+  { key: "team.view", label: "Consulter l’équipe", group: "Équipe" },
+  { key: "team.manage", label: "Gérer l’équipe", group: "Équipe" },
+  { key: "finance.view", label: "Consulter la trésorerie", group: "Finance" },
+  { key: "reports.view", label: "Consulter les rapports", group: "Pilotage" },
+] as const;
+
+export const defaultRolePermissions: Record<string, string[]> = {
+  SERVEUR: ["orders.view", "orders.create", "orders.deliver"],
+  SUPERVISEUR: ["orders.view", "orders.create", "orders.prepare", "orders.deliver", "stock.view", "team.view", "reports.view"],
+  MAGASINIER: ["stock.view", "stock.adjust"],
+  GERANT: permissionCatalog.map((permission) => permission.key),
+  BARMAN: ["orders.view", "orders.create", "stock.view"],
+  SECRETAIRE: ["orders.view", "team.view", "reports.view"],
+  COMPTABLE: ["finance.view", "reports.view"],
+  APPROVISIONNEMENT: ["stock.view", "stock.adjust", "reports.view"],
+  CUISINIER: ["orders.view", "orders.prepare"],
+  CHEF_CUISINE: ["orders.view", "orders.prepare", "team.view", "reports.view"],
+  ADMINISTRATEUR: permissionCatalog.map((permission) => permission.key),
+};
+
+export const roleLabels: Record<string, string> = {
+  SERVEUR: "Serveur", SUPERVISEUR: "Superviseur", MAGASINIER: "Magasinier", GERANT: "Gérant", BARMAN: "Barman", SECRETAIRE: "Secrétaire", COMPTABLE: "Comptable", APPROVISIONNEMENT: "Approvisionnement", CUISINIER: "Cuisinier", CHEF_CUISINE: "Chef cuisine", ADMINISTRATEUR: "Administrateur",
+};
