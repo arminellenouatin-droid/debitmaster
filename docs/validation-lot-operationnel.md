@@ -7,3 +7,15 @@ Les routes métier Orders, Tables, Paiement, Cuisine, Stock, Personnel, Finance,
 Le build de production a généré les routes suivantes sans erreur TypeScript : `/dashboard/orders`, `/dashboard/tables`, `/dashboard/payment`, `/dashboard/kitchen`, `/dashboard/stock`, `/dashboard/personnel`, `/dashboard/finance`, `/dashboard/messages` et `/dashboard/settings`. Les modules utilisent les APIs existantes et affichent des états vides explicites lorsque les données réelles sont absentes.
 
 Limite connue : la migration `20260824_internal_messages.sql` doit être appliquée dans Supabase avant d’utiliser la messagerie en production. De même, le bouton Moneroo reste une étape d’interface tant que les identifiants et le webhook du compte marchand ne sont pas connectés.
+
+## Contrôle production du 24 août 2026
+
+Le projet Vercel `debitmaster` (`prj_kxoPaaNCBScUEGscmIRPxYKO3G6W`) est lié au dépôt GitHub `arminellenouatin-droid/debitmaster`. Le dernier déploiement production `dpl_4ZiCjo2Bjk9PTt1msRmHwA7ku2My` est en état `READY`, avec l’alias public `https://debitmaster.vercel.app` et le commit fusionné de la PR #11.
+
+La page publique `/` répond HTTP 200. La route `/dashboard/tables` sans session est correctement servie par la page `/connexion`, ce qui confirme la protection d’authentification du parcours en production.
+
+## Tests API production
+
+Le 24 août 2026, `GET /api/orders` sans session répond `401 Authentification requise`. `PATCH /api/orders` avec un payload de transition correctement formé mais sans session répond également `401 Authentification requise`. `POST /api/orders` avec une liste vide est rejeté en amont par `400 Établissement et au moins une ligne de commande requis`, sans insertion en base. L’endpoint Moneroo avec les champs exacts `tenantId` et `orderId`, mais sans session, répond `401 Authentification requise`.
+
+Ces contrôles confirment les garde-fous de forme et d’authentification sans créer de données de test en production.

@@ -36,3 +36,14 @@
 - [x] Vérifier la migration de messagerie et préparer un contrôle d’application Supabase.
 - [x] Préparer le contrat Moneroo, le retour de paiement et le webhook sans simuler de succès.
 - [x] Exécuter les tests TypeScript, build, sécurité tenant et responsive avant livraison.
+
+## Lot validation et durcissement
+
+- [ ] Vérifier la présence des variables serveur Moneroo et l’URL publique de retour sans exposer de secrets.
+- [ ] Tester le refus propre de Moneroo lorsque la configuration serveur est absente.
+- [ ] Vérifier le parcours commande créée → paiement → retour Moneroo.
+- [ ] Tester les transitions KDS valides et les transitions hors séquence.
+- [ ] Tester l’isolation entre deux tenants et les réponses 401/403.
+- [ ] Revoir les alertes Supabase Auth et la fonction SECURITY DEFINER d’invitation.
+- [ ] Vérifier le rendu mobile des routes métier et les états vides/erreurs.
+- [ ] Préparer un rapport de validation et un commit séparé si des corrections sont nécessaires.

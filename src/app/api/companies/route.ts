@@ -2,15 +2,22 @@
 import { NextResponse } from "next/server";
 import { randomBytes } from "node:crypto";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getAuthorizationContext } from "@/lib/authorization";
 
 const activityTypes = ["BUVETTE", "BAR_RESTAURANT", "NIGHTCLUB_LOUNGE"] as const;
 
 export async function GET() {
   try {
-    const supabase = await createSupabaseServerClient();
-    const { data: auth } = await supabase.auth.getUser();
-    if (!auth.user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
-    const { data, error } = await supabase.from("companies").select("id,name,activity_type,country,currency,language,status,created_at").eq("owner_user_id", auth.user.id).is("deleted_at", null).order("created_at", { ascending: false }).limit(20);
+    const context = await getAuthorizationContext();
+    if (!context.user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
+    if (!context.tenantIds.length) return NextResponse.json({ companies: [] });
+    const { data, error } = await context.supabase
+      .from("companies")
+      .select("id,name,activity_type,country,currency,language,status,created_at")
+      .in("id", context.tenantIds)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false })
+      .limit(20);
     if (error) return NextResponse.json({ error: "Impossible de charger vos établissements." }, { status: 500 });
     return NextResponse.json({ companies: data ?? [] });
   } catch {
