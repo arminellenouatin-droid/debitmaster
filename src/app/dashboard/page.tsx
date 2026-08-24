@@ -1,7 +1,7 @@
-// DebitManager product UI: espace gérant, structure prête pour les modules tenant et protégée par la session Supabase.
-import Link from "next/link";
+/* Maquette tableaudeboard: shell vert profond, KPI opérationnels et modules conservés derrière une navigation persistante. */
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { DashboardShell } from "@/components/DashboardShell";
 import { DashboardClient } from "./DashboardClient";
 import { CatalogueClient } from "./CatalogueClient";
 import { OperationsClient } from "./OperationsClient";
@@ -13,6 +13,6 @@ export default async function DashboardPage() {
   const supabase = await createSupabaseServerClient();
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) redirect("/connexion");
-
-  return <main className="min-h-screen"><header className="border-b border-[var(--line)] bg-[var(--surface)]"><div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-5 md:px-10"><Link href="/" className="font-serif text-2xl font-semibold tracking-tight">Debit<span className="text-[var(--accent)]">Manager</span></Link><form action="/api/auth/logout" method="post"><button className="font-sans text-sm font-bold text-[var(--muted)] hover:text-[var(--ink)]">Se déconnecter</button></form></div></header><div className="mx-auto max-w-7xl px-5 py-12 md:px-10 md:py-16"><div className="mb-12 max-w-2xl"><p className="font-sans text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent)]">Espace gérant</p><h1 className="mt-3 font-serif text-5xl leading-tight">Bonjour, {auth.user.user_metadata?.first_name ?? "gérant"}.</h1><p className="mt-5 font-sans text-base leading-7 text-[var(--muted)]">Configurez votre environnement de travail avant d’ouvrir les opérations quotidiennes.</p></div><DashboardClient /><CatalogueClient /><TeamClient /><OperationsClient /></div></main>;
+  const firstName = auth.user.user_metadata?.first_name ?? "gérant";
+  return <DashboardShell firstName={firstName}><div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><p className="text-xs font-black uppercase tracking-[0.18em] text-[var(--secondary)]">Espace gérant</p><h1 className="mt-3 text-4xl font-black tracking-[-0.04em] text-[var(--primary)]">Bonjour, {firstName}.</h1><p className="mt-3 text-sm leading-6 text-[var(--muted)]">Voici la situation de votre établissement aujourd’hui.</p></div><span className="inline-flex w-fit items-center gap-2 rounded-full bg-[var(--accent-soft)] px-3 py-2 text-xs font-black text-[var(--primary)]"><span className="h-2 w-2 rounded-full bg-[var(--success)]" /> Données synchronisées</span></div><DashboardClient /><div className="mt-6 grid gap-6 xl:grid-cols-2"><CatalogueClient /><TeamClient /></div><div className="mt-6"><OperationsClient /></div></DashboardShell>;
 }

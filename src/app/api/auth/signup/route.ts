@@ -10,6 +10,7 @@ export async function POST(request: Request) {
     const password = typeof body.password === "string" ? body.password : "";
     const firstName = typeof body.firstName === "string" ? body.firstName.trim() : "";
     const lastName = typeof body.lastName === "string" ? body.lastName.trim() : "";
+    const phone = typeof body.phone === "string" ? body.phone.trim() : "";
     const invitationToken = typeof body.invitationToken === "string" ? body.invitationToken.trim() : "";
 
     if (!email || !email.includes("@") || password.length < 8 || !firstName || !lastName) {
@@ -20,7 +21,7 @@ export async function POST(request: Request) {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { first_name: firstName, last_name: lastName } },
+      options: { data: { first_name: firstName, last_name: lastName, phone } },
     });
 
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
