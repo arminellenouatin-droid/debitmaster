@@ -1,5 +1,6 @@
 // DebitManager tenant API: toutes les opérations sont bornées par l’utilisateur Supabase courant.
 import { NextResponse } from "next/server";
+import { randomBytes } from "node:crypto";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const activityTypes = ["BUVETTE", "BAR_RESTAURANT", "NIGHTCLUB_LOUNGE"] as const;
@@ -27,7 +28,8 @@ export async function POST(request: Request) {
     const supabase = await createSupabaseServerClient();
     const { data: auth } = await supabase.auth.getUser();
     if (!auth.user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
-    const { data, error } = await supabase.from("companies").insert({ name, activity_type: activityType, owner_user_id: auth.user.id }).select("id,name,activity_type,country,currency,language,status,created_at").single();
+    const uniqueCode = `DM-${randomBytes(6).toString("hex").toUpperCase()}`;
+    const { data, error } = await supabase.from("companies").insert({ name, activity_type: activityType, unique_code: uniqueCode, owner_user_id: auth.user.id }).select("id,name,activity_type,country,currency,language,status,created_at").single();
     if (error) return NextResponse.json({ error: "Impossible de créer l’établissement. Vérifiez les permissions du tenant." }, { status: 400 });
     return NextResponse.json({ company: data }, { status: 201 });
   } catch {
