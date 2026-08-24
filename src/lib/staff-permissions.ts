@@ -29,7 +29,7 @@ export const permissionCatalog = [
 export const defaultRolePermissions: Record<string, string[]> = {
   SERVEUR: ["orders.view", "orders.create", "orders.receive", "orders.deliver", "tables.view", "payments.create"],
   SUPERVISEUR: ["orders.view", "stock.view", "stock.audit", "team.view", "reports.view", "reports.daily_close", "messages.view", "messages.send", "tables.view"],
-  MAGASINIER: ["stock.view", "stock.receive", "stock.issue", "stock.handoff"],
+  MAGASINIER: ["stock.view", "stock.receive", "stock.issue", "stock.handoff", "products.manage"],
   GERANT: ["orders.view", "orders.prepare", "orders.handoff", "stock.view", "team.view", "finance.view", "reports.view", "reports.daily_close", "messages.view", "messages.send"],
   BARMAN: ["orders.view", "orders.create", "stock.view", "tables.view", "payments.create"],
   SECRETAIRE: ["orders.view", "team.view", "reports.view", "messages.view", "messages.send", "tables.view"],

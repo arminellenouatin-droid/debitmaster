@@ -151,3 +151,14 @@
 - [x] Ajouter l’API et l’interface propriétaire pour accorder les droits `tables.view` et `team.manage` au Gérant.
 - [x] Vérifier `pnpm typecheck`, `pnpm build` et le lint ciblé des fichiers du lot.
 - [ ] Réaliser les scénarios métier connectés sur le preview avec des comptes de test.
+
+
+## Nouvelle clarification — espace Magasinier
+
+- [x] Limiter le Dashboard Magasinier aux mouvements de stocks, alertes et indicateurs stock autorisés.
+- [x] Limiter l’onglet Gestion des stocks à la création de produits, entrées, seuils d’alerte, sorties et approvisionnement.
+- [x] Autoriser les sorties uniquement vers `BAR` ou `CUISINE`, avec traçabilité de l’auteur, du produit, de la quantité et de la destination.
+- [x] Ajouter la création de demandes d’approvisionnement avec statut et suivi tenant-scoped.
+- [x] Refuser au Magasinier les ventes, commandes clients, paiements, finances et gestion du personnel.
+- [x] Conserver l’onglet Profil pour le Magasinier comme pour tous les rôles.
+- [ ] Tester les droits `MAGASINIER`, les sorties BAR/CUISINE, les alertes, l’approvisionnement et l’isolation inter-établissements.
