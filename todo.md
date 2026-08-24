@@ -84,3 +84,21 @@
 - [x] Garantir l’idempotence des webhooks Moneroo et empêcher toute commission sans paiement confirmé.
 - [ ] Tester les calculs de commission, l’isolation RLS, les rôles et les parcours responsive.
 - [ ] Préparer une pull request dédiée et attendre la validation manuelle avant la production.
+
+
+## Lot diagnostic master et données de test
+
+- [x] Inspecter le fichier local mis à jour et identifier les données intégrables sans exposer les secrets.
+- [x] Comparer l’identifiant master du fichier avec le compte Auth réellement provisionné dans Supabase.
+- [x] Vérifier l’état email/téléphone, le profil `SUPER_ADMIN/MASTER_ADMIN` et le mot de passe sans journaliser de valeur sensible.
+- [x] Corriger ou reprovisionner proprement l’accès master après confirmation de la cause exacte.
+- [x] Importer uniquement les données de test validées et compatibles avec le schéma DebitManager.
+- [ ] Tester les sections master et affilié une par une avant toute fusion ou production.
+
+
+## Lot correction connexion téléphone équipe
+
+- [ ] Vérifier le format E.164 du numéro de la serveuse et son état dans Supabase Auth.
+- [ ] Vérifier si le fournisseur téléphone Supabase est activé et si la route login utilise une stratégie compatible.
+- [ ] Corriger le compte ou le routeur sans exposer le mot de passe.
+- [ ] Tester la connexion serveuse en local et en production avec contrôle du tenant et du rôle.
