@@ -1,6 +1,7 @@
 // DebitManager: invitation acceptance remains server-side and never exposes the stored token hash.
 import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const errorMessages: Record<string, string> = {
@@ -25,7 +26,17 @@ export async function POST(request: Request) {
     }
 
     const tokenHash = createHash("sha256").update(token).digest("hex");
-    const { data, error } = await supabase.rpc("accept_employee_invitation", { p_token_hash: tokenHash });
+    let admin;
+    try {
+      admin = createSupabaseAdminClient();
+    } catch {
+      return NextResponse.json({ error: "Le service d’acceptation d’invitation n’est pas configuré sur le serveur." }, { status: 503 });
+    }
+    const { data, error } = await admin.rpc("accept_employee_invitation", {
+      p_token_hash: tokenHash,
+      p_user_id: sessionData.user.id,
+      p_email: sessionData.user.email ?? "",
+    });
     if (error) {
       const code = error.message.match(/(AUTHENTICATION_REQUIRED|INVITATION_INVALID_OR_EXPIRED|INVITATION_EMAIL_MISMATCH|ACCOUNT_ALREADY_LINKED)/)?.[1] ?? "INVITATION_ACCEPTANCE_FAILED";
       return NextResponse.json({ error: errorMessages[code] ?? "Impossible d’accepter cette invitation.", code }, { status: code === "INVITATION_INVALID_OR_EXPIRED" ? 410 : 400 });

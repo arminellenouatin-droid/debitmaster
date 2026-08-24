@@ -19,3 +19,7 @@ La page publique `/` répond HTTP 200. La route `/dashboard/tables` sans session
 Le 24 août 2026, `GET /api/orders` sans session répond `401 Authentification requise`. `PATCH /api/orders` avec un payload de transition correctement formé mais sans session répond également `401 Authentification requise`. `POST /api/orders` avec une liste vide est rejeté en amont par `400 Établissement et au moins une ligne de commande requis`, sans insertion en base. L’endpoint Moneroo avec les champs exacts `tenantId` et `orderId`, mais sans session, répond `401 Authentification requise`.
 
 Ces contrôles confirment les garde-fous de forme et d’authentification sans créer de données de test en production.
+
+## Erreurs runtime Vercel observées sur les dernières 24 heures
+
+Le regroupement Vercel signale deux groupes historiques sur d’anciens déploiements : neuf erreurs `companies.POST` liées à une valeur dépassant `varchar(10)` sur le déploiement `dpl_BTgCzS7ytnGbrQCNdh2rAZY2Sh43`, et six erreurs d’inscription indiquant une configuration Supabase absente sur le déploiement `dpl_4FMRZzbuKen3fLET5MfRB2yfFiEu`. Ces erreurs précèdent les corrections déjà fusionnées et ne correspondent pas au dernier déploiement production contrôlé après la PR #12. Elles restent conservées comme trace de diagnostic afin de vérifier qu’elles ne réapparaissent pas.
