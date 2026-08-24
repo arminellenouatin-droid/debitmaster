@@ -19,7 +19,8 @@ export function ConnexionForm() {
       const response = await fetch("/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ identifier, password }) });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error ?? "Connexion impossible.");
-      router.push(result.mustChangePassword ? "/dashboard/settings?firstLogin=1" : "/dashboard");
+      const destination = result.mustChangePassword ? "/dashboard/settings?firstLogin=1" : result.space === "MASTER_ADMIN" ? "/admin" : result.space === "AFFILIATE" ? "/affilie" : "/dashboard";
+      router.push(destination);
       router.refresh();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Connexion impossible.");
