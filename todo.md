@@ -205,3 +205,12 @@
 - [ ] Adapter la mise en page ordinateur pour éviter l’empilement vertical des formulaires.
 - [ ] Conserver une navigation mobile lisible et les permissions serveur existantes.
 - [ ] Vérifier les états vides, les retours d’erreur et les actions de modification/archivage.
+
+## Correctif demandé — création de tables dans le Plan de site
+
+- [x] Auditer l’API et l’interface actuelles de gestion des tables.
+- [x] Ajouter un formulaire de création avec nom, zone et capacité.
+- [x] Rafraîchir la liste des tables après création et afficher les erreurs métier.
+- [x] Vérifier l’isolation tenant et la permission `tables.manage`.
+- [x] Exécuter le type-check et le build de production.
+- [ ] Publier le correctif dans un PR DebitManager.
