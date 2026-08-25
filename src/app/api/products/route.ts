@@ -1,6 +1,7 @@
 // DebitManager catalogue API: produit validé côté serveur, catégorie et tenant contrôlés avant insertion.
 import { NextResponse } from "next/server";
 import { getAuthorizationContext, can } from "@/lib/authorization";
+import { databaseDiagnostic, logDatabaseError } from "@/lib/database-error";
 
 const productTypes = ["UNIT", "SERVICE", "MENU"] as const;
 const stockFamilies = ["BEVERAGE", "KITCHEN"] as const;
@@ -47,7 +48,10 @@ export async function POST(request: Request) {
     }
     if (categoryId) { const { data: category } = await supabase.from("categories").select("id").eq("id", categoryId).eq("tenant_id", tenantId).maybeSingle(); if (!category) return NextResponse.json({ error: "Catégorie non autorisée." }, { status: 403 }); }
     const { data, error } = await supabase.from("products").insert({ tenant_id: tenantId, category_id: categoryId, name, product_type: productType, stock_family: stockFamily, unit, price, current_stock: currentStock, alert_threshold: alertThreshold, safety_threshold: safetyThreshold }).select("id,tenant_id,category_id,name,product_type,unit,price,current_stock,alert_threshold,safety_threshold,image_url,created_at").single();
-    if (error) return NextResponse.json({ error: "Impossible de créer le produit." }, { status: 400 });
+    if (error) {
+      logDatabaseError("products.POST", error);
+      return NextResponse.json({ error: "Impossible de créer le produit.", diagnostic: databaseDiagnostic(error) }, { status: 400 });
+    }
     return NextResponse.json({ product: data }, { status: 201 });
   } catch {
     return NextResponse.json({ error: "Requête invalide." }, { status: 400 });
