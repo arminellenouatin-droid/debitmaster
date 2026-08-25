@@ -57,8 +57,12 @@ export async function POST(request: Request) {
     if (payload.event !== "payment.success") return NextResponse.json({ received: true });
     const verified = await verifyMonerooPayment(providerReference, payment.amount, payment.currency);
     if (!verified) return NextResponse.json({ error: "Vérification Moneroo non concluante." }, { status: 422 });
-    const { error: updateError } = await admin.from("payments").update({ status: "SUCCESS", paid_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq("id", payment.id).eq("tenant_id", payment.tenant_id).eq("status", "PENDING");
+    const { data: updatedPayment, error: updateError } = await admin.from("payments").update({ status: "SUCCESS", paid_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq("id", payment.id).eq("tenant_id", payment.tenant_id).eq("status", "PENDING").select("id,order_id,status").maybeSingle();
     if (updateError) return NextResponse.json({ error: "Mise à jour du paiement impossible." }, { status: 500 });
+    if (updatedPayment?.order_id) {
+      const { error: settleError } = await admin.rpc("settle_order_stock_after_payment", { p_order_id: updatedPayment.order_id });
+      if (settleError && settleError.message !== "ORDER_STOCK_NOT_ALLOCATED") return NextResponse.json({ error: "Paiement confirmé, mais la clôture du stock de la commande doit être rejouée." }, { status: 500 });
+    }
     return NextResponse.json({ received: true });
   } catch { return NextResponse.json({ error: "Payload Moneroo invalide." }, { status: 400 }); }
 }
