@@ -15,8 +15,8 @@ export async function POST(request: Request) {
     if (!order) return NextResponse.json({ error: "Commande introuvable." }, { status: 404 });
     if (context.role === "SERVEUR" && order.server_user_id !== context.user.id) return NextResponse.json({ error: "Cette commande ne vous est pas attribuée." }, { status: 403 });
     if (!["HANDED_OFF", "DELIVERED"].includes(order.status)) return NextResponse.json({ error: "La commande doit être remise ou livrée avant encaissement." }, { status: 409 });
-    const { data: payment, error } = await context.supabase.from("payments").insert({ tenant_id: tenantId, order_id: order.id, provider: "CASH", payment_method: "CASH", status: "PAID", amount: order.total_amount, currency: order.currency, paid_at: new Date().toISOString() }).select("id,order_id,provider,payment_method,status,amount,currency,paid_at,created_at").single();
-    if (error) return NextResponse.json({ error: "La commande est peut-être déjà encaissée." }, { status: 409 });
+    const { data: payment, error } = await context.supabase.rpc("record_cash_payment_and_settle", { p_order_id: order.id });
+    if (error || !payment) return NextResponse.json({ error: error?.message === "PAYMENT_ALREADY_RECORDED" ? "La commande est déjà encaissée." : "Impossible de confirmer le paiement et de solder les articles affectés." }, { status: 409 });
     return NextResponse.json({ payment }, { status: 201 });
   } catch { return NextResponse.json({ error: "Requête invalide." }, { status: 400 }); }
 }
