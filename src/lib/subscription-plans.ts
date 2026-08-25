@@ -11,10 +11,13 @@ const planDefinitions: Record<SubscriptionPlanCode, { label: string; durationMon
 };
 
 const activityDefinitions: Record<string, { label: string; multiplier: number }> = {
-  BUVETTE: { label: "Buvette", multiplier: 1 },
+  BAR: { label: "Bar", multiplier: 1 },
+  BUVETTE: { label: "Bar", multiplier: 1 },
   BAR_RESTAURANT: { label: "Bar restaurant", multiplier: 1.5 },
   NIGHTCLUB_LOUNGE: { label: "Boîte de nuit / Lounge", multiplier: 2 },
 };
+
+export const subscriptionActivityCodes = ["BAR", "BAR_RESTAURANT", "NIGHTCLUB_LOUNGE"] as const;
 
 export function getActivityPricing(activityType: string) {
   return activityDefinitions[activityType] ?? activityDefinitions.BUVETTE;
@@ -46,6 +49,13 @@ export function getSubscriptionCatalog(activityType: string) {
   });
 }
 
+export function getSubscriptionActivityCatalog() {
+  return subscriptionActivityCodes.map((code) => {
+    const activity = getActivityPricing(code);
+    return { code, label: activity.label, multiplier: activity.multiplier, plans: getSubscriptionCatalog(code) };
+  });
+}
+
 export function subscriptionIsExpired(status: string | null | undefined, trialEndsAt: string | null | undefined, subscriptionExpiresAt: string | null | undefined, now = Date.now()) {
   const normalized = String(status ?? "").toUpperCase();
   if (["SUSPENDED", "EXPIRED", "CANCELLED"].includes(normalized)) return true;
@@ -53,9 +63,11 @@ export function subscriptionIsExpired(status: string | null | undefined, trialEn
   return Boolean(cutoff && new Date(cutoff).getTime() <= now);
 }
 
-export function subscriptionDisplayStatus(status: string | null | undefined, trialEndsAt: string | null | undefined, subscriptionExpiresAt: string | null | undefined) {
-  if (subscriptionIsExpired(status, trialEndsAt, subscriptionExpiresAt)) return "Expiré";
-  if (subscriptionExpiresAt) return "Activé";
+export function subscriptionDisplayStatus(status: string | null | undefined, trialEndsAt: string | null | undefined, subscriptionExpiresAt: string | null | undefined, now = Date.now()) {
+  if (subscriptionIsExpired(status, trialEndsAt, subscriptionExpiresAt, now)) return "Expiré";
+  const cutoff = subscriptionExpiresAt || trialEndsAt;
+  if (cutoff && new Date(cutoff).getTime() - now <= 7 * 24 * 60 * 60 * 1000) return "Expire bientôt";
+  if (subscriptionExpiresAt) return "Actif";
   if (String(status ?? "").toUpperCase() === "TRIAL") return "Essai";
   return "À activer";
 }
