@@ -3,6 +3,7 @@
 /* Design Read DebitManager Magasinier: interface desktop en vues listes, sous-onglets explicites, formulaires repliés et mobile-first. */
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { useLiveRefresh } from "@/hooks/useLiveRefresh";
 
 type Company = { id: string; name: string };
 type Category = { id: string; name: string; parent_id: string | null };
@@ -65,6 +66,7 @@ export function MagasinierClient({ stockScope, firstName, companyName }: Props) 
 
   useEffect(() => { let active = true; fetch("/api/companies").then(async (response) => { const result = await response.json(); if (!response.ok) throw new Error(result.error); if (!active) return; setCompanies(result.companies ?? []); if (result.companies?.[0]) setTenantId(result.companies[0].id); }).catch((cause) => active && setError(cause instanceof Error ? cause.message : "Impossible de charger l’établissement.")).finally(() => active && setLoading(false)); return () => { active = false; }; }, []);
   useEffect(() => { if (!tenantId) return; let active = true; setLoading(true); setError(""); load(tenantId).catch((cause) => active && setError(cause instanceof Error ? cause.message : "Impossible de charger le stock.")).finally(() => active && setLoading(false)); return () => { active = false; }; }, [tenantId]);
+  useLiveRefresh(() => { if (tenantId) return load(tenantId); });
 
   const familyOptions = stockScope === "BOTH" ? ["BEVERAGE", "KITCHEN"] : [stockScope];
   const visibleProducts = products.filter((item) => familyOptions.includes(item.stock_family));

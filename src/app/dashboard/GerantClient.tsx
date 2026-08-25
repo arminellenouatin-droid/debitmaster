@@ -2,6 +2,7 @@
 /* Direction DebitManager Gérant: supervision opérationnelle dense mais lisible, priorité aux données réelles et aux actions autorisées. */
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useLiveRefresh } from "@/hooks/useLiveRefresh";
 
 type Table = { id: string; label: string; zone: string | null; status: string; capacity: number };
 type Serveuse = { id: string; user_id: string; first_name: string; last_name: string; phone: string | null; status: string; service_start_time: string | null; service_end_time: string | null; rest_day: number | null; employee_table_assignments?: { id: string; table_id: string; dining_tables: Table | null }[]; sales?: number; orderCount?: number; deliveredCount?: number; commissionTotal?: number; servedTables?: string[] };
@@ -36,6 +37,7 @@ export function GerantClient({ tenantId, firstName, companyName, initialTab = "d
     if (stockResponse.ok) setGerantStock(await stockResponse.json());
   }, [tenantId]);
   useEffect(() => { const timer = window.setTimeout(() => { void refresh(); }, 0); return () => window.clearTimeout(timer); }, [refresh]);
+  useLiveRefresh(refresh);
   const filteredOrders = useMemo(() => overview?.orders.filter((order) => !search || `${order.order_number} ${order.server_name ?? ""} ${order.table_label ?? ""}`.toLowerCase().includes(search.toLowerCase())) ?? [], [overview, search]);
   const moveOrder = async (order: Order, status: string) => {
     setBusy(true); setNotice("");

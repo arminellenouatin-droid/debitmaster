@@ -12,12 +12,17 @@ export async function GET(request: Request) {
     const context = await getAuthorizationContext();
     const { supabase, user, tenantIds } = context;
     if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
-    if (!can(context, "stock.view") && !can(context, "products.manage")) return NextResponse.json({ error: "Permission insuffisante pour consulter le catalogue." }, { status: 403 });
+    const canViewCatalog = can(context, "stock.view") || can(context, "products.manage") || can(context, "orders.create");
+    if (!canViewCatalog) return NextResponse.json({ error: "Permission insuffisante pour consulter le catalogue." }, { status: 403 });
     if (tenantId && !tenantIds.includes(tenantId)) return NextResponse.json({ error: "Établissement non autorisé." }, { status: 403 });
-    const query = supabase.from("products").select("id,tenant_id,category_id,name,product_type,unit,price,current_stock,alert_threshold,safety_threshold,image_url,created_at").is("deleted_at", null).order("name").limit(100);
+    const query = supabase.from("products").select("id,tenant_id,category_id,name,product_type,stock_family,unit,price,current_stock,alert_threshold,safety_threshold,image_url,created_at").is("deleted_at", null).order("name").limit(100);
     const { data, error } = await (tenantId ? query.eq("tenant_id", tenantId) : query.in("tenant_id", tenantIds));
     if (error) return NextResponse.json({ error: "Impossible de charger les produits." }, { status: 500 });
-    return NextResponse.json({ products: data ?? [] });
+    const products = data ?? [];
+    if (context.role === "SERVEUR") {
+      return NextResponse.json({ products: products.map(({ id, category_id, name, product_type, unit, price, stock_family }) => ({ id, category_id, name, product_type, unit, price, stock_family })) });
+    }
+    return NextResponse.json({ products });
   } catch {
     return NextResponse.json({ error: "Service temporairement indisponible." }, { status: 500 });
   }
