@@ -53,9 +53,11 @@ export function subscriptionIsExpired(status: string | null | undefined, trialEn
   return Boolean(cutoff && new Date(cutoff).getTime() <= now);
 }
 
-export function subscriptionDisplayStatus(status: string | null | undefined, trialEndsAt: string | null | undefined, subscriptionExpiresAt: string | null | undefined) {
-  if (subscriptionIsExpired(status, trialEndsAt, subscriptionExpiresAt)) return "Expiré";
-  if (subscriptionExpiresAt) return "Activé";
+export function subscriptionDisplayStatus(status: string | null | undefined, trialEndsAt: string | null | undefined, subscriptionExpiresAt: string | null | undefined, now = Date.now()) {
+  if (subscriptionIsExpired(status, trialEndsAt, subscriptionExpiresAt, now)) return "Expiré";
+  const cutoff = subscriptionExpiresAt || trialEndsAt;
+  if (cutoff && new Date(cutoff).getTime() - now <= 7 * 24 * 60 * 60 * 1000) return "Expire bientôt";
+  if (subscriptionExpiresAt) return "Actif";
   if (String(status ?? "").toUpperCase() === "TRIAL") return "Essai";
   return "À activer";
 }

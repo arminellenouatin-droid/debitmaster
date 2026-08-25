@@ -271,3 +271,22 @@ Les coefficients sont automatiques selon l’activité : Buvette ×1, Bar restau
 - [x] Vérifier `pnpm exec tsc --noEmit`, `pnpm build` et `git diff --check`.
 - [x] Ouvrir le PR #50.
 - [ ] Définir puis brancher une source réelle pour les dépenses ; le cockpit les signale actuellement comme non configurées.
+
+
+## Clarification propriétaire — séparation établissement / SaaS
+
+- [ ] Retirer la présentation de l’abonnement comme bloc principal des paramètres opérationnels.
+- [ ] Maintenir le Dashboard propriétaire centré sur toutes les données réelles de son établissement.
+- [ ] Conserver tous les onglets opérationnels correspondant aux droits du propriétaire.
+- [ ] Ajouter un encart de statut d’abonnement distinct avec un bouton dédié vers les formules SaaS.
+- [ ] Vérifier que le propriétaire conserve l’accès à la gestion de l’abonnement même lorsque l’établissement est expiré.
+- [ ] Ne modifier le code qu’après validation de cette architecture d’interface par l’utilisateur.
+
+
+## Priorité confirmée — compte propriétaire avant abonnement
+
+- [ ] Finaliser le dashboard métier complet de l’établissement avant d’enrichir les formules SaaS.
+- [ ] Vérifier que le propriétaire retrouve tous les KPI : ventes, dépenses, stocks, achats, commandes et meilleurs vendeurs.
+- [ ] Vérifier que le propriétaire retrouve tous les onglets et droits opérationnels des rôles de son établissement.
+- [ ] Réduire la présence de l’abonnement à deux commandes séparées : statut et mise à jour de l’abonnement.
+- [ ] Ne pas mélanger les formules SaaS avec les indicateurs ou opérations métier du propriétaire.
