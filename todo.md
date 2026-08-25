@@ -231,3 +231,29 @@
 - [x] Afficher le coût unitaire moyen et les quantités dans l’inventaire.
 - [x] Prévoir un état explicite lorsqu’aucun prix d’achat n’est encore enregistré.
 - [x] Vérifier le type-check, le build et publier le PR #49 DebitManager.
+
+## Nouveau chantier — propriétaire, plans SaaS et cockpit complet
+
+- [ ] Auditer les offres, abonnements, paiements et statuts d’expiration existants.
+- [ ] Vérifier le rôle propriétaire et la résolution de ses permissions établissement.
+- [ ] Définir les règles de souscription, changement de formule, renouvellement et expiration.
+- [ ] Bloquer les opérations établissement lorsque l’abonnement est expiré ou impayé, en conservant l’accès nécessaire au renouvellement.
+- [ ] Construire la vue Plans avec paiement, formule active et historique utile.
+- [ ] Construire les KPI propriétaire : ventes, classement serveuses, stocks, achats, dépenses et marge brute.
+- [ ] Ajouter les filtres jour, période et critères opérationnels.
+- [ ] Vérifier les données réelles, la sécurité tenant, le responsive et le build.
+
+## Offres confirmées par le document métier
+
+Les quatre formules de référence sont désormais fixées : **Base** mensuelle à **50 000 XOF**, **Moyenne** trimestrielle à **130 000 XOF**, **Semestrielle** à **240 000 XOF** et **Suprême** annuelle à **400 000 XOF**. Le document indique aussi que le tarif Bar restaurant est multiplié par 1,5 et celui de Boîte de nuit / Lounge par 2 par rapport au tarif Buvette.
+
+- [ ] Confirmer si les coefficients d’activité s’appliquent automatiquement au catalogue de plans.
+- [ ] Confirmer les règles non précisées : grâce de renouvellement, baisse de formule et consultation après expiration.
+
+## Règles métier confirmées
+
+Les coefficients sont automatiques selon l’activité : Buvette ×1, Bar restaurant ×1,5, Boîte de nuit / Lounge ×2. À l’expiration, l’établissement ne peut plus utiliser le SaaS tant qu’un renouvellement de paiement n’a pas été validé. La marge brute est calculée par la formule : ventes totales moins coût des stocks vendus.
+
+- [ ] Implémenter les coefficients d’activité dans le catalogue et le montant Moneroo.
+- [ ] Enforcer le blocage à expiration sur les opérations de l’établissement.
+- [ ] Calculer la marge brute à partir des ventes et du coût des articles vendus.

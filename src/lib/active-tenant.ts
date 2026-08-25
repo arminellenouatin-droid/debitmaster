@@ -13,6 +13,8 @@ type Company = {
   language: string;
   status: string;
   trial_ends_at: string | null;
+  subscription_plan: string | null;
+  subscription_expires_at: string | null;
 };
 
 export async function getActiveTenantContext() {
@@ -26,7 +28,7 @@ export async function getActiveTenantContext() {
   const tenantId = context.tenantIds.includes(requestedTenantId) ? requestedTenantId : context.tenantIds[0];
   const { data: company, error } = await context.supabase
     .from("companies")
-    .select("id,name,activity_type,country,currency,language,status,trial_ends_at")
+    .select("id,name,activity_type,country,currency,language,status,trial_ends_at,subscription_plan,subscription_expires_at")
     .eq("id", tenantId)
     .is("deleted_at", null)
     .maybeSingle();

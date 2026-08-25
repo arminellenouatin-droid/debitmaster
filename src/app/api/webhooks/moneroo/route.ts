@@ -43,9 +43,14 @@ export async function POST(request: Request) {
       if (payload.event !== "payment.success") return NextResponse.json({ received: true });
       const verified = await verifyMonerooPayment(providerReference, subscription.amount, subscription.currency);
       if (!verified) return NextResponse.json({ error: "Vérification Moneroo non concluante." }, { status: 422 });
-      const { data: updated, error: updateError } = await admin.from("saas_subscription_payments").update({ status: "SUCCEEDED", paid_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq("id", subscription.id).eq("status", "PENDING").select("id,tenant_id,amount").maybeSingle();
+      const paidAt = new Date().toISOString();
+      const { data: updated, error: updateError } = await admin.from("saas_subscription_payments").update({ status: "SUCCEEDED", paid_at: paidAt, updated_at: paidAt }).eq("id", subscription.id).eq("status", "PENDING").select("id,tenant_id,plan,amount,period_end").maybeSingle();
       if (updateError) return NextResponse.json({ error: "Mise à jour de l’abonnement impossible." }, { status: 500 });
-      if (updated) await issueAffiliateCommission(admin, updated.tenant_id, updated.id, updated.amount);
+      if (updated) {
+        const { error: companyError } = await admin.from("companies").update({ subscription_plan: updated.plan, subscription_expires_at: updated.period_end, subscription_updated_at: paidAt, status: "ACTIVE", updated_at: paidAt }).eq("id", updated.tenant_id).is("deleted_at", null);
+        if (companyError) return NextResponse.json({ error: "Paiement confirmé, mais l’activation de l’abonnement doit être rejouée." }, { status: 500 });
+        await issueAffiliateCommission(admin, updated.tenant_id, updated.id, updated.amount);
+      }
       return NextResponse.json({ received: true });
     }
     const { data: payment, error: paymentError } = await admin.from("payments").select("id,tenant_id,order_id,provider,status,amount,currency,provider_reference,paid_at").eq("provider", "MONEROO").eq("provider_reference", providerReference).maybeSingle();
