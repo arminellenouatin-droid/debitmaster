@@ -226,8 +226,8 @@
 
 ## Règle confirmée — valorisation du stock Magasinier
 
-- [ ] Calculer le coût moyen pondéré à partir des entrées stock_purchases.
-- [ ] Afficher la valeur totale d’inventaire au coût d’achat, jamais au prix de vente.
-- [ ] Afficher le coût unitaire moyen et les quantités dans l’inventaire.
-- [ ] Prévoir un état explicite lorsqu’aucun prix d’achat n’est encore enregistré.
-- [ ] Vérifier le type-check, le build et publier un PR DebitManager.
+- [x] Calculer le coût moyen pondéré à partir des entrées stock_purchases.
+- [x] Afficher la valeur totale d’inventaire au coût d’achat, jamais au prix de vente.
+- [x] Afficher le coût unitaire moyen et les quantités dans l’inventaire.
+- [x] Prévoir un état explicite lorsqu’aucun prix d’achat n’est encore enregistré.
+- [x] Vérifier le type-check, le build et publier le PR #49 DebitManager.

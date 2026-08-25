@@ -21,9 +21,9 @@ export async function GET(request: Request) {
     const { data, error } = await query;
     if (error) return NextResponse.json({ error: "Impossible de charger le stock." }, { status: 500 });
     const productIds = (data ?? []).map((product) => product.id);
-    const { data: purchases, error: purchaseError } = productIds.length
-      ? await supabase.from("stock_purchases").select("product_id,purchase_unit_price,quantity").in("product_id", productIds).order("purchased_at", { ascending: true }).limit(2000)
-      : { data: [], error: null };
+    let purchaseQuery = supabase.from("stock_purchases").select("product_id,purchase_unit_price,quantity").in("product_id", productIds).order("purchased_at", { ascending: true }).limit(2000);
+    purchaseQuery = tenantId ? purchaseQuery.eq("tenant_id", tenantId) : purchaseQuery.in("tenant_id", tenantIds);
+    const { data: purchases, error: purchaseError } = productIds.length ? await purchaseQuery : { data: [], error: null };
     if (purchaseError) return NextResponse.json({ error: "Impossible de calculer la valeur d’achat du stock." }, { status: 500 });
     const purchaseTotals = new Map<string, { quantity: number; value: number }>();
     for (const purchase of purchases ?? []) {
