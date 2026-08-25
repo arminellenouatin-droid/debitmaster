@@ -2,6 +2,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { useLiveRefresh } from "@/hooks/useLiveRefresh";
 
 type Company = { id: string; name: string; activity_type: string; country: string; currency: string; status: string; trial_ends_at?: string | null };
 type Overview = {
@@ -51,6 +52,7 @@ export function DashboardClient() {
   }
 
   useEffect(() => { void load(); }, []);
+  useLiveRefresh(() => load(selectedTenantId));
 
   async function selectTenant(tenantId: string) {
     setSelectedTenantId(tenantId);

@@ -1,6 +1,7 @@
 "use client";
 /* Design DebitManager Serveur : atelier ivoire, hiérarchie compacte et actions métier explicites. */
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useLiveRefresh } from "@/hooks/useLiveRefresh";
 
 type OrderItem = { id: string; product_id: string; product_name: string; quantity: number; unit_price: number; total_price: number; fulfillment_unit?: "BEVERAGE" | "MEAL"; preparation_status?: string; prepared_at?: string | null; received_at?: string | null; delivered_at?: string | null };
 type Payment = { id: string; status: string; payment_method: string; amount: number; created_at?: string };
@@ -37,9 +38,10 @@ export function ServeurClient({ tenantId, firstName, companyName, initialTab = "
   const [mobileNumber, setMobileNumber] = useState("");
   const [printingOrder, setPrintingOrder] = useState<Order | null>(null);
 
-  const refresh = async () => { const response = await fetch("/api/dashboard/staff-overview", { cache: "no-store" }); if (response.ok) setData(await response.json()); };
-  const loadOrderData = async () => { const [productsResponse, customersResponse] = await Promise.all([fetch(`/api/products?tenantId=${tenantId}`), fetch(`/api/customers?tenantId=${tenantId}`)]); if (productsResponse.ok) setProducts((await productsResponse.json()).products ?? []); if (customersResponse.ok) setCustomers((await customersResponse.json()).customers ?? []); };
-  useEffect(() => { void refresh(); void loadOrderData(); }, []);
+  const refresh = useCallback(async () => { const response = await fetch("/api/dashboard/staff-overview", { cache: "no-store" }); if (response.ok) setData(await response.json()); }, []);
+  const loadOrderData = useCallback(async () => { const [productsResponse, customersResponse] = await Promise.all([fetch(`/api/products?tenantId=${tenantId}`, { cache: "no-store" }), fetch(`/api/customers?tenantId=${tenantId}`, { cache: "no-store" })]); if (productsResponse.ok) setProducts((await productsResponse.json()).products ?? []); if (customersResponse.ok) setCustomers((await customersResponse.json()).customers ?? []); }, [tenantId]);
+  useEffect(() => { void refresh(); void loadOrderData(); }, [refresh, loadOrderData]);
+  useLiveRefresh(async () => { await Promise.all([refresh(), loadOrderData()]); });
   const assignedTables = useMemo(() => data?.assignments.map((assignment) => assignment.dining_tables).filter(Boolean) ?? [], [data]);
   const filteredProducts = useMemo(() => products.filter((product) => { const kind = String(product.product_type ?? "").toUpperCase(); const inferred = kind.includes("FOOD") || kind.includes("MEAL") || product.stock_family === "KITCHEN" ? "MEAL" : "BEVERAGE"; return inferred === selectedType && product.name.toLowerCase().includes(productSearch.toLowerCase()); }), [products, productSearch, selectedType]);
   const cartTotal = useMemo(() => cart.reduce((sum, line) => sum + line.product.price * line.quantity, 0), [cart]);
