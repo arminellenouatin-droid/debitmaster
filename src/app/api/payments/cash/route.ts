@@ -15,7 +15,6 @@ export async function POST(request: Request) {
     const { data: order } = await context.supabase.from("orders").select("id,tenant_id,server_user_id,status,total_amount,currency").eq("id", orderId).eq("tenant_id", tenantId).maybeSingle();
     if (!order) return NextResponse.json({ error: "Commande introuvable." }, { status: 404 });
     if (context.role === "SERVEUR" && order.server_user_id !== context.user.id) return NextResponse.json({ error: "Cette commande ne vous est pas attribuée." }, { status: 403 });
-    if (!["HANDED_OFF", "DELIVERED"].includes(order.status)) return NextResponse.json({ error: "La commande doit être remise ou livrée avant encaissement." }, { status: 409 });
     const { data: payment, error } = await context.supabase.rpc("record_cash_payment", { p_order_id: order.id, p_amount: amount });
     if (error || !payment) {
       const messages: Record<string, string> = { PAYMENT_EXCEEDS_REMAINING: "Le montant dépasse le reste à encaisser.", ORDER_NOT_READY_FOR_PAYMENT: "La commande doit être remise ou livrée avant encaissement.", ORDER_STOCK_NOT_ALLOCATED: "Les articles ne sont pas encore affectés au serveur." };

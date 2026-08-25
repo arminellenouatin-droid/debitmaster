@@ -61,7 +61,7 @@ export async function POST(request: Request) {
     if (updateError) return NextResponse.json({ error: "Mise à jour du paiement impossible." }, { status: 500 });
     if (updatedPayment?.order_id) {
       const { error: settleError } = await admin.rpc("settle_order_stock_after_payment", { p_order_id: updatedPayment.order_id });
-      if (settleError && settleError.message !== "ORDER_STOCK_NOT_ALLOCATED") return NextResponse.json({ error: "Paiement confirmé, mais la clôture du stock de la commande doit être rejouée." }, { status: 500 });
+      if (settleError && !["PAYMENT_INCOMPLETE", "ORDER_STOCK_NOT_ALLOCATED"].includes(settleError.message)) return NextResponse.json({ error: "Paiement confirmé, mais la clôture du stock de la commande doit être rejouée." }, { status: 500 });
     }
     return NextResponse.json({ received: true });
   } catch { return NextResponse.json({ error: "Payload Moneroo invalide." }, { status: 400 }); }
