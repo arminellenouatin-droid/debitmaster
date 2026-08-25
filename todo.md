@@ -163,6 +163,8 @@
 - [x] Conserver l’onglet Profil pour le Magasinier comme pour tous les rôles.
 - [x] Vérifier le modèle SQL, les contraintes, les fonctions atomiques, `pnpm typecheck`, `pnpm build` et `git diff --check`.
 - [ ] Tester les droits `MAGASINIER`, les sorties BAR/CUISINE, les alertes, l’approvisionnement et l’isolation inter-établissements avec les comptes de test.
+- [x] Ouvrir la PR #23 et vérifier que les contrôles Vercel sont réussis.
+- [ ] Attendre la validation métier de l’utilisateur avant fusion et production.
 
 
 ## Règle de méthode confirmée par l’utilisateur
@@ -193,3 +195,13 @@
 - [x] Confirmer que les produits et stocks actuellement présents sont des données de test du compte d’essai.
 - [x] Ne pas affecter automatiquement ces données de test à un magasin réel ou créer une migration de stock à partir de leur `current_stock`.
 - [x] Utiliser le nouveau modèle multi-magasins pour les nouvelles créations et entrées, avec un rattachement explicite au magasin choisi.
+
+
+## Refonte interface Gestion des stocks — sous-onglets
+
+- [ ] Ajouter les sous-onglets Vue d’ensemble, Magasins, Catégories, Produits, Entrées de stock, Livraisons au Gérant et Approvisionnement.
+- [ ] Afficher la liste des éléments existants dans chaque sous-onglet avant les actions de création.
+- [ ] Masquer les formulaires d’ajout par défaut et les ouvrir avec un bouton « Ajouter ».
+- [ ] Adapter la mise en page ordinateur pour éviter l’empilement vertical des formulaires.
+- [ ] Conserver une navigation mobile lisible et les permissions serveur existantes.
+- [ ] Vérifier les états vides, les retours d’erreur et les actions de modification/archivage.
