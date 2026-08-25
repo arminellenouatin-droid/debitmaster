@@ -43,6 +43,7 @@ export async function POST(request: Request) {
     const context = await getAuthorizationContext();
     const { supabase, user, tenantIds } = context;
     if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
+    if (context.role === "MAGASINIER" && movementType === "OUT_SALE") return NextResponse.json({ error: "Le Magasinier doit envoyer une livraison au Gérant via le Magasin comptoir." }, { status: 403 });
     const requiredPermission = movementType === "IN_PURCHASE" ? "stock.receive" : movementType === "OUT_SALE" ? "stock.issue" : "stock.adjust";
     if (!can(context, requiredPermission)) return NextResponse.json({ error: "Permission insuffisante pour ce mouvement de stock." }, { status: 403 });
     if (!tenantIds.includes(tenantId)) return NextResponse.json({ error: "Établissement non autorisé." }, { status: 403 });

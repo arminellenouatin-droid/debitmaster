@@ -161,4 +161,35 @@
 - [x] Ajouter la création de demandes d’approvisionnement avec statut et suivi tenant-scoped.
 - [x] Refuser au Magasinier les ventes, commandes clients, paiements, finances et gestion du personnel.
 - [x] Conserver l’onglet Profil pour le Magasinier comme pour tous les rôles.
-- [ ] Tester les droits `MAGASINIER`, les sorties BAR/CUISINE, les alertes, l’approvisionnement et l’isolation inter-établissements.
+- [x] Vérifier le modèle SQL, les contraintes, les fonctions atomiques, `pnpm typecheck`, `pnpm build` et `git diff --check`.
+- [ ] Tester les droits `MAGASINIER`, les sorties BAR/CUISINE, les alertes, l’approvisionnement et l’isolation inter-établissements avec les comptes de test.
+
+
+## Règle de méthode confirmée par l’utilisateur
+
+- [ ] Avant chaque nouvelle modification, recenser les erreurs observées, les données disponibles et les éléments manquants.
+- [ ] Poser les questions nécessaires lorsque le besoin, les permissions, le parcours ou le modèle de données ne sont pas certains.
+- [ ] Reformuler précisément la correction proposée et attendre la confirmation de l’utilisateur avant tout changement de code ou de base.
+- [ ] Ne lancer aucun déploiement, fusion, migration ou modification irréversible avant validation explicite du résultat testé.
+
+
+## Règles confirmées — magasins et Magasin comptoir
+
+- [x] Permettre à chaque établissement de définir ses propres prix de vente.
+- [x] Historiser le prix d’achat sur chaque facture et chaque entrée de stock, avec variation possible d’un achat à l’autre.
+- [x] Permettre au Magasinier de créer plusieurs lieux physiques de stockage par établissement.
+- [x] Créer ou identifier le lieu réservé au Gérant sous le nom exact **Magasin comptoir**.
+- [x] Interdire au Magasinier toute sortie ou mouvement direct depuis le Magasin comptoir.
+- [x] Autoriser le Magasinier à envoyer des produits vers le Magasin comptoir avec un transfert en attente.
+- [x] Ne débiter le magasin source et ne créditer le Magasin comptoir qu’après confirmation **Reçu** par le Gérant.
+- [x] Notifier le Gérant lorsqu’un transfert vers le Magasin comptoir est envoyé.
+- [x] Faire valider par l’utilisateur le modèle fonctionnel complet avant toute migration ou modification de code.
+- [x] Confirmer que le seuil de sécurité est défini par produit, comme le seuil d’alerte.
+- [x] Implémenter le modèle validé uniquement sur DebitManager, sans toucher au projet Envol Africa Magazine.
+
+
+## Clarification sur les données existantes
+
+- [x] Confirmer que les produits et stocks actuellement présents sont des données de test du compte d’essai.
+- [x] Ne pas affecter automatiquement ces données de test à un magasin réel ou créer une migration de stock à partir de leur `current_stock`.
+- [x] Utiliser le nouveau modèle multi-magasins pour les nouvelles créations et entrées, avec un rattachement explicite au magasin choisi.
