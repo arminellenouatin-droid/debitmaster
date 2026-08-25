@@ -3,8 +3,6 @@ import { NextResponse } from "next/server";
 import { getAuthorizationContext, can } from "@/lib/authorization";
 import { databaseDiagnostic, logDatabaseError } from "@/lib/database-error";
 
-const counterName = "Magasin comptoir";
-
 export async function GET(request: Request) {
   try {
     const tenantId = new URL(request.url).searchParams.get("tenantId") ?? "";
@@ -25,16 +23,17 @@ export async function POST(request: Request) {
     const body = await request.json();
     const tenantId = typeof body.tenantId === "string" ? body.tenantId : "";
     const name = typeof body.name === "string" ? body.name.trim().slice(0, 120) : "";
+    const isCounter = body.isCounter === true;
     if (!tenantId || name.length < 2) return NextResponse.json({ error: "Établissement et nom du magasin requis." }, { status: 400 });
     const context = await getAuthorizationContext();
     if (!context.user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
     if (!can(context, "products.manage")) return NextResponse.json({ error: "Permission insuffisante pour créer un magasin." }, { status: 403 });
     if (!context.tenantIds.includes(tenantId)) return NextResponse.json({ error: "Établissement non autorisé." }, { status: 403 });
-    const storeType = name.toLocaleLowerCase("fr-FR") === counterName.toLocaleLowerCase("fr-FR") ? "COUNTER" : "GENERAL";
+    const storeType = isCounter ? "COUNTER" : "GENERAL";
     const { data, error } = await context.supabase.from("inventory_stores").insert({ tenant_id: tenantId, name, store_type: storeType, created_by: context.user.id }).select("id,tenant_id,name,store_type,is_active,created_at").single();
     if (error) {
       logDatabaseError("stock.stores.POST", error);
-      return NextResponse.json({ error: error.code === "23505" ? "Ce magasin existe déjà dans l’établissement." : "Impossible de créer le magasin.", diagnostic: databaseDiagnostic(error) }, { status: 400 });
+      return NextResponse.json({ error: error.code === "23505" ? (isCounter ? "Un magasin comptoir existe déjà dans l’établissement." : "Ce magasin existe déjà dans l’établissement.") : "Impossible de créer le magasin.", diagnostic: databaseDiagnostic(error) }, { status: 400 });
     }
     return NextResponse.json({ store: data }, { status: 201 });
   } catch { return NextResponse.json({ error: "Requête invalide." }, { status: 400 }); }
