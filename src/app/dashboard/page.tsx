@@ -11,14 +11,16 @@ import { MagasinierClient } from "./MagasinierClient";
 
 export const dynamic = "force-dynamic";
 
-export default async function DashboardPage() {
+export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   const supabase = await createSupabaseServerClient();
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) redirect("/connexion");
   const firstName = auth.user.user_metadata?.first_name ?? "gérant";
   const authorization = await getAuthorizationContext();
+  const requestedTab = (await searchParams).tab;
+  const serverTab = requestedTab === "orders" || requestedTab === "encaissement" || requestedTab === "treasury" || requestedTab === "permanence" || requestedTab === "profile" ? requestedTab : "dashboard";
   const active = await getActiveTenantContext();
-  if (authorization.role === "SERVEUR") return <DashboardShell firstName={firstName}><ServeurClient tenantId={active.tenantId ?? ""} firstName={firstName} companyName={active.company?.name ?? "Établissement actif"} /></DashboardShell>;
+  if (authorization.role === "SERVEUR") return <DashboardShell firstName={firstName}><ServeurClient tenantId={active.tenantId ?? ""} firstName={firstName} companyName={active.company?.name ?? "Établissement actif"} initialTab={serverTab} /></DashboardShell>;
   if (authorization.role === "GERANT") return <DashboardShell firstName={firstName}><GerantClient tenantId={active.tenantId ?? ""} firstName={firstName} companyName={active.company?.name ?? "Établissement actif"} /></DashboardShell>;
   if (authorization.role === "MAGASINIER") {
     const { data: employee } = authorization.employeeId ? await authorization.supabase.from("employees").select("stock_scope").eq("id", authorization.employeeId).maybeSingle() : { data: null };
