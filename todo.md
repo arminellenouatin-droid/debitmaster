@@ -257,3 +257,17 @@ Les coefficients sont automatiques selon l’activité : Buvette ×1, Bar restau
 - [ ] Implémenter les coefficients d’activité dans le catalogue et le montant Moneroo.
 - [ ] Enforcer le blocage à expiration sur les opérations de l’établissement.
 - [ ] Calculer la marge brute à partir des ventes et du coût des articles vendus.
+
+
+## Chantier propriétaire — abonnements SaaS et cockpit financier
+
+- [x] Confirmer les quatre offres Base, Moyenne, Semestrielle et Suprême à partir du document métier.
+- [x] Appliquer les coefficients automatiques Buvette ×1, Bar restaurant ×1,5 et Boîte de nuit / Lounge ×2.
+- [x] Ajouter la page propriétaire Paramètres → Plans avec calcul tarifaire serveur et redirection Moneroo.
+- [x] Activer la formule et l’échéance depuis le webhook Moneroo confirmé.
+- [x] Bloquer les opérations d’un établissement expiré tout en conservant le renouvellement propriétaire.
+- [x] Ajouter les KPI propriétaire filtrables : ventes payées, classement, stocks, achats, coût vendu et marge brute.
+- [x] Appliquer les politiques RLS liées à l’expiration et à la lecture propriétaire de l’historique.
+- [x] Vérifier `pnpm exec tsc --noEmit`, `pnpm build` et `git diff --check`.
+- [x] Ouvrir le PR #50.
+- [ ] Définir puis brancher une source réelle pour les dépenses ; le cockpit les signale actuellement comme non configurées.
