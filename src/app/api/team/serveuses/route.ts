@@ -10,7 +10,7 @@ export async function GET(request: Request) {
     const context = await getAuthorizationContext();
     if (!context.user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
     if (!tenantId || !context.tenantIds.includes(tenantId) || !can(context, "team.view")) return NextResponse.json({ error: "Permission insuffisante pour consulter les serveuses." }, { status: 403 });
-    const { data, error } = await context.supabase.from("employees").select("id,tenant_id,user_id,first_name,last_name,phone,position,status,service_start_time,service_end_time,rest_day,employee_table_assignments(id,table_id,dining_tables(id,label,zone,capacity,status))").eq("tenant_id", tenantId).eq("position", "SERVEUR").is("deleted_at", null).order("first_name").limit(100);
+    const { data, error } = await context.supabase.from("employees").select("id,tenant_id,user_id,first_name,last_name,phone,position,status,service_start_time,service_end_time,rest_day,employee_table_assignments(id,table_id,dining_tables(id,label,zone,zone_id,capacity,status)),employee_zone_assignments(id,zone_id,work_zones(id,name,is_active))").eq("tenant_id", tenantId).eq("position", "SERVEUR").is("deleted_at", null).order("first_name").limit(100);
     if (error) return NextResponse.json({ error: "Impossible de charger les serveuses." }, { status: 500 });
     return NextResponse.json({ serveuses: data ?? [], permissions: { manage: can(context, "team.manage"), viewTables: can(context, "tables.view"), manageTables: can(context, "tables.manage") } });
   } catch { return NextResponse.json({ error: "Service temporairement indisponible." }, { status: 500 }); }
@@ -22,15 +22,23 @@ export async function POST(request: Request) {
     const tenantId = typeof body.tenantId === "string" ? body.tenantId : "";
     const employeeId = typeof body.employeeId === "string" ? body.employeeId : "";
     const tableId = typeof body.tableId === "string" ? body.tableId : "";
-    if (!tenantId || !employeeId || !tableId) return NextResponse.json({ error: "Serveuse et table requises." }, { status: 400 });
+    const zoneId = typeof body.zoneId === "string" ? body.zoneId : "";
+    if (!tenantId || !employeeId || (!tableId && !zoneId)) return NextResponse.json({ error: "Serveuse et zone ou table requise." }, { status: 400 });
     const context = await getAuthorizationContext();
     if (!context.user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
     if (!context.tenantIds.includes(tenantId) || !can(context, "team.manage")) return NextResponse.json({ error: "Permission insuffisante pour affecter une table." }, { status: 403 });
-    const [{ data: employee }, { data: table }] = await Promise.all([
+    const [{ data: employee }, { data: table }, { data: zone }] = await Promise.all([
       context.supabase.from("employees").select("id").eq("id", employeeId).eq("tenant_id", tenantId).eq("position", "SERVEUR").is("deleted_at", null).maybeSingle(),
-      context.supabase.from("dining_tables").select("id").eq("id", tableId).eq("tenant_id", tenantId).is("deleted_at", null).maybeSingle(),
+      tableId ? context.supabase.from("dining_tables").select("id,zone_id").eq("id", tableId).eq("tenant_id", tenantId).is("deleted_at", null).maybeSingle() : Promise.resolve({ data: null }),
+      zoneId ? context.supabase.from("work_zones").select("id").eq("id", zoneId).eq("tenant_id", tenantId).eq("is_active", true).maybeSingle() : Promise.resolve({ data: null }),
     ]);
-    if (!employee || !table) return NextResponse.json({ error: "Serveuse ou table introuvable dans cet établissement." }, { status: 404 });
+    if (!employee || (tableId && !table) || (zoneId && !zone)) return NextResponse.json({ error: "Serveuse, zone ou table introuvable dans cet établissement." }, { status: 404 });
+    if (tableId && zoneId && table?.zone_id !== zoneId) return NextResponse.json({ error: "La table ne dépend pas de la zone sélectionnée." }, { status: 400 });
+    if (zoneId) {
+      const { data, error } = await context.supabase.from("employee_zone_assignments").insert({ tenant_id: tenantId, employee_id: employeeId, zone_id: zoneId, assigned_by: context.user.id }).select("id,employee_id,zone_id,created_at").single();
+      if (error) return NextResponse.json({ error: "Cette zone est déjà attribuée à cette serveuse." }, { status: 409 });
+      return NextResponse.json({ zoneAssignment: data }, { status: 201 });
+    }
     const { data, error } = await context.supabase.from("employee_table_assignments").insert({ tenant_id: tenantId, employee_id: employeeId, table_id: tableId, assigned_by: context.user.id }).select("id,employee_id,table_id,created_at").single();
     if (error) return NextResponse.json({ error: "Cette table est déjà attribuée à cette serveuse." }, { status: 409 });
     return NextResponse.json({ assignment: data }, { status: 201 });

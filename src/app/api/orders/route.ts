@@ -28,6 +28,7 @@ export async function POST(request: Request) {
     const tenantId = typeof body.tenantId === "string" ? body.tenantId : "";
     const tableLabel = typeof body.tableLabel === "string" ? body.tableLabel.trim().slice(0, 80) : null;
     const locationLabel = typeof body.locationLabel === "string" ? body.locationLabel.trim().slice(0, 80) : null;
+    const zoneId = typeof body.zoneId === "string" && body.zoneId ? body.zoneId : null;
     const customerId = typeof body.customerId === "string" ? body.customerId : null;
     const lines = Array.isArray(body.lines) ? body.lines as OrderLine[] : [];
     if (!tenantId || !tableLabel || !locationLabel || !lines.length || lines.length > 50) return NextResponse.json({ error: "Établissement, emplacement, numéro de table et au moins une ligne de commande sont requis." }, { status: 400 });
@@ -37,10 +38,17 @@ export async function POST(request: Request) {
     if (!can(context, "orders.create")) return NextResponse.json({ error: "Permission insuffisante pour créer une commande." }, { status: 403 });
     if (!tenantIds.includes(tenantId)) return NextResponse.json({ error: "Établissement non autorisé." }, { status: 403 });
     if (context.role === "SERVEUR") {
-      const { data: assignments } = await supabase.from("employee_table_assignments").select("dining_tables(label,zone)").eq("tenant_id", tenantId).eq("employee_id", context.employeeId).limit(100);
+      const [{ data: assignments }, { data: zoneAssignments }] = await Promise.all([
+        supabase.from("employee_table_assignments").select("dining_tables(label,zone,zone_id)").eq("tenant_id", tenantId).eq("employee_id", context.employeeId).limit(100),
+        zoneId ? supabase.from("employee_zone_assignments").select("zone_id,work_zones(name,is_active)").eq("tenant_id", tenantId).eq("employee_id", context.employeeId).eq("zone_id", zoneId).limit(1) : Promise.resolve({ data: [] }),
+      ]);
       const assignedDiningTables = (assignments ?? []).flatMap((assignment) => Array.isArray(assignment.dining_tables) ? assignment.dining_tables : assignment.dining_tables ? [assignment.dining_tables] : []);
-      const allowedTable = assignedDiningTables.some((table) => table.label === tableLabel && (table.zone ?? "Emplacement général") === locationLabel);
-      if (!allowedTable) return NextResponse.json({ error: "Cette table ne correspond pas à l’emplacement qui vous est attribué." }, { status: 403 });
+      const directTable = assignedDiningTables.some((table) => table.label === tableLabel && (table.zone ?? "Emplacement général") === locationLabel && (!zoneId || table.zone_id === zoneId));
+      const assignedZone = (zoneAssignments ?? []).some((assignment) => {
+        const zone = Array.isArray(assignment.work_zones) ? assignment.work_zones[0] : assignment.work_zones;
+        return zone?.name === locationLabel && zone.is_active;
+      });
+      if (!directTable && !assignedZone) return NextResponse.json({ error: "Cette table ne correspond pas à l’emplacement qui vous est attribué." }, { status: 403 });
     }
     const normalizedLines = lines.map((line) => ({ productId: typeof line.productId === "string" ? line.productId : "", quantity: Number(line.quantity), fulfillmentUnit: line.fulfillmentUnit === "MEAL" || line.fulfillmentUnit === "BEVERAGE" ? line.fulfillmentUnit : undefined })).filter((line) => line.productId && Number.isInteger(line.quantity) && line.quantity > 0 && line.quantity <= 999);
     if (normalizedLines.length !== lines.length) return NextResponse.json({ error: "Chaque ligne doit contenir un produit et une quantité valide." }, { status: 400 });
