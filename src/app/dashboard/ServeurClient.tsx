@@ -19,6 +19,7 @@ const days = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Sa
 export function ServeurClient({ tenantId, firstName, companyName, initialTab = "dashboard" }: { tenantId: string; firstName: string; companyName: string; initialTab?: "dashboard" | "orders" | "sales" | "encaissement" | "treasury" | "permanence" | "profile" }) {
   const normalizedInitial = initialTab === "sales" ? "encaissement" : initialTab;
   const [tab, setTab] = useState<"dashboard" | "orders" | "encaissement" | "treasury" | "permanence" | "profile">(normalizedInitial as "dashboard" | "orders" | "encaissement" | "treasury" | "permanence" | "profile");
+  useEffect(() => { setTab(normalizedInitial as "dashboard" | "orders" | "encaissement" | "treasury" | "permanence" | "profile"); }, [normalizedInitial]);
   const [data, setData] = useState<DashboardData | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
