@@ -13,7 +13,7 @@ export async function GET(request: Request) {
     if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
     if (!can(context, "orders.view")) return NextResponse.json({ error: "Permission insuffisante pour consulter les commandes." }, { status: 403 });
     if (tenantId && !tenantIds.includes(tenantId)) return NextResponse.json({ error: "Établissement non autorisé." }, { status: 403 });
-    let query = supabase.from("orders").select("id,tenant_id,order_number,table_label,customer_id,server_user_id,server_name,received_by_user_id,received_at,delivered_by_user_id,delivered_at,status,total_amount,currency,created_at,order_items(id,product_id,product_name,quantity,unit_price,total_price,fulfillment_unit,preparation_status,prepared_at,received_by_user_id,received_at,delivered_at),order_stock_allocations(id,server_user_id,product_id,quantity,status,allocated_at,settled_at)").order("created_at", { ascending: false }).limit(50);
+    let query = supabase.from("orders").select("id,tenant_id,order_number,table_label,location_label,customer_id,server_user_id,server_name,received_by_user_id,received_at,delivered_by_user_id,delivered_at,status,total_amount,currency,created_at,order_items(id,product_id,product_name,quantity,unit_price,total_price,fulfillment_unit,preparation_status,prepared_at,received_by_user_id,received_at,delivered_at),order_stock_allocations(id,server_user_id,product_id,quantity,status,allocated_at,settled_at)").order("created_at", { ascending: false }).limit(50);
     query = tenantId ? query.eq("tenant_id", tenantId) : query.in("tenant_id", tenantIds);
     if (context.role === "SERVEUR") query = query.eq("server_user_id", user.id);
     const { data, error } = await query;
@@ -27,14 +27,21 @@ export async function POST(request: Request) {
     const body = await request.json();
     const tenantId = typeof body.tenantId === "string" ? body.tenantId : "";
     const tableLabel = typeof body.tableLabel === "string" ? body.tableLabel.trim().slice(0, 80) : null;
+    const locationLabel = typeof body.locationLabel === "string" ? body.locationLabel.trim().slice(0, 80) : null;
     const customerId = typeof body.customerId === "string" ? body.customerId : null;
     const lines = Array.isArray(body.lines) ? body.lines as OrderLine[] : [];
-    if (!tenantId || !tableLabel || !lines.length || lines.length > 50) return NextResponse.json({ error: "Établissement, numéro de table et au moins une ligne de commande sont requis." }, { status: 400 });
+    if (!tenantId || !tableLabel || !locationLabel || !lines.length || lines.length > 50) return NextResponse.json({ error: "Établissement, emplacement, numéro de table et au moins une ligne de commande sont requis." }, { status: 400 });
     const context = await getAuthorizationContext();
     const { supabase, user, tenantIds } = context;
     if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
     if (!can(context, "orders.create")) return NextResponse.json({ error: "Permission insuffisante pour créer une commande." }, { status: 403 });
     if (!tenantIds.includes(tenantId)) return NextResponse.json({ error: "Établissement non autorisé." }, { status: 403 });
+    if (context.role === "SERVEUR") {
+      const { data: assignments } = await supabase.from("employee_table_assignments").select("dining_tables(label,zone)").eq("tenant_id", tenantId).eq("employee_id", context.employeeId).limit(100);
+      const assignedDiningTables = (assignments ?? []).flatMap((assignment) => Array.isArray(assignment.dining_tables) ? assignment.dining_tables : assignment.dining_tables ? [assignment.dining_tables] : []);
+      const allowedTable = assignedDiningTables.some((table) => table.label === tableLabel && (table.zone ?? "Emplacement général") === locationLabel);
+      if (!allowedTable) return NextResponse.json({ error: "Cette table ne correspond pas à l’emplacement qui vous est attribué." }, { status: 403 });
+    }
     const normalizedLines = lines.map((line) => ({ productId: typeof line.productId === "string" ? line.productId : "", quantity: Number(line.quantity), fulfillmentUnit: line.fulfillmentUnit === "MEAL" || line.fulfillmentUnit === "BEVERAGE" ? line.fulfillmentUnit : undefined })).filter((line) => line.productId && Number.isInteger(line.quantity) && line.quantity > 0 && line.quantity <= 999);
     if (normalizedLines.length !== lines.length) return NextResponse.json({ error: "Chaque ligne doit contenir un produit et une quantité valide." }, { status: 400 });
     const ids = [...new Set(normalizedLines.map((line) => line.productId))];
@@ -48,7 +55,7 @@ export async function POST(request: Request) {
     const orderLines = normalizedLines.map((line) => { const product = productMap.get(line.productId)!; const inferredUnit = String(product.product_type ?? "").toUpperCase().includes("FOOD") || String(product.product_type ?? "").toUpperCase().includes("MEAL") ? "MEAL" : "BEVERAGE"; return { tenant_id: tenantId, product_id: product.id, product_name: product.name, quantity: line.quantity, unit_price: product.price, total_price: product.price * line.quantity, fulfillment_unit: line.fulfillmentUnit ?? inferredUnit, preparation_status: "PENDING" }; });
     const totalAmount = orderLines.reduce((total, line) => total + line.total_price, 0);
     const orderNumber = `DM-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}-${randomUUID().slice(0, 8).toUpperCase()}`;
-    const { data: order, error: orderError } = await supabase.from("orders").insert({ tenant_id: tenantId, order_number: orderNumber, table_label: tableLabel, customer_id: customerId, server_user_id: context.employeeId && context.role === "SERVEUR" ? user.id : null, server_name: user.user_metadata?.first_name ?? null, total_amount: totalAmount, currency: "XOF" }).select("id,tenant_id,order_number,table_label,customer_id,server_user_id,server_name,status,total_amount,currency,created_at").single();
+    const { data: order, error: orderError } = await supabase.from("orders").insert({ tenant_id: tenantId, order_number: orderNumber, table_label: tableLabel, location_label: locationLabel, customer_id: customerId, server_user_id: context.employeeId && context.role === "SERVEUR" ? user.id : null, server_name: user.user_metadata?.first_name ?? null, total_amount: totalAmount, currency: "XOF" }).select("id,tenant_id,order_number,table_label,location_label,customer_id,server_user_id,server_name,status,total_amount,currency,created_at").single();
     if (orderError || !order) return NextResponse.json({ error: "Impossible de créer la commande." }, { status: 400 });
     const { data: insertedLines, error: linesError } = await supabase.from("order_items").insert(orderLines.map((line) => ({ ...line, order_id: order.id }))).select("id,product_id,product_name,quantity,unit_price,total_price");
     if (linesError) { await supabase.from("orders").delete().eq("id", order.id).eq("tenant_id", tenantId); return NextResponse.json({ error: "Impossible d’enregistrer les lignes de commande." }, { status: 400 }); }
@@ -84,6 +91,11 @@ export async function PATCH(request: Request) {
     const canTransition = permission === "orders.receive" ? can(context, "orders.receive") || can(context, "orders.handoff") : can(context, permission);
     if (!canTransition) return NextResponse.json({ error: "Permission insuffisante pour modifier cette étape de commande." }, { status: 403 });
     const orderItemId = typeof body.orderItemId === "string" ? body.orderItemId : "";
+    if (!orderItemId && (status === "IN_PREPARATION" || status === "READY")) {
+      const fromStatuses = status === "READY" ? ["PENDING", "IN_PREPARATION"] : ["PENDING"];
+      const { error: preparationError } = await supabase.from("order_items").update({ preparation_status: status, prepared_at: status === "READY" ? new Date().toISOString() : null }).eq("order_id", orderId).eq("tenant_id", tenantId).in("preparation_status", fromStatuses);
+      if (preparationError) return NextResponse.json({ error: "Impossible de synchroniser la préparation des articles." }, { status: 409 });
+    }
     if (status === "HANDED_OFF" && !orderItemId) {
       if (current.server_user_id !== user.id) return NextResponse.json({ error: "Cette commande n’est pas attribuée à votre service." }, { status: 403 });
       const { data: handedOffOrder, error: handoffError } = await supabase.rpc("receive_order_for_server", { p_order_id: orderId });
