@@ -51,13 +51,13 @@ export async function POST(request: Request) {
     const { data: payment, error: paymentError } = await admin.from("payments").select("id,tenant_id,order_id,provider,status,amount,currency,provider_reference,paid_at").eq("provider", "MONEROO").eq("provider_reference", providerReference).maybeSingle();
     if (paymentError) return NextResponse.json({ error: "Lecture du paiement impossible." }, { status: 500 });
     if (!payment) return NextResponse.json({ received: true });
-    if (["SUCCESS", "FAILED", "CANCELLED"].includes(payment.status)) return NextResponse.json({ received: true, alreadyProcessed: true });
+    if (["SUCCEEDED", "FAILED"].includes(payment.status)) return NextResponse.json({ received: true, alreadyProcessed: true });
     if (payload.event === "payment.failed") { await admin.from("payments").update({ status: "FAILED", updated_at: new Date().toISOString() }).eq("id", payment.id).eq("tenant_id", payment.tenant_id); return NextResponse.json({ received: true }); }
-    if (payload.event === "payment.cancelled") { await admin.from("payments").update({ status: "CANCELLED", updated_at: new Date().toISOString() }).eq("id", payment.id).eq("tenant_id", payment.tenant_id); return NextResponse.json({ received: true }); }
+    if (payload.event === "payment.cancelled") { await admin.from("payments").update({ status: "FAILED", updated_at: new Date().toISOString() }).eq("id", payment.id).eq("tenant_id", payment.tenant_id); return NextResponse.json({ received: true }); }
     if (payload.event !== "payment.success") return NextResponse.json({ received: true });
     const verified = await verifyMonerooPayment(providerReference, payment.amount, payment.currency);
     if (!verified) return NextResponse.json({ error: "Vérification Moneroo non concluante." }, { status: 422 });
-    const { data: updatedPayment, error: updateError } = await admin.from("payments").update({ status: "SUCCESS", paid_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq("id", payment.id).eq("tenant_id", payment.tenant_id).eq("status", "PENDING").select("id,order_id,status").maybeSingle();
+    const { data: updatedPayment, error: updateError } = await admin.from("payments").update({ status: "SUCCEEDED", paid_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq("id", payment.id).eq("tenant_id", payment.tenant_id).eq("status", "PENDING").select("id,order_id,status").maybeSingle();
     if (updateError) return NextResponse.json({ error: "Mise à jour du paiement impossible." }, { status: 500 });
     if (updatedPayment?.order_id) {
       const { error: settleError } = await admin.rpc("settle_order_stock_after_payment", { p_order_id: updatedPayment.order_id });

@@ -1,48 +1,5 @@
--- DebitManager: le paiement peut être lancé à tout moment.
--- La vente et la sortie de stock sont finalisées uniquement au paiement total.
--- Réception et livraison restent des états opérationnels indépendants.
-
-create or replace function public.receive_order_item_for_server(p_order_item_id uuid)
-returns public.order_items
-language plpgsql
-security definer
-set search_path = public, private
-as $$
-declare
-  item_row public.order_items;
-  order_row public.orders;
-  employee_exists boolean;
-begin
-  if auth.uid() is null then raise exception 'AUTHENTICATION_REQUIRED'; end if;
-  select * into item_row from public.order_items where id = p_order_item_id for update;
-  if item_row.id is null then raise exception 'ORDER_ITEM_NOT_FOUND'; end if;
-  select * into order_row from public.orders where id = item_row.order_id for update;
-  if order_row.server_user_id <> auth.uid() then raise exception 'ORDER_NOT_ASSIGNED'; end if;
-  if item_row.preparation_status = 'RECEIVED' then return item_row; end if;
-  if item_row.preparation_status <> 'READY' then raise exception 'ORDER_ITEM_NOT_READY'; end if;
-
-  select exists (
-    select 1 from public.employees e
-    where e.tenant_id = order_row.tenant_id and e.user_id = auth.uid()
-      and e.position = 'SERVEUR' and e.status = 'ACTIVE' and e.deleted_at is null
-  ) into employee_exists;
-  if not employee_exists then raise exception 'SERVER_REQUIRED'; end if;
-
-  update public.order_items
-  set preparation_status = 'RECEIVED', received_by_user_id = auth.uid(), received_at = now()
-  where id = item_row.id
-  returning * into item_row;
-
-  update public.orders
-  set status = case when status in ('PENDING', 'IN_PREPARATION', 'READY') then 'HANDED_OFF' else status end,
-      received_by_user_id = coalesce(received_by_user_id, auth.uid()),
-      received_at = coalesce(received_at, now()), updated_at = now()
-  where id = order_row.id;
-  return item_row;
-end;
-$$;
-
-grant execute on function public.receive_order_item_for_server(uuid) to authenticated;
+-- DebitManager: aligner tous les paiements confirmés sur le modèle payments.status.
+-- La contrainte active accepte PENDING, PROCESSING, SUCCEEDED, FAILED et REFUNDED.
 
 create or replace function public.settle_order_stock_after_payment(p_order_id uuid)
 returns public.orders
@@ -114,11 +71,17 @@ begin
   if order_row.id is null then raise exception 'ORDER_NOT_FOUND'; end if;
   if order_row.server_user_id <> auth.uid() then raise exception 'ORDER_SERVER_ONLY'; end if;
   if order_row.status = 'PAID' then raise exception 'ORDER_ALREADY_PAID'; end if;
-  select coalesce(sum(p.amount), 0)::integer into paid_total from public.payments p where p.order_id = order_row.id and p.tenant_id = order_row.tenant_id and p.status = 'SUCCEEDED';
+
+  select coalesce(sum(p.amount), 0)::integer into paid_total
+  from public.payments p
+  where p.order_id = order_row.id and p.tenant_id = order_row.tenant_id and p.status = 'SUCCEEDED';
   remaining := order_row.total_amount - paid_total;
   if p_amount > remaining then raise exception 'PAYMENT_EXCEEDS_REMAINING'; end if;
+
   insert into public.payments (tenant_id, order_id, provider, payment_method, status, amount, currency, paid_at)
-  values (order_row.tenant_id, order_row.id, 'CASH', 'CASH', 'SUCCEEDED', p_amount, order_row.currency, now()) returning * into payment_row;
+  values (order_row.tenant_id, order_row.id, 'CASH', 'CASH', 'SUCCEEDED', p_amount, order_row.currency, now())
+  returning * into payment_row;
+
   if paid_total + p_amount = order_row.total_amount then perform public.settle_order_stock_after_payment(order_row.id); end if;
   return payment_row;
 end;

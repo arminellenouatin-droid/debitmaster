@@ -21,7 +21,7 @@ export async function POST(request: Request) {
       const errorCode = error?.message ?? "UNKNOWN_CASH_PAYMENT_ERROR";
       return NextResponse.json({ error: messages[errorCode] ?? `Encaissement refusé (${errorCode}).`, code: errorCode }, { status: 409 });
     }
-    const { data: payments } = await context.supabase.from("payments").select("amount,status,payment_method").eq("order_id", order.id).eq("tenant_id", tenantId).in("status", ["PAID", "SUCCESS"]);
+    const { data: payments } = await context.supabase.from("payments").select("amount,status,payment_method").eq("order_id", order.id).eq("tenant_id", tenantId).in("status", ["SUCCEEDED"]);
     const paidAmount = (payments ?? []).reduce((sum, row) => sum + Number(row.amount ?? 0), 0);
     return NextResponse.json({ payment, paidAmount, remainingAmount: Math.max(order.total_amount - paidAmount, 0), isPaid: paidAmount >= order.total_amount }, { status: 201 });
   } catch { return NextResponse.json({ error: "Requête invalide." }, { status: 400 }); }
