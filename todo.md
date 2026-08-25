@@ -213,4 +213,21 @@
 - [x] Rafraîchir la liste des tables après création et afficher les erreurs métier.
 - [x] Vérifier l’isolation tenant et la permission `tables.manage`.
 - [x] Exécuter le type-check et le build de production.
+- [x] Publier le correctif dans un PR DebitManager.
+
+## Correctif demandé — valorisation du stock Magasinier
+
+- [ ] Vérifier la source actuelle du prix utilisée par le Dashboard Magasinier.
+- [ ] Utiliser le prix d’achat réel de la dernière entrée ou du stock concerné.
+- [ ] Afficher les quantités et la valeur d’achat totale sans utiliser le prix de vente.
+- [ ] Vérifier les cas sans historique de prix d’achat et l’isolation tenant.
+- [ ] Exécuter le type-check et le build de production.
 - [ ] Publier le correctif dans un PR DebitManager.
+
+## Règle confirmée — valorisation du stock Magasinier
+
+- [ ] Calculer le coût moyen pondéré à partir des entrées stock_purchases.
+- [ ] Afficher la valeur totale d’inventaire au coût d’achat, jamais au prix de vente.
+- [ ] Afficher le coût unitaire moyen et les quantités dans l’inventaire.
+- [ ] Prévoir un état explicite lorsqu’aucun prix d’achat n’est encore enregistré.
+- [ ] Vérifier le type-check, le build et publier un PR DebitManager.
