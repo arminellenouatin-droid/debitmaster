@@ -1,4 +1,4 @@
-// DebitManager cash payment: l’encaissement est autorisé uniquement sur une commande livrée par son serveur.
+// DebitManager cash payment: le règlement est possible avant préparation ou livraison, mais la vente et le stock sont finalisés au paiement total.
 import { NextResponse } from "next/server";
 import { getAuthorizationContext, can } from "@/lib/authorization";
 
@@ -17,8 +17,9 @@ export async function POST(request: Request) {
     if (context.role === "SERVEUR" && order.server_user_id !== context.user.id) return NextResponse.json({ error: "Cette commande ne vous est pas attribuée." }, { status: 403 });
     const { data: payment, error } = await context.supabase.rpc("record_cash_payment", { p_order_id: order.id, p_amount: amount });
     if (error || !payment) {
-      const messages: Record<string, string> = { PAYMENT_EXCEEDS_REMAINING: "Le montant dépasse le reste à encaisser.", ORDER_NOT_READY_FOR_PAYMENT: "La commande doit être remise ou livrée avant encaissement.", ORDER_STOCK_NOT_ALLOCATED: "Les articles ne sont pas encore affectés au serveur." };
-      return NextResponse.json({ error: messages[error?.message ?? ""] ?? "Impossible d’enregistrer l’encaissement cash." }, { status: 409 });
+      const messages: Record<string, string> = { PAYMENT_EXCEEDS_REMAINING: "Le montant dépasse le reste à encaisser.", ORDER_ALREADY_PAID: "Cette commande est déjà totalement payée.", ORDER_SERVER_ONLY: "Cette commande n’est pas attribuée au compte Serveur connecté.", COUNTER_STORE_NOT_FOUND: "Le magasin comptoir de l’établissement est introuvable.", INSUFFICIENT_COUNTER_STOCK: "Le stock comptoir est insuffisant pour finaliser cette vente.", AUTHENTICATION_REQUIRED: "La session de la Serveuse a expiré.", SERVER_REQUIRED: "Le compte connecté n’est pas reconnu comme Serveur actif.", INVALID_PAYMENT_AMOUNT: "Le montant espèces est invalide.", ORDER_NOT_FOUND: "Commande introuvable.", PAYMENT_INCOMPLETE: "Le paiement total de la facture est incomplet." };
+      const errorCode = error?.message ?? "UNKNOWN_CASH_PAYMENT_ERROR";
+      return NextResponse.json({ error: messages[errorCode] ?? `Encaissement refusé (${errorCode}).`, code: errorCode }, { status: 409 });
     }
     const { data: payments } = await context.supabase.from("payments").select("amount,status,payment_method").eq("order_id", order.id).eq("tenant_id", tenantId).in("status", ["PAID", "SUCCESS"]);
     const paidAmount = (payments ?? []).reduce((sum, row) => sum + Number(row.amount ?? 0), 0);
