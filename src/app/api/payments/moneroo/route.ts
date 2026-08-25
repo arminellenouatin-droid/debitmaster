@@ -26,7 +26,6 @@ export async function POST(request: Request) {
     const { data: order, error: orderError } = await supabase.from("orders").select("id,tenant_id,server_user_id,order_number,total_amount,currency,status").eq("id", orderId).eq("tenant_id", tenantId).maybeSingle();
     if (orderError || !order) return NextResponse.json({ error: "Commande introuvable dans cet établissement." }, { status: 404 });
     if (context.role === "SERVEUR" && order.server_user_id !== user.id) return NextResponse.json({ error: "Cette commande ne vous est pas attribuée." }, { status: 403 });
-    if (!["HANDED_OFF", "DELIVERED"].includes(order.status)) return NextResponse.json({ error: "La commande doit être remise ou livrée avant paiement." }, { status: 409 });
     if (order.total_amount <= 0) return NextResponse.json({ error: "Le montant de la commande doit être positif." }, { status: 400 });
     const { data: existingPayments } = await supabase.from("payments").select("amount,status").eq("order_id", order.id).eq("tenant_id", tenantId).in("status", ["PAID", "SUCCESS", "PENDING"]);
     const alreadyCounted = (existingPayments ?? []).filter((payment) => ["PAID", "SUCCESS"].includes(payment.status)).reduce((sum, payment) => sum + Number(payment.amount ?? 0), 0);
