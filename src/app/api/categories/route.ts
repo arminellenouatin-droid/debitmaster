@@ -1,6 +1,7 @@
 // DebitManager catalogue API: catégories et sous-catégories tenant-scoped, suppression logique protégée par le stock.
 import { NextResponse } from "next/server";
 import { getAuthorizationContext, can } from "@/lib/authorization";
+import { databaseDiagnostic, logDatabaseError } from "@/lib/database-error";
 
 export async function GET(request: Request) {
   try {
@@ -37,7 +38,10 @@ export async function POST(request: Request) {
     if (!context.tenantIds.includes(tenantId)) return NextResponse.json({ error: "Établissement non autorisé." }, { status: 403 });
     if (!(await validateParent(context, tenantId, parentId))) return NextResponse.json({ error: "Sous-catégorie parente non autorisée." }, { status: 400 });
     const { data, error } = await context.supabase.from("categories").insert({ tenant_id: tenantId, name, parent_id: parentId }).select("id,tenant_id,parent_id,name,created_at").single();
-    if (error) return NextResponse.json({ error: error.code === "23505" ? "Cette catégorie existe déjà." : "Impossible de créer la catégorie." }, { status: 400 });
+    if (error) {
+      logDatabaseError("categories.POST", error);
+      return NextResponse.json({ error: error.code === "23505" ? "Cette catégorie existe déjà." : "Impossible de créer la catégorie.", diagnostic: databaseDiagnostic(error) }, { status: 400 });
+    }
     return NextResponse.json({ category: data }, { status: 201 });
   } catch { return NextResponse.json({ error: "Requête invalide." }, { status: 400 }); }
 }

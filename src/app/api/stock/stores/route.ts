@@ -1,6 +1,7 @@
 // DebitManager stores API: lieux physiques isolés par établissement, jamais partagés entre tenants.
 import { NextResponse } from "next/server";
 import { getAuthorizationContext, can } from "@/lib/authorization";
+import { databaseDiagnostic, logDatabaseError } from "@/lib/database-error";
 
 const counterName = "Magasin comptoir";
 
@@ -31,7 +32,10 @@ export async function POST(request: Request) {
     if (!context.tenantIds.includes(tenantId)) return NextResponse.json({ error: "Établissement non autorisé." }, { status: 403 });
     const storeType = name.toLocaleLowerCase("fr-FR") === counterName.toLocaleLowerCase("fr-FR") ? "COUNTER" : "GENERAL";
     const { data, error } = await context.supabase.from("inventory_stores").insert({ tenant_id: tenantId, name, store_type: storeType, created_by: context.user.id }).select("id,tenant_id,name,store_type,is_active,created_at").single();
-    if (error) return NextResponse.json({ error: error.code === "23505" ? "Ce magasin existe déjà dans l’établissement." : "Impossible de créer le magasin." }, { status: 400 });
+    if (error) {
+      logDatabaseError("stock.stores.POST", error);
+      return NextResponse.json({ error: error.code === "23505" ? "Ce magasin existe déjà dans l’établissement." : "Impossible de créer le magasin.", diagnostic: databaseDiagnostic(error) }, { status: 400 });
+    }
     return NextResponse.json({ store: data }, { status: 201 });
   } catch { return NextResponse.json({ error: "Requête invalide." }, { status: 400 }); }
 }
