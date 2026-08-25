@@ -11,10 +11,13 @@ const planDefinitions: Record<SubscriptionPlanCode, { label: string; durationMon
 };
 
 const activityDefinitions: Record<string, { label: string; multiplier: number }> = {
-  BUVETTE: { label: "Buvette", multiplier: 1 },
+  BAR: { label: "Bar", multiplier: 1 },
+  BUVETTE: { label: "Bar", multiplier: 1 },
   BAR_RESTAURANT: { label: "Bar restaurant", multiplier: 1.5 },
   NIGHTCLUB_LOUNGE: { label: "Boîte de nuit / Lounge", multiplier: 2 },
 };
+
+export const subscriptionActivityCodes = ["BAR", "BAR_RESTAURANT", "NIGHTCLUB_LOUNGE"] as const;
 
 export function getActivityPricing(activityType: string) {
   return activityDefinitions[activityType] ?? activityDefinitions.BUVETTE;
@@ -43,6 +46,13 @@ export function getSubscriptionCatalog(activityType: string) {
   return subscriptionPlanCodes.map((code) => {
     const definition = planDefinitions[code];
     return { code, label: definition.label, durationMonths: definition.durationMonths, priceXof: Math.round(definition.basePriceXof * activity.multiplier), basePriceXof: definition.basePriceXof, description: definition.description };
+  });
+}
+
+export function getSubscriptionActivityCatalog() {
+  return subscriptionActivityCodes.map((code) => {
+    const activity = getActivityPricing(code);
+    return { code, label: activity.label, multiplier: activity.multiplier, plans: getSubscriptionCatalog(code) };
   });
 }
 

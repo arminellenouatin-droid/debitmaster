@@ -2,7 +2,7 @@
 import { NextResponse } from "next/server";
 import { getAuthorizationContext } from "@/lib/authorization";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { addSubscriptionPeriod, getSubscriptionCatalog, getSubscriptionPlan, getSubscriptionPrice } from "@/lib/subscription-plans";
+import { addSubscriptionPeriod, getSubscriptionActivityCatalog, getSubscriptionCatalog, getSubscriptionPlan, getSubscriptionPrice } from "@/lib/subscription-plans";
 
 const monerooApiUrl = "https://api.moneroo.io/v1/payments/initialize";
 
@@ -38,6 +38,7 @@ export async function GET(request: Request) {
     return NextResponse.json({
       activity: { type: company.activity_type, currency: company.currency },
       plans: getSubscriptionCatalog(company.activity_type),
+      activities: getSubscriptionActivityCatalog(),
       current: { plan: company.subscription_plan, status: company.status, trialEndsAt: company.trial_ends_at, expiresAt: company.subscription_expires_at },
       payments: payments ?? [],
     });

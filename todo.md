@@ -290,3 +290,13 @@ Les coefficients sont automatiques selon l’activité : Buvette ×1, Bar restau
 - [ ] Vérifier que le propriétaire retrouve tous les onglets et droits opérationnels des rôles de son établissement.
 - [ ] Réduire la présence de l’abonnement à deux commandes séparées : statut et mise à jour de l’abonnement.
 - [ ] Ne pas mélanger les formules SaaS avec les indicateurs ou opérations métier du propriétaire.
+
+
+## Correction abonnement — types d’établissement confirmés
+
+- [ ] Ajouter l’onglet **Bar** comme type de référence.
+- [ ] Ajouter l’onglet **Bar restaurant** avec coefficient ×1,5.
+- [ ] Ajouter l’onglet **Boîte de nuit / Lounge** avec coefficient ×2.
+- [ ] Afficher les quatre formules sous chacun des trois onglets.
+- [ ] Envoyer au paiement le montant correspondant au type sélectionné.
+- [ ] Vérifier le responsive, les montants et le build, puis publier le correctif.
