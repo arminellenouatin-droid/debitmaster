@@ -25,14 +25,21 @@ export async function GET(request: Request) {
     const payments = paymentsResult.data ?? [];
     const products = productsResult.data ?? [];
     const commissions = commissionsResult.data ?? [];
-    const confirmedPayments = payments.filter((payment) => ["PAID", "SUCCESS", "COMPLETED"].includes(String(payment.status).toUpperCase()));
+    const confirmedPayments = payments.filter((payment) => String(payment.status).toUpperCase() === "SUCCEEDED");
     const revenue = orders.reduce((sum, order) => sum + Number(order.total_amount ?? 0), 0);
     const confirmedRevenue = confirmedPayments.reduce((sum, payment) => sum + Number(payment.amount ?? 0), 0);
     const lowStock = products.filter((product) => Number(product.current_stock ?? 0) <= Number(product.alert_threshold ?? 0));
     const serveuses = (employeesResult.data ?? []).map((employee) => {
       const employeeOrders = orders.filter((order) => order.server_user_id === employee.user_id);
       const employeeCommissions = commissions.filter((commission) => commission.employee_id === employee.id);
-      return { ...employee, sales: employeeOrders.reduce((sum, order) => sum + Number(order.total_amount ?? 0), 0), orderCount: employeeOrders.length, deliveredCount: employeeOrders.filter((order) => order.status === "DELIVERED").length, commissionTotal: employeeCommissions.reduce((sum, commission) => sum + Number(commission.commission_amount ?? 0), 0), servedTables: [...new Set(employeeOrders.map((order) => order.table_label).filter(Boolean))] };
+      const sales = employeeOrders.reduce((sum, order) => sum + Number(order.total_amount ?? 0), 0);
+      const employeeOrderIds = new Set(employeeOrders.map((order) => order.id));
+      const paidSales = confirmedPayments.filter((payment) => employeeOrderIds.has(payment.order_id)).reduce((sum, payment) => sum + Number(payment.amount ?? 0), 0);
+      const paidOrderCount = employeeOrders.filter((order) => {
+        const paid = confirmedPayments.filter((payment) => payment.order_id === order.id).reduce((sum, payment) => sum + Number(payment.amount ?? 0), 0);
+        return paid >= Number(order.total_amount ?? 0);
+      }).length;
+      return { ...employee, sales, paidSales, remainingSales: Math.max(sales - paidSales, 0), orderCount: employeeOrders.length, paidOrderCount, deliveredCount: employeeOrders.filter((order) => order.status === "DELIVERED").length, commissionTotal: employeeCommissions.reduce((sum, commission) => sum + Number(commission.commission_amount ?? 0), 0), servedTables: [...new Set(employeeOrders.map((order) => order.table_label).filter(Boolean))] };
     });
     return NextResponse.json({ company: context.company, range, metrics: { revenue, confirmedRevenue, orderCount: orders.length, paidOrderCount: confirmedPayments.length, lowStockCount: lowStock.length, totalStockItems: products.length, occupiedTables: (tablesResult.data ?? []).filter((table) => table.status === "OCCUPIED").length, totalTables: (tablesResult.data ?? []).length }, serveuses, orders, payments, stock: products, lowStock, tables: tablesResult.data ?? [], commissions });
   } catch { return NextResponse.json({ error: "Service de pilotage Gérant temporairement indisponible." }, { status: 500 }); }
