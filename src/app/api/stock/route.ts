@@ -12,7 +12,7 @@ export async function GET(request: Request) {
     if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
     if (!can(context, "stock.view")) return NextResponse.json({ error: "Permission insuffisante pour consulter le stock." }, { status: 403 });
     if (tenantId && !tenantIds.includes(tenantId)) return NextResponse.json({ error: "Établissement non autorisé." }, { status: 403 });
-    let query = supabase.from("products").select("id,tenant_id,name,product_type,unit,stock_family,current_stock,alert_threshold,safety_threshold").is("deleted_at", null).order("name").limit(100);
+    let query = supabase.from("products").select("id,tenant_id,name,product_type,unit,price,stock_family,current_stock,alert_threshold,safety_threshold").is("deleted_at", null).order("name").limit(100);
     if (tenantId) query = query.eq("tenant_id", tenantId); else query = query.in("tenant_id", tenantIds);
     if (context.role === "MAGASINIER" && context.employeeId) {
       const { data: employee } = await supabase.from("employees").select("stock_scope").eq("id", context.employeeId).maybeSingle();
