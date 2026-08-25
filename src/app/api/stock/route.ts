@@ -20,11 +20,27 @@ export async function GET(request: Request) {
     }
     const { data, error } = await query;
     if (error) return NextResponse.json({ error: "Impossible de charger le stock." }, { status: 500 });
+    const productIds = (data ?? []).map((product) => product.id);
+    let purchaseQuery = supabase.from("stock_purchases").select("product_id,purchase_unit_price,quantity").in("product_id", productIds).order("purchased_at", { ascending: true }).limit(2000);
+    purchaseQuery = tenantId ? purchaseQuery.eq("tenant_id", tenantId) : purchaseQuery.in("tenant_id", tenantIds);
+    const { data: purchases, error: purchaseError } = productIds.length ? await purchaseQuery : { data: [], error: null };
+    if (purchaseError) return NextResponse.json({ error: "Impossible de calculer la valeur d’achat du stock." }, { status: 500 });
+    const purchaseTotals = new Map<string, { quantity: number; value: number }>();
+    for (const purchase of purchases ?? []) {
+      const current = purchaseTotals.get(purchase.product_id) ?? { quantity: 0, value: 0 };
+      purchaseTotals.set(purchase.product_id, { quantity: current.quantity + Number(purchase.quantity ?? 0), value: current.value + Number(purchase.quantity ?? 0) * Number(purchase.purchase_unit_price ?? 0) });
+    }
+    const valuedStock = (data ?? []).map((product) => {
+      const totals = purchaseTotals.get(product.id);
+      if (!totals?.quantity) return { ...product, weighted_purchase_price: null, stock_value: null };
+      const weightedPurchasePrice = Math.round(totals.value / totals.quantity);
+      return { ...product, weighted_purchase_price: weightedPurchasePrice, stock_value: Math.round(Number(product.current_stock ?? 0) * weightedPurchasePrice) };
+    });
     let movementQuery = supabase.from("stock_movements").select("id,tenant_id,product_id,movement_type,quantity,reason,destination,created_at,products(name,unit,stock_family)").order("created_at", { ascending: false }).limit(20);
     movementQuery = tenantId ? movementQuery.eq("tenant_id", tenantId) : movementQuery.in("tenant_id", tenantIds);
     const { data: movements, error: movementError } = await movementQuery;
     if (movementError) return NextResponse.json({ error: "Impossible de charger les mouvements de stock." }, { status: 500 });
-    return NextResponse.json({ stock: data ?? [], movements: movements ?? [] });
+    return NextResponse.json({ stock: valuedStock, movements: movements ?? [] });
   } catch { return NextResponse.json({ error: "Service temporairement indisponible." }, { status: 500 }); }
 }
 
