@@ -93,8 +93,8 @@ export async function PATCH(request: Request) {
     const orderItemId = typeof body.orderItemId === "string" ? body.orderItemId : "";
     if (!orderItemId && (status === "IN_PREPARATION" || status === "READY")) {
       const fromStatuses = status === "READY" ? ["PENDING", "IN_PREPARATION"] : ["PENDING"];
-      const { error: preparationError } = await supabase.from("order_items").update({ preparation_status: status, prepared_at: status === "READY" ? new Date().toISOString() : null }).eq("order_id", orderId).eq("tenant_id", tenantId).in("preparation_status", fromStatuses);
-      if (preparationError) return NextResponse.json({ error: "Impossible de synchroniser la préparation des articles." }, { status: 409 });
+      const { data: preparedItems, error: preparationError } = await supabase.from("order_items").update({ preparation_status: status, prepared_at: status === "READY" ? new Date().toISOString() : null }).eq("order_id", orderId).eq("tenant_id", tenantId).in("preparation_status", fromStatuses).select("id");
+      if (preparationError || !preparedItems?.length) return NextResponse.json({ error: "Impossible de synchroniser la préparation des articles. Vérifiez les permissions de préparation et l’état actuel de la commande." }, { status: 409 });
     }
     if (status === "HANDED_OFF" && !orderItemId) {
       if (current.server_user_id !== user.id) return NextResponse.json({ error: "Cette commande n’est pas attribuée à votre service." }, { status: 403 });
