@@ -485,3 +485,29 @@ Pour chaque formule, la réduction est calculée ainsi : `100 × (prix Base mens
 
 - [ ] Vérifier le commit final de connexion et le PR réellement ouvert après la fusion du PR précédent.
 - [ ] Confirmer que le lien communiqué pointe vers une révision non fusionnée contenant le correctif.
+
+## Périmètre confirmé — test connexion Power BAR SANTE PLUS
+
+- [x] Tester un compte réel créé pour BAR SANTE PLUS uniquement.
+- [x] Ne consulter ni modifier les formules standard ni les autres établissements.
+- [x] Corriger uniquement la cause empêchant le personnel BAR SANTE PLUS de se connecter.
+- [x] Retester le compte et l’accès à son tenant Power après correction.
+
+## Configuration Vercel confirmée — DebitManager Power
+
+- [x] Vérifier la variable serveur Supabase active dans le projet Vercel DebitManager.
+- [x] Corriger la variable en Production, Preview et Development sans afficher sa valeur. La production a été corrigée ; le preview sera régénéré lors de son prochain déploiement.
+- [x] Retester la connexion de BAR SANTE PLUS sur la production : réponse HTTP 200 avec session créée.
+
+## Rotation des mots de passe — BAR SANTE PLUS Power
+
+- [ ] Lire le mot de passe mis à jour sans l’afficher.
+- [ ] Vérifier la liste exacte des comptes du personnel du tenant BAR SANTE PLUS.
+- [ ] Réinitialiser uniquement leurs mots de passe Auth.
+- [ ] Tester une connexion avec le nouveau secret sans le révéler.
+
+## Correction logout — DebitManager
+
+- [ ] Vérifier pourquoi la réponse JSON du logout est affichée comme une page.
+- [ ] Rediriger le client vers `/connexion` après suppression de session.
+- [ ] Tester Sign out depuis BAR SANTE PLUS Power.
