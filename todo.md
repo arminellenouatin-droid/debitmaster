@@ -85,6 +85,18 @@
 - [ ] Tester les calculs de commission, l’isolation RLS, les rôles et les parcours responsive.
 - [ ] Préparer une pull request dédiée et attendre la validation manuelle avant la production.
 
+## Nouveau chantier — intégration directe MTN MoMo
+- [x] Auditer les routes Moneroo, les statuts de paiement et les variables actuellement utilisées.
+- [x] Vérifier le contrat officiel MTN MoMo Bénin, Collection, Disbursement, webhooks et statuts.
+- [x] Définir les variables serveur MTN MoMo sans exposer de secrets.
+- [x] Remplacer l’encaissement des commandes et abonnements par Collection.
+- [x] Ajouter les endpoints de reversement Disbursement avec confirmation explicite administrateur.
+- [x] Sécuriser les callbacks, la vérification serveur, l’idempotence et les références uniques.
+- [ ] Tester les flux sandbox puis préparer la configuration production avec les identifiants MTN du marchand.
+- [ ] Retirer le webhook Moneroo historique uniquement après validation complète des flux MTN MoMo.
+
+> Décision fonctionnelle : MTN MoMo devient le fournisseur de paiement utilisé par DebitManager. Moneroo est abandonné pour les nouveaux paiements ; l’ancien historique reste lisible.
+
 ## Nouveau chantier — parcours public et programme d’affiliation
 - [x] Auditer le parcours public, l’authentification et l’espace affilié existant.
 - [x] Définir les données, politiques RLS et règles d’attribution durable des établissements.

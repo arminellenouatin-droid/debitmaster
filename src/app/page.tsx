@@ -33,7 +33,7 @@ export default function HomePage() {
             <Link href="/connexion" className="inline-flex items-center rounded-lg border border-[var(--line)] bg-[var(--surface)] px-6 py-4 text-sm font-black text-[var(--primary)] transition hover:border-[var(--primary)]">J’ai déjà un compte</Link>
             <Link href="/affiliation" className="inline-flex items-center rounded-lg border border-[var(--secondary)] px-6 py-4 text-sm font-black text-[var(--secondary)] transition hover:bg-[var(--accent-soft)]">Devenir affilié</Link>
           </div>
-          <div className="mt-10 flex flex-wrap gap-x-5 gap-y-2 border-t border-[var(--line)] pt-5 text-xs font-bold text-[var(--muted)]"><span>Responsive mobile</span><span>Isolation par établissement</span><span>Moneroo uniquement</span></div>
+          <div className="mt-10 flex flex-wrap gap-x-5 gap-y-2 border-t border-[var(--line)] pt-5 text-xs font-bold text-[var(--muted)]"><span>Responsive mobile</span><span>Isolation par établissement</span><span>MTN MoMo uniquement</span></div>
         </div>
 
         <div className="overflow-hidden rounded-xl bg-[var(--primary)] p-3 text-white shadow-[0_24px_60px_-26px_var(--primary)]">
