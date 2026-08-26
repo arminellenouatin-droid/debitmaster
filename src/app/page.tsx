@@ -17,6 +17,7 @@ export default function HomePage() {
           <span>DebitManager <span className="font-normal text-[var(--muted)]">Pro</span></span>
         </Link>
         <div className="flex items-center gap-3 text-sm font-bold">
+          <Link href="/affiliation" className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-3 py-2.5 text-[var(--primary)] transition hover:border-[var(--primary)] active:scale-[0.98]">S’affilier</Link>
           <Link href="/connexion" className="hidden px-3 py-2 text-[var(--muted)] hover:text-[var(--primary)] sm:block">Se connecter</Link>
           <Link href="/inscription" className="rounded-lg bg-[var(--primary)] px-4 py-3 text-white transition hover:bg-[var(--primary-soft)] active:scale-[0.98]">Créer mon espace</Link>
         </div>
@@ -30,6 +31,7 @@ export default function HomePage() {
           <div className="mt-9 flex flex-wrap gap-3">
             <Link href="/inscription" className="inline-flex items-center gap-3 rounded-lg bg-[var(--primary)] px-6 py-4 text-sm font-black text-white shadow-[0_16px_30px_-18px_var(--primary)] transition hover:bg-[var(--primary-soft)] active:scale-[0.98]">Commencer maintenant <span aria-hidden>→</span></Link>
             <Link href="/connexion" className="inline-flex items-center rounded-lg border border-[var(--line)] bg-[var(--surface)] px-6 py-4 text-sm font-black text-[var(--primary)] transition hover:border-[var(--primary)]">J’ai déjà un compte</Link>
+            <Link href="/affiliation" className="inline-flex items-center rounded-lg border border-[var(--secondary)] px-6 py-4 text-sm font-black text-[var(--secondary)] transition hover:bg-[var(--accent-soft)]">Devenir affilié</Link>
           </div>
           <div className="mt-10 flex flex-wrap gap-x-5 gap-y-2 border-t border-[var(--line)] pt-5 text-xs font-bold text-[var(--muted)]"><span>Responsive mobile</span><span>Isolation par établissement</span><span>Moneroo uniquement</span></div>
         </div>

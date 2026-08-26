@@ -36,6 +36,7 @@ export async function POST(request: Request) {
 
     const context = await getAuthorizationContext();
     if (!context.user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
+    if (context.affiliateId || context.userType === "AFFILIATE") return NextResponse.json({ error: "Un compte affilié ne peut pas créer un établissement. Utilisez un compte propriétaire séparé." }, { status: 403 });
     if (context.employeeId) return NextResponse.json({ error: "Seul le propriétaire peut créer un établissement." }, { status: 403 });
     const supabase = context.supabase;
     const auth = { user: context.user };
