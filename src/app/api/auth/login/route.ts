@@ -1,6 +1,7 @@
 // DebitManager auth API: email or phone login, with server-side approval enforcement for staff accounts.
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { normalizePhoneIdentifier, syntheticEmailForPhone } from "@/lib/auth-identifiers";
 
 function normalizePhone(value: string) { return normalizePhoneIdentifier(value); }
@@ -18,7 +19,20 @@ export async function POST(request: Request) {
 
     const supabase = await createSupabaseServerClient();
     let authInput: { email: string; password: string } | { phone: string; password: string } = email ? { email, password } : { phone, password };
-    if (phone) authInput = { email: syntheticEmailForPhone(phone), password };
+    if (phone) {
+      const admin = createSupabaseAdminClient();
+      const [{ data: employee }, { data: profile }] = await Promise.all([
+        admin.from("employees").select("user_id").eq("phone", phone).is("deleted_at", null).limit(1).maybeSingle(),
+        admin.from("profiles").select("id").eq("phone", phone).limit(1).maybeSingle(),
+      ]);
+      const userId = employee?.user_id ?? profile?.id;
+      let accountEmail = "";
+      if (userId) {
+        const { data: authUser } = await admin.auth.admin.getUserById(userId);
+        accountEmail = authUser.user?.email ?? "";
+      }
+      authInput = { email: accountEmail || syntheticEmailForPhone(phone), password };
+    }
     const { data, error } = await supabase.auth.signInWithPassword(authInput);
     if (error || !data.user) return NextResponse.json({ error: "Identifiant ou mot de passe incorrect." }, { status: 401 });
 
