@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { getActiveTenantContext } from "@/lib/active-tenant";
 import { can } from "@/lib/authorization";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { subscriptionDisplayStatus } from "@/lib/subscription-plans";
 
 const paidStatuses = new Set(["PAID", "SUCCESS", "SUCCEEDED", "COMPLETED"]);
@@ -39,19 +40,20 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const { start, end, dayCount } = periodBounds(url);
     const tenantId = context.tenantId;
+    const reportClient = createSupabaseAdminClient();
     const serverId = url.searchParams.get("serverId") ?? "";
     const zoneId = url.searchParams.get("zoneId") ?? "";
     const since = start.toISOString();
     const until = end.toISOString();
 
     const [ordersResult, paymentsResult, itemsResult, employeesResult, tablesResult, inventoryResult, purchasesResult] = await Promise.all([
-      context.supabase.from("orders").select("id,total_amount,status,server_name,server_user_id,table_label,location_label,created_at").eq("tenant_id", tenantId).gte("created_at", since).lte("created_at", until).order("created_at", { ascending: false }).limit(1000),
-      can(context, "finance.view") ? context.supabase.from("payments").select("order_id,amount,status,created_at").eq("tenant_id", tenantId).gte("created_at", since).lte("created_at", until).limit(2000) : Promise.resolve({ data: [], error: null }),
-      context.supabase.from("order_items").select("order_id,product_id,product_name,quantity,total_price").eq("tenant_id", tenantId).gte("created_at", since).lte("created_at", until).limit(4000),
-      can(context, "team.view") ? context.supabase.from("employees").select("id,user_id,first_name,last_name,position,status").eq("tenant_id", tenantId).is("deleted_at", null).limit(300) : Promise.resolve({ data: [], error: null }),
-      can(context, "tables.view") ? context.supabase.from("dining_tables").select("id,label,zone,zone_id,status,work_zones(id,name)").eq("tenant_id", tenantId).is("deleted_at", null).limit(400) : Promise.resolve({ data: [], error: null }),
-      can(context, "stock.view") ? context.supabase.from("store_inventory").select("product_id,quantity,reserved_quantity,inventory_stores!inner(id,name,is_active)").eq("tenant_id", tenantId).eq("inventory_stores.is_active", true).limit(2000) : Promise.resolve({ data: [], error: null }),
-      can(context, "stock.view") ? context.supabase.from("stock_purchases").select("product_id,purchase_unit_price,quantity,purchased_at").eq("tenant_id", tenantId).lte("purchased_at", until).limit(4000) : Promise.resolve({ data: [], error: null }),
+      reportClient.from("orders").select("id,total_amount,status,server_name,server_user_id,table_label,location_label,created_at").eq("tenant_id", tenantId).gte("created_at", since).lte("created_at", until).order("created_at", { ascending: false }).limit(1000),
+      can(context, "finance.view") ? reportClient.from("payments").select("order_id,amount,status,created_at").eq("tenant_id", tenantId).gte("created_at", since).lte("created_at", until).limit(2000) : Promise.resolve({ data: [], error: null }),
+      reportClient.from("order_items").select("order_id,product_id,product_name,quantity,total_price").eq("tenant_id", tenantId).gte("created_at", since).lte("created_at", until).limit(4000),
+      can(context, "team.view") ? reportClient.from("employees").select("id,user_id,first_name,last_name,position,status").eq("tenant_id", tenantId).is("deleted_at", null).limit(300) : Promise.resolve({ data: [], error: null }),
+      can(context, "tables.view") ? reportClient.from("dining_tables").select("id,label,zone,zone_id,status").eq("tenant_id", tenantId).is("deleted_at", null).limit(400) : Promise.resolve({ data: [], error: null }),
+      can(context, "stock.view") ? reportClient.from("store_inventory").select("product_id,quantity,reserved_quantity,inventory_stores!inner(id,name,is_active)").eq("tenant_id", tenantId).eq("inventory_stores.is_active", true).limit(2000) : Promise.resolve({ data: [], error: null }),
+      can(context, "stock.view") ? reportClient.from("stock_purchases").select("product_id,purchase_unit_price,quantity,purchased_at").eq("tenant_id", tenantId).lte("purchased_at", until).limit(4000) : Promise.resolve({ data: [], error: null }),
     ]);
 
     if (ordersResult.error || paymentsResult.error || itemsResult.error || employeesResult.error || tablesResult.error || inventoryResult.error || purchasesResult.error) return NextResponse.json({ error: "Impossible de charger les indicateurs de l’établissement." }, { status: 500 });
@@ -61,14 +63,12 @@ export async function GET(request: Request) {
     const itemRows = (itemsResult.data ?? []) as ItemRow[];
     const employees = employeesResult.data ?? [];
     const tables = tablesResult.data ?? [];
+    const tableZoneByLabel = new Map<string, { id: string; name: string }>();
     const inventory = inventoryResult.data ?? [];
     const purchases = purchasesResult.data ?? [];
-
-    const tableZoneByLabel = new Map<string, { id: string; name: string }>();
     for (const table of tables) {
-      const relation = Array.isArray(table.work_zones) ? table.work_zones[0] : table.work_zones;
-      const zoneName = relation?.name ?? table.zone ?? "";
-      if (table.label && zoneName) tableZoneByLabel.set(String(table.label), { id: String(relation?.id ?? table.zone_id ?? zoneName), name: String(zoneName) });
+      const zoneName = table.zone ?? "";
+      if (table.label && zoneName) tableZoneByLabel.set(String(table.label), { id: String(table.zone_id ?? zoneName), name: String(zoneName) });
     }
     const orders = allOrders.filter((order) => {
       if (serverId && order.server_user_id !== serverId) return false;

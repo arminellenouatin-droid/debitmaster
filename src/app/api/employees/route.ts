@@ -45,11 +45,12 @@ export async function GET(request: Request) {
     if (tenantId && !context.tenantIds.includes(tenantId)) return NextResponse.json({ error: "Établissement non autorisé." }, { status: 403 });
     const resolvedTenantIds = tenantId ? [tenantId] : context.tenantIds;
     if (!resolvedTenantIds.length) return NextResponse.json({ employees: [], pendingRequests: [], positions });
-    const query = context.supabase.from("employees").select("id,tenant_id,user_id,first_name,last_name,phone,position,status,must_change_password,approved_at,created_at,salary_amount,salary_currency,salary_frequency").is("deleted_at", null).order("created_at", { ascending: false }).limit(100);
+    const readClient = createSupabaseAdminClient();
+    const query = readClient.from("employees").select("id,tenant_id,user_id,first_name,last_name,phone,position,status,must_change_password,approved_at,created_at,salary_amount,salary_currency,salary_frequency").is("deleted_at", null).order("created_at", { ascending: false }).limit(100);
     const { data, error } = await query.in("tenant_id", resolvedTenantIds);
     if (error) return NextResponse.json({ error: "Impossible de charger l’équipe." }, { status: 500 });
     const pendingRequests = isOwner(context, resolvedTenantIds[0])
-      ? (await context.supabase.from("employee_access_requests").select("id,tenant_id,user_id,phone,first_name,last_name,position,status,requested_at").in("tenant_id", resolvedTenantIds).eq("status", "PENDING").order("requested_at", { ascending: false }).limit(100)).data ?? []
+      ? (await readClient.from("employee_access_requests").select("id,tenant_id,user_id,phone,first_name,last_name,position,status,requested_at").in("tenant_id", resolvedTenantIds).eq("status", "PENDING").order("requested_at", { ascending: false }).limit(100)).data ?? []
       : [];
     return NextResponse.json({ employees: data ?? [], pendingRequests, positions });
   } catch {

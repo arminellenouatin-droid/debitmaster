@@ -580,3 +580,18 @@ Pour chaque formule, la réduction est calculée ainsi : `100 × (prix Base mens
 - [x] Reproduire l’échec du paramétrage des seuils d’alerte et de sécurité.
 - [x] Vérifier le payload, le contrat API, les permissions et la contrainte des seuils.
 - [x] Corriger le flux puis valider sur le tenant Power BAR SANTE PLUS.
+
+## Blocage production — chargement des espaces Power
+
+- [ ] Diagnostiquer « Impossible de charger les indicateurs de l’établissement ».
+- [ ] Diagnostiquer « Impossible de charger la file des commandes ».
+- [ ] Diagnostiquer « Impossible de charger le chiffre d’affaires ».
+- [ ] Diagnostiquer « Impossible de charger l’équipe ».
+
+## Services Power — GYM, Lavage et Auberge
+
+- [ ] Paramétrer les prestations et tarifs Gym sans stock.
+- [ ] Ajouter ventes, clients, abonnement et caisse Gym.
+- [ ] Ajouter ventes, clients et caisse Lavage sans stock.
+- [ ] Ajouter ventes, chambres, pass, nuitées et occupation Auberge.
+- [ ] Relier les reversements des caisses d’activité à la caisse principale du gérant.
