@@ -8,7 +8,7 @@ const navigation: ReadonlyArray<readonly [string, string, string]> = [
   ["⌂", "Dashboard", "/dashboard"],
   ["▦", "Plan de salle", "/dashboard/tables"],
   ["＋", "Ventes", "/dashboard/orders"],
-  ["◉", "Cuisine", "/dashboard/kitchen"],
+  ["◉", "Commandes", "/dashboard/orders"],
   ["▤", "Gestion des stocks", "/dashboard/stock"],
   ["♙", "Personnel", "/dashboard/personnel"],
   ["◫", "Finance", "/dashboard/finance"],
@@ -24,12 +24,12 @@ export async function DashboardShell({ children, firstName }: { children: React.
   const role = isOwner ? "Propriétaire" : activeContext.role || "Membre de l’équipe";
   const subscriptionStatus = activeContext.company ? subscriptionDisplayStatus(activeContext.company.status, activeContext.company.trial_ends_at, activeContext.company.subscription_expires_at) : "Indisponible";
   const baseNavigation = activeContext.role === "SERVEUR"
-    ? navigation.filter(([, label]) => ["Dashboard", "Ventes"].includes(label)).concat([["＋", "Commandes", "/dashboard/orders"]])
+    ? navigation.filter(([, label]) => ["Dashboard", "Commandes", "Profil"].includes(label))
     : activeContext.role === "MAGASINIER"
       ? navigation.filter(([, label]) => ["Dashboard", "Gestion des stocks", "Profil"].includes(label))
       : activeContext.role === "GERANT"
-        ? navigation.filter(([, label]) => ["Dashboard", "Ventes", "Profil"].includes(label) || (label === "Plan de salle" && activeContext.permissions.has("tables.view")) || (label === "Personnel" && activeContext.permissions.has("team.view")) || (label === "Finance" && activeContext.permissions.has("finance.view")))
-        : navigation;
+        ? navigation.filter(([, label]) => ["Dashboard", "Commandes", "Profil"].includes(label) || (label === "Plan de salle" && activeContext.permissions.has("tables.view")) || (label === "Personnel" && activeContext.permissions.has("team.view")) || (label === "Finance" && activeContext.permissions.has("finance.view")))
+        : navigation.filter(([, label]) => label !== "Ventes");
   const visibleNavigation = activeContext.company?.activity_type === "POWER" && activeContext.permissions.has("power.view") && !baseNavigation.some(([, label]) => label === "Gestion Power")
     ? [...baseNavigation.slice(0, -1), navigation.find(([, label]) => label === "Gestion Power")!, baseNavigation[baseNavigation.length - 1]]
     : baseNavigation;

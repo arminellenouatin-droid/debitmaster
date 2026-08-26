@@ -527,3 +527,11 @@ Pour chaque formule, la réduction est calculée ainsi : `100 × (prix Base mens
 - [x] Ajouter l’upload sécurisé de la photo de profil dans le profil.
 - [x] Vérifier que chaque utilisateur ne modifie que son propre compte.
 - [ ] Tester les comptes propriétaire et personnel de BAR SANTE PLUS Power après déploiement du correctif.
+
+## Commandes propriétaire — BAR SANTE PLUS Power
+
+- [ ] Remplacer le libellé et le lien Cuisine par Commandes dans le sidebar propriétaire.
+- [ ] Centraliser boissons et repas dans le suivi propriétaire.
+- [ ] Afficher les états prise en charge, préparation, prêtes à remettre et remise au service.
+- [ ] Ajouter les volumes, montants, détail de journée et filtres opérationnels.
+- [ ] Vérifier que cette évolution reste limitée à BAR SANTE PLUS Power.
