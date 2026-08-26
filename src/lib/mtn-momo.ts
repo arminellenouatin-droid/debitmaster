@@ -8,6 +8,7 @@ type MtnResponse = Record<string, unknown>;
 type MtnConfig = {
   baseUrl: string;
   targetEnvironment: string;
+  sandboxCurrency: string;
   collectionSubscriptionKey: string;
   disbursementSubscriptionKey: string;
   apiUser: string;
@@ -34,6 +35,7 @@ function config(): MtnConfig {
   return {
     baseUrl: required("MTN_MOMO_API_BASE_URL", baseUrl).replace(/\/$/, ""),
     targetEnvironment,
+    sandboxCurrency: process.env.MTN_MOMO_SANDBOX_CURRENCY?.trim().toUpperCase() || "EUR",
     collectionSubscriptionKey: required("MTN_MOMO_COLLECTION_SUBSCRIPTION_KEY", process.env.MTN_MOMO_COLLECTION_SUBSCRIPTION_KEY),
     disbursementSubscriptionKey: process.env.MTN_MOMO_DISBURSEMENT_SUBSCRIPTION_KEY?.trim() || "",
     apiUser: required("MTN_MOMO_API_USER", process.env.MTN_MOMO_API_USER),
@@ -82,6 +84,12 @@ async function accessToken(product: "collection" | "disbursement") {
   return { token, current, subscriptionKey };
 }
 
+function providerCurrency(current: MtnConfig, requestedCurrency: string) {
+  const normalized = requestedCurrency.trim().toUpperCase() || "XOF";
+  // MTN MoMo sandbox accepte EUR uniquement ; XOF reste la devise métier et production du Bénin.
+  return current.targetEnvironment.toLowerCase() === "sandbox" ? current.sandboxCurrency : normalized;
+}
+
 function commonHeaders(token: string, subscriptionKey: string, referenceId: string, callbackUrl: string) {
   return {
     Authorization: `Bearer ${token}`,
@@ -98,10 +106,11 @@ export async function requestToPay(input: { amount: number; currency: string; cu
   const { token, current, subscriptionKey } = await accessToken("collection");
   const referenceId = randomUUID();
   const customer = normalizeMsisdn(input.customerPhone, current.countryCode);
+  const currency = providerCurrency(current, input.currency);
   await request("/collection/v1_0/requesttopay", {
     method: "POST",
     headers: commonHeaders(token, subscriptionKey, referenceId, current.callbackUrl),
-    body: JSON.stringify({ amount: String(Math.round(input.amount)), currency: input.currency, externalId: input.externalId, payer: { partyIdType: "MSISDN", partyId: customer }, payerMessage: input.payerMessage.slice(0, 160), payeeNote: input.payeeNote.slice(0, 160) }),
+    body: JSON.stringify({ amount: String(Math.round(input.amount)), currency, externalId: input.externalId, payer: { partyIdType: "MSISDN", partyId: customer }, payerMessage: input.payerMessage.slice(0, 160), payeeNote: input.payeeNote.slice(0, 160) }),
   }, [202]);
   return { referenceId };
 }
@@ -115,10 +124,11 @@ export async function transfer(input: { amount: number; currency: string; recipi
   const { token, current, subscriptionKey } = await accessToken("disbursement");
   const referenceId = randomUUID();
   const recipient = normalizeMsisdn(input.recipientPhone, current.countryCode);
+  const currency = providerCurrency(current, input.currency);
   await request("/disbursement/v1_0/transfer", {
     method: "POST",
     headers: commonHeaders(token, subscriptionKey, referenceId, current.callbackUrl),
-    body: JSON.stringify({ amount: String(Math.round(input.amount)), currency: input.currency, externalId: input.externalId, payee: { partyIdType: "MSISDN", partyId: recipient }, payerMessage: input.payerMessage.slice(0, 160), payeeNote: input.payeeNote.slice(0, 160) }),
+    body: JSON.stringify({ amount: String(Math.round(input.amount)), currency, externalId: input.externalId, payee: { partyIdType: "MSISDN", partyId: recipient }, payerMessage: input.payerMessage.slice(0, 160), payeeNote: input.payeeNote.slice(0, 160) }),
   }, [202]);
   return { referenceId };
 }

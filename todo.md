@@ -358,3 +358,29 @@ Pour chaque formule, la réduction est calculée ainsi : `100 × (prix Base mens
 - [ ] Synchroniser le libellé du bouton avec la formule et l’activité sélectionnées.
 - [ ] Vérifier que le montant envoyé à Moneroo est recalculé côté serveur et correspond à l’affichage.
 - [ ] Tester Base, Moyenne, Semestrielle et Suprême pour Bar, Bar restaurant et Boîte de nuit/Lounge.
+
+## Clarification MTN MoMo — Collection classique pour DebitManager
+- [ ] Utiliser uniquement la souscription MTN MoMo **Collection classique / RequestToPay** pour DebitManager.
+- [ ] Ne pas utiliser Collection Widget pour le parcours actuel.
+- [ ] Choisir le pays sandbox compatible et vérifier la devise de test.
+- [ ] Configurer et tester API User, API Key, RequestToPay et callback.
+
+> Le test concerne uniquement DebitManager. Le nom éventuel « ENVOL AFRICA » dans les identifiants sandbox est un libellé de souscription d’essai et ne doit entraîner aucune modification du projet Envol Africa Magazine.
+
+## Bug prioritaire — bouton Commander serveuse
+- [ ] Reproduire la soumission et inspecter les erreurs navigateur et réseau.
+- [ ] Vérifier la fonction de validation, les données de commande et les champs obligatoires.
+- [ ] Contrôler la route API de création et les contraintes Supabase/RLS.
+- [ ] Corriger le blocage et afficher un retour explicite à la serveuse.
+- [ ] Tester création, rafraîchissement des commandes et réception côté gérant/cuisine.
+
+
+## Nouveau lot — diagnostic MTN MoMo « Currency not supported »
+
+- [x] Tracer la valeur de devise construite par le formulaire de paiement et les routes serveur.
+- [x] Vérifier le code pays, la devise et le produit MTN MoMo associés au sandbox Bénin/XOF.
+- [x] Corriger le mapping sans relancer de paiement avant validation.
+- [x] Contrôler le build et le déploiement Production.
+- [ ] Reprendre le test sandbox de 1 000 XOF pour la serveuse Ella et documenter le résultat.
+
+> Ne jamais afficher ni consigner les secrets MTN MoMo ou les identifiants Supabase/Vercel dans ce fichier.
