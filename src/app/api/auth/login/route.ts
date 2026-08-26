@@ -28,7 +28,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: employee.status === "PENDING" ? "Votre demande est en attente de validation par le propriétaire de l’établissement." : "Votre accès à cet établissement n’est pas actif." }, { status: 403 });
     }
     const { data: pendingRequest } = await supabase.from("employee_access_requests").select("status").eq("user_id", data.user.id).order("requested_at", { ascending: false }).limit(1).maybeSingle();
-    const { data: profile } = await supabase.from("profiles").select("user_type,role,must_change_password").eq("id", data.user.id).maybeSingle();
+    const { data: profile } = await supabase.from("profiles").select("user_type,role,must_change_password,status").eq("id", data.user.id).maybeSingle();
+    if (profile?.user_type === "AFFILIATE") {
+      const { data: affiliate } = await supabase.from("platform_affiliates").select("status").eq("user_id", data.user.id).maybeSingle();
+      if (affiliate?.status !== "ACTIVE") {
+        await supabase.auth.signOut();
+        return NextResponse.json({ error: "Votre accès au programme affilié n’est pas actif." }, { status: 403 });
+      }
+    }
     if (!employee && pendingRequest && pendingRequest.status !== "APPROVED") {
       await supabase.auth.signOut();
       return NextResponse.json({ error: pendingRequest.status === "PENDING" ? "Votre demande est en attente de validation par le propriétaire de l’établissement." : "Votre demande d’accès a été refusée." }, { status: 403 });

@@ -52,6 +52,12 @@ export async function proxy(request: NextRequest) {
     redirectUrl.searchParams.set("error", "acces_affilie_requis");
     return NextResponse.redirect(redirectUrl);
   }
+  if (request.nextUrl.pathname.startsWith("/dashboard") && profile?.user_type === "AFFILIATE" && !request.nextUrl.pathname.startsWith("/dashboard/settings")) {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = "/affilie";
+    redirectUrl.searchParams.set("error", "espace_affilie");
+    return NextResponse.redirect(redirectUrl);
+  }
   if (accessRequest && accessRequest.status !== "APPROVED") {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/connexion";
@@ -87,4 +93,4 @@ export async function proxy(request: NextRequest) {
   return response;
 }
 
-export const config = { matcher: ["/dashboard/:path*", "/auth/callback"] };
+export const config = { matcher: ["/dashboard/:path*", "/admin/:path*", "/affilie/:path*", "/auth/callback"] };

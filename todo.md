@@ -85,6 +85,17 @@
 - [ ] Tester les calculs de commission, l’isolation RLS, les rôles et les parcours responsive.
 - [ ] Préparer une pull request dédiée et attendre la validation manuelle avant la production.
 
+## Nouveau chantier — parcours public et programme d’affiliation
+- [x] Auditer le parcours public, l’authentification et l’espace affilié existant.
+- [x] Définir les données, politiques RLS et règles d’attribution durable des établissements.
+- [x] Ajouter le bouton « S’affilier » et le parcours inscription/connexion/acceptation.
+- [x] Générer le lien affilié et rattacher les établissements aux renouvellements.
+- [x] Calculer 10 % de commission et afficher le suivi dans l’espace affilié.
+- [ ] Tester les scénarios d’inscription, d’abonnement, de renouvellement et d’accès avec les variables Supabase de production.
+- [x] Documenter et préparer le PR de livraison.
+
+> Décision fonctionnelle : une personne peut être affiliée sans posséder d’établissement. L’attribution du lien doit rester attachée à l’établissement pour ses renouvellements futurs.
+
 
 ## Lot diagnostic master et données de test
 

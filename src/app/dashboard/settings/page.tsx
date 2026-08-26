@@ -13,7 +13,8 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) redirect("/connexion");
   const { data: employee } = await supabase.from("employees").select("must_change_password,status").eq("user_id", auth.user.id).is("deleted_at", null).maybeSingle();
+  const { data: profile } = await supabase.from("profiles").select("must_change_password").eq("id", auth.user.id).maybeSingle();
   const params = await searchParams;
-  const mustChangePassword = Boolean(employee?.must_change_password && employee.status === "ACTIVE") || params.firstLogin === "1" && Boolean(employee?.must_change_password);
+  const mustChangePassword = Boolean(employee?.must_change_password && employee.status === "ACTIVE") || Boolean(profile?.must_change_password) || params.firstLogin === "1" && Boolean(employee?.must_change_password || profile?.must_change_password);
   return <DashboardShell firstName={auth.user.user_metadata?.first_name ?? "gérant"}><SettingsClient firstName={auth.user.user_metadata?.first_name ?? ""} email={auth.user.email ?? ""} phone={auth.user.phone ?? ""} mustChangePassword={mustChangePassword} /></DashboardShell>;
 }
