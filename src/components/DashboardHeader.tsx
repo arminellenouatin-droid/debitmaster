@@ -14,11 +14,12 @@ type DashboardHeaderProps = {
   role: string;
   isOwner: boolean;
   subscriptionStatus: string;
+  avatarUrl?: string | null;
 };
 
 const dateFormatter = new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "short" });
 
-export function DashboardHeader({ firstName, companyName, tenantId, role, isOwner, subscriptionStatus }: DashboardHeaderProps) {
+export function DashboardHeader({ firstName, companyName, tenantId, role, isOwner, subscriptionStatus, avatarUrl }: DashboardHeaderProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loadingNotifications, setLoadingNotifications] = useState(false);
   const [notificationError, setNotificationError] = useState("");
@@ -50,7 +51,7 @@ export function DashboardHeader({ firstName, companyName, tenantId, role, isOwne
     <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-3">
       {isOwner && <div className="hidden items-center gap-2 md:flex"><Link href="/dashboard/subscription#subscription-status" className="rounded-lg border border-[var(--line)] px-3 py-2 text-xs font-black text-[var(--primary)]">Statut : {subscriptionStatus}</Link><Link href="/dashboard/subscription#plans" className="rounded-lg bg-[var(--primary)] px-3 py-2 text-xs font-black text-white">Mettre à jour</Link></div>}
       <details className="relative">
-        <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-lg px-2 py-1.5 text-left transition hover:bg-[var(--surface-muted)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--secondary)]"><span className="relative flex h-9 w-9 items-center justify-center rounded-full bg-[var(--accent-soft)] text-sm font-black text-[var(--primary)]">{initials}</span><span className="hidden text-sm font-bold text-[var(--muted)] md:block">{displayName}</span><span aria-hidden="true" className="text-xs text-[var(--muted)]">⌄</span></summary>
+        <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-lg px-2 py-1.5 text-left transition hover:bg-[var(--surface-muted)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--secondary)]">{avatarUrl ? <img src={avatarUrl} alt="Photo de profil" className="relative h-9 w-9 rounded-full object-cover" /> : <span className="relative flex h-9 w-9 items-center justify-center rounded-full bg-[var(--accent-soft)] text-sm font-black text-[var(--primary)]">{initials}</span>}<span className="hidden text-sm font-bold text-[var(--muted)] md:block">{displayName}</span><span aria-hidden="true" className="text-xs text-[var(--muted)]">⌄</span></summary>
         <div className="absolute right-0 top-[calc(100%+0.5rem)] z-30 w-56 rounded-xl border border-[var(--line)] bg-[var(--surface)] p-2 shadow-[0_18px_40px_-24px_var(--primary)]">
           <div className="border-b border-[var(--line)] px-3 py-2"><p className="text-sm font-black text-[var(--primary)]">{displayName}</p><p className="mt-0.5 text-xs font-semibold text-[var(--muted)]">{role}</p></div>
           <Link href="/dashboard/settings" className="mt-1 block rounded-lg px-3 py-3 text-sm font-bold text-[var(--primary)] transition hover:bg-[var(--surface-muted)]">Paramétrer mon compte</Link>

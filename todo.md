@@ -595,3 +595,32 @@ Pour chaque formule, la réduction est calculée ainsi : `100 × (prix Base mens
 - [ ] Ajouter ventes, clients et caisse Lavage sans stock.
 - [ ] Ajouter ventes, chambres, pass, nuitées et occupation Auberge.
 - [ ] Relier les reversements des caisses d’activité à la caisse principale du gérant.
+
+## Audit global Power — BAR SANTE PLUS
+
+- [ ] Auditer les rôles, permissions, routes et menus de chaque compte Power.
+- [ ] Corriger la file des commandes et le pilotage refusé pour les comptes autorisés.
+- [ ] Vérifier que les comptes Gym, Lavage et Auberge n’accèdent pas aux stocks.
+- [ ] Réparer la persistance de la photo de profil et son affichage dans l’en-tête.
+- [ ] Tester chaque compte et chaque menu dans le navigateur sans exposer de données sensibles.
+
+## Mise à jour tarifs Power — BAR SANTE PLUS
+
+- [ ] Vérifier les tarifs actuels des prestations Gym et des chambres Auberge.
+- [ ] Appliquer les tarifs et unités confirmés par l’utilisateur.
+- [ ] Vérifier les valeurs finales sans exposer de données de connexion.
+
+## Séparation des prestations par activité — BAR SANTE PLUS
+
+- [ ] Limiter les prestations Gym au compte Secrétaire Gym et à l’activité Gym.
+- [ ] Limiter les prestations Auberge au compte affecté à l’activité Auberge.
+- [ ] Empêcher l’affichage croisé des prestations dans les autres comptes métier.
+- [ ] Vérifier la visibilité propriétaire/superviseur uniquement dans leurs vues de pilotage.
+
+## WIFI — compte Gérant BAR SANTE PLUS
+
+- [ ] Enregistrer les tickets reçus par type et quantité.
+- [ ] Paramétrer 100 XOF pour 3 heures, 500 XOF pour 72 heures et 2 500 XOF pour un mois.
+- [ ] Enregistrer les tickets vendus à la demande des clients.
+- [ ] Calculer le solde disponible par type de ticket.
+- [ ] Relier les ventes WIFI au Dashboard et à la caisse centrale du Gérant.
