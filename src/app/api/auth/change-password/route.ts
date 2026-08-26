@@ -16,7 +16,8 @@ export async function POST(request: Request) {
     if (authError) return NextResponse.json({ error: "Impossible de modifier le mot de passe." }, { status: 400 });
     const admin = createSupabaseAdminClient();
     const { error: employeeError } = await admin.from("employees").update({ must_change_password: false }).eq("user_id", user.id).eq("status", "ACTIVE").is("deleted_at", null);
-    if (employeeError) return NextResponse.json({ error: "Mot de passe modifié, mais le statut du premier accès n’a pas pu être clôturé. Reconnectez-vous puis réessayez." }, { status: 409 });
+    const { error: profileError } = await admin.from("profiles").update({ must_change_password: false, updated_at: new Date().toISOString() }).eq("id", user.id);
+    if (employeeError || profileError) return NextResponse.json({ error: "Mot de passe modifié, mais le statut du premier accès n’a pas pu être clôturé. Reconnectez-vous puis réessayez." }, { status: 409 });
     return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json({ error: "Requête invalide." }, { status: 400 });
