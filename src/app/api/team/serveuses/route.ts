@@ -1,6 +1,7 @@
 // DebitManager équipe serveuses: lecture conditionnelle et mutations réservées à team.manage.
 import { NextResponse } from "next/server";
 import { getAuthorizationContext, can } from "@/lib/authorization";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 function validTime(value: unknown) { return value === null || value === "" || (typeof value === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(value)); }
 
@@ -10,10 +11,35 @@ export async function GET(request: Request) {
     const context = await getAuthorizationContext();
     if (!context.user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
     if (!tenantId || !context.tenantIds.includes(tenantId) || !can(context, "team.view")) return NextResponse.json({ error: "Permission insuffisante pour consulter les serveuses." }, { status: 403 });
-    const { data, error } = await context.supabase.from("employees").select("id,tenant_id,user_id,first_name,last_name,phone,position,status,service_start_time,service_end_time,rest_day,employee_table_assignments(id,table_id,dining_tables(id,label,zone,zone_id,capacity,status)),employee_zone_assignments(id,zone_id,work_zones(id,name,is_active))").eq("tenant_id", tenantId).eq("position", "SERVEUR").is("deleted_at", null).order("first_name").limit(100);
-    if (error) return NextResponse.json({ error: "Impossible de charger les serveuses." }, { status: 500 });
-    return NextResponse.json({ serveuses: data ?? [], permissions: { manage: can(context, "team.manage"), viewTables: can(context, "tables.view"), manageTables: can(context, "tables.manage") } });
-  } catch { return NextResponse.json({ error: "Service temporairement indisponible." }, { status: 500 }); }
+    const admin = createSupabaseAdminClient();
+    const { data: employees, error } = await admin.from("employees").select("id,tenant_id,user_id,first_name,last_name,phone,position,status,service_start_time,service_end_time,rest_day").eq("tenant_id", tenantId).eq("position", "SERVEUR").is("deleted_at", null).order("first_name").limit(100);
+    if (error) {
+      console.error("[team/serveuses.GET] employees query failed", { code: error.code, message: error.message });
+      return NextResponse.json({ error: "Impossible de charger les serveuses.", diagnostic: "SERVEUSES_EMPLOYEES_QUERY_FAILED" }, { status: 500 });
+    }
+    const rows = employees ?? [];
+    const employeeIds = rows.map((employee) => employee.id);
+    const [tableAssignmentsResult, zoneAssignmentsResult] = await Promise.all([
+      employeeIds.length ? admin.from("employee_table_assignments").select("id,employee_id,table_id").eq("tenant_id", tenantId).in("employee_id", employeeIds).limit(500) : { data: [], error: null },
+      employeeIds.length ? admin.from("employee_zone_assignments").select("id,employee_id,zone_id").eq("tenant_id", tenantId).in("employee_id", employeeIds).limit(500) : { data: [], error: null },
+    ]);
+    const tableIds = [...new Set((tableAssignmentsResult.data ?? []).map((assignment) => assignment.table_id))];
+    const zoneIds = [...new Set((zoneAssignmentsResult.data ?? []).map((assignment) => assignment.zone_id))];
+    const [tablesResult, zonesResult] = await Promise.all([
+      tableIds.length ? admin.from("dining_tables").select("id,label,zone,zone_id,capacity,status").eq("tenant_id", tenantId).in("id", tableIds).is("deleted_at", null).limit(500) : { data: [], error: null },
+      zoneIds.length ? admin.from("work_zones").select("id,name,is_active").eq("tenant_id", tenantId).in("id", zoneIds).limit(500) : { data: [], error: null },
+    ]);
+    if (tableAssignmentsResult.error || zoneAssignmentsResult.error || tablesResult.error || zonesResult.error) {
+      console.error("[team/serveuses.GET] assignment query failed", { tableAssignments: tableAssignmentsResult.error?.message, zoneAssignments: zoneAssignmentsResult.error?.message, tables: tablesResult.error?.message, zones: zonesResult.error?.message });
+    }
+    const tableMap = new Map((tablesResult.data ?? []).map((table) => [table.id, table]));
+    const zoneMap = new Map((zonesResult.data ?? []).map((zone) => [zone.id, zone]));
+    const serveuses = rows.map((employee) => ({ ...employee, employee_table_assignments: (tableAssignmentsResult.data ?? []).filter((assignment) => assignment.employee_id === employee.id).map((assignment) => ({ ...assignment, dining_tables: tableMap.get(assignment.table_id) ?? null })), employee_zone_assignments: (zoneAssignmentsResult.data ?? []).filter((assignment) => assignment.employee_id === employee.id).map((assignment) => ({ ...assignment, work_zones: zoneMap.get(assignment.zone_id) ?? null })) }));
+    return NextResponse.json({ serveuses, permissions: { manage: can(context, "team.manage"), viewTables: can(context, "tables.view"), manageTables: can(context, "tables.manage") } });
+  } catch (error) {
+    console.error("[team/serveuses.GET] unexpected error", error);
+    return NextResponse.json({ error: "Service temporairement indisponible.", diagnostic: "SERVEUSES_UNEXPECTED_ERROR" }, { status: 500 });
+  }
 }
 
 export async function POST(request: Request) {

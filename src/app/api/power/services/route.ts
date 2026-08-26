@@ -15,7 +15,16 @@ export async function GET(request: Request) {
   const tenantId = new URL(request.url).searchParams.get("tenantId") ?? context.tenantIds[0] ?? "";
   if (!context.user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
   if (!await powerTenant(context, tenantId) || !can(context, "services.view")) return NextResponse.json({ error: "Accès aux services Power refusé." }, { status: 403 });
-  const { data, error } = await context.supabase.from("company_services").select("id,tenant_id,activity_id,name,description,price_xof,billing_unit,is_active,created_at,updated_at").eq("tenant_id", tenantId).order("name").limit(300);
+  const activityCode = new URL(request.url).searchParams.get("activityCode")?.trim().toUpperCase() ?? "";
+  let activityId = "";
+  if (activityCode) {
+    const { data: activity } = await context.supabase.from("company_activities").select("id").eq("tenant_id", tenantId).eq("activity_code", activityCode).eq("is_active", true).maybeSingle();
+    activityId = activity?.id ?? "";
+    if (!activityId) return NextResponse.json({ services: [] });
+  }
+  let query = context.supabase.from("company_services").select("id,tenant_id,activity_id,name,description,price_xof,billing_unit,is_active,created_at,updated_at").eq("tenant_id", tenantId).eq("is_active", true).order("name").limit(300);
+  if (activityId) query = query.eq("activity_id", activityId);
+  const { data, error } = await query;
   if (error) return NextResponse.json({ error: "Impossible de charger les services Power." }, { status: 500 });
   return NextResponse.json({ services: data ?? [] });
 }

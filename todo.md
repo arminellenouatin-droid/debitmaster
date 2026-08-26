@@ -624,3 +624,11 @@ Pour chaque formule, la réduction est calculée ainsi : `100 × (prix Base mens
 - [ ] Enregistrer les tickets vendus à la demande des clients.
 - [ ] Calculer le solde disponible par type de ticket.
 - [ ] Relier les ventes WIFI au Dashboard et à la caisse centrale du Gérant.
+
+## Blocage Gérant — erreurs de chargement en production
+
+- [ ] Reproduire les erreurs 404 et 500 des routes commandes, stock, serveuses et dashboard.
+- [ ] Comparer les requêtes aux colonnes et relations du schéma DebitManager.
+- [ ] Corriger le contexte tenant, les permissions et les relations fragiles.
+- [ ] Vérifier le traitement client des erreurs de commandes.
+- [ ] Tester les écrans Gérant avant le PR de rattrapage.
