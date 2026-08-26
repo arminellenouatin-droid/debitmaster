@@ -2,7 +2,7 @@
 import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { issueAffiliateCommission } from "@/lib/affiliate-commissions";
-import { getCollectionStatus, MtnMomoError } from "@/lib/mtn-momo";
+import { getCollectionStatus, isProviderCurrencyAccepted, MtnMomoError } from "@/lib/mtn-momo";
 
 type CallbackPayload = { externalId?: string; referenceId?: string; status?: string; amount?: string | number; currency?: string; financialTransactionId?: string };
 const terminalStatuses = new Set(["SUCCESSFUL", "FAILED", "REJECTED", "TIMEOUT", "CANCELLED"]);
@@ -36,7 +36,7 @@ async function handle(request: Request) {
     const verification = await getCollectionStatus(providerReference);
     const verifiedStatus = typeof verification?.status === "string" ? verification.status.toUpperCase() : "";
     if (verifiedStatus !== callbackStatus) return NextResponse.json({ error: "Statut MTN MoMo non concordant." }, { status: 422 });
-    if (callbackStatus === "SUCCESSFUL" && (Number(payload.amount) !== Number(payment.amount) || String(payload.currency || payment.currency) !== String(payment.currency))) return NextResponse.json({ error: "Montant ou devise MTN MoMo non concordant." }, { status: 422 });
+    if (callbackStatus === "SUCCESSFUL" && (Number(payload.amount) !== Number(payment.amount) || !isProviderCurrencyAccepted(payload.currency, payment.currency))) return NextResponse.json({ error: "Montant ou devise MTN MoMo non concordant." }, { status: 422 });
 
     const now = new Date().toISOString();
     const nextStatus = callbackStatus === "SUCCESSFUL" ? "SUCCEEDED" : "FAILED";
@@ -59,6 +59,7 @@ async function handle(request: Request) {
     return NextResponse.json({ received: true });
   } catch (cause) {
     if (cause instanceof MtnMomoError) return NextResponse.json({ error: cause.message }, { status: cause.status });
+    console.error("[mtn-momo.webhook] unexpected error", { name: cause instanceof Error ? cause.name : "unknown", message: cause instanceof Error ? cause.message : "unknown" });
     return NextResponse.json({ error: "Traitement du callback MTN MoMo impossible." }, { status: 502 });
   }
 }
