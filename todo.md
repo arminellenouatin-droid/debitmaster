@@ -558,3 +558,11 @@ Pour chaque formule, la réduction est calculée ainsi : `100 × (prix Base mens
 - [ ] Sélectionner les produits en alerte et saisir les quantités à commander.
 - [ ] Générer un bon de commande depuis l’approvisionnement.
 - [ ] Vérifier les restrictions tenant, rôle et absence d’accès cuisine.
+
+## Correction Superviseur — alignement complet et approvisionnement
+
+- [ ] Reproduire exactement les onglets et informations du Propriétaire chez le Superviseur Power.
+- [ ] Diagnostiquer et corriger l’erreur de chargement de la situation des stocks.
+- [ ] Ajouter prix unitaires, quantités, total et lancement d’une commande d’approvisionnement boissons.
+- [ ] Afficher les demandes du magasin comptoir et permettre leur livraison au Superviseur.
+- [ ] Rendre les commandes lancées visibles au Propriétaire et au Chargé des inventaires.

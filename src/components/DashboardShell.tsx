@@ -23,9 +23,12 @@ export async function DashboardShell({ children, firstName }: { children: React.
   const activeContext = await getActiveTenantContext();
   const companyName = activeContext.company?.name ?? "Aucun établissement sélectionné";
   const isOwner = activeContext.role === "ADMINISTRATEUR" && activeContext.employeeId === null;
+  const isPowerSupervisor = activeContext.role === "SUPERVISEUR" && activeContext.company?.activity_type === "POWER" && activeContext.permissions.has("power.view");
   const role = isOwner ? "Propriétaire" : activeContext.role || "Membre de l’équipe";
   const subscriptionStatus = activeContext.company ? subscriptionDisplayStatus(activeContext.company.status, activeContext.company.trial_ends_at, activeContext.company.subscription_expires_at) : "Indisponible";
-  const baseNavigation = activeContext.role === "SERVEUR"
+  const baseNavigation = isPowerSupervisor
+    ? navigation.filter(([, label]) => label !== "Ventes")
+    : activeContext.role === "SERVEUR"
     ? navigation.filter(([, label]) => ["Dashboard", "Commandes", "Profil"].includes(label))
     : activeContext.role === "MAGASINIER"
       ? navigation.filter(([, label]) => ["Dashboard", "Gestion des stocks", "Profil"].includes(label))

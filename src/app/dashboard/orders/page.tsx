@@ -26,6 +26,6 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
     return <DashboardShell firstName={auth.user.user_metadata?.first_name ?? "gérant"}><ServeurClient tenantId={active.tenantId ?? ""} firstName={auth.user.user_metadata?.first_name ?? "serveur"} companyName={active.company?.name ?? "Établissement actif"} initialTab="orders" /></DashboardShell>;
   }
   const active = await getActiveTenantContext();
-  if (authorization.role === "ADMINISTRATEUR") return <DashboardShell firstName={auth.user.user_metadata?.first_name ?? "propriétaire"}><OwnerOrdersClient companyName={active.company?.name ?? "Établissement actif"} /></DashboardShell>;
+  if (authorization.role === "ADMINISTRATEUR" || (authorization.role === "SUPERVISEUR" && active.company?.activity_type === "POWER")) return <DashboardShell firstName={auth.user.user_metadata?.first_name ?? "propriétaire"}><OwnerOrdersClient companyName={active.company?.name ?? "Établissement actif"} /></DashboardShell>;
   return <DashboardShell firstName={auth.user.user_metadata?.first_name ?? "gérant"}><OrdersClient initialTableLabel={params.table ?? ""} /></DashboardShell>;
 }
