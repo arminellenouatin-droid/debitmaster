@@ -13,6 +13,7 @@ export const permissionCatalog = [
   { key: "stock.receive", label: "Enregistrer une réception de livraison", group: "Stocks" },
   { key: "stock.issue", label: "Préparer une sortie de stock quotidienne", group: "Stocks" },
   { key: "stock.handoff", label: "Remettre un stock à un responsable", group: "Stocks" },
+  { key: "stock.accept_counter", label: "Réceptionner une livraison du magasin comptoir", group: "Stocks" },
   { key: "stock.audit", label: "Contrôler les stocks et mouvements", group: "Pilotage" },
   { key: "stock.accept_kitchen", label: "Recevoir les vivres cuisine", group: "Stocks" },
   { key: "reports.daily_close", label: "Contrôler la clôture journalière", group: "Pilotage" },
