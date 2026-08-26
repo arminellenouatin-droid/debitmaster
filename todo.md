@@ -327,3 +327,11 @@ Pour chaque formule, la réduction est calculée ainsi : `100 × (prix Base mens
 - [ ] Ajouter ces taux et les économies aux données retournées par l’API.
 - [ ] Afficher prix total, prix mensuel moyen, réduction et économie sous chaque offre.
 - [ ] Vérifier que Moneroo reçoit le prix total exact de la formule et de l’activité sélectionnées.
+
+
+## Correctif paiement — montant de la formule sélectionnée
+
+- [ ] Identifier l’origine du montant obsolète affiché sur le bouton de paiement.
+- [ ] Synchroniser le libellé du bouton avec la formule et l’activité sélectionnées.
+- [ ] Vérifier que le montant envoyé à Moneroo est recalculé côté serveur et correspond à l’affichage.
+- [ ] Tester Base, Moyenne, Semestrielle et Suprême pour Bar, Bar restaurant et Boîte de nuit/Lounge.
