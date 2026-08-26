@@ -398,34 +398,33 @@ Pour chaque formule, la réduction est calculée ainsi : `100 × (prix Base mens
 
 
 ## Nouveau lot — cadrage du plan Power
-
-- [ ] Lire BARSANTEPLUS.docx depuis le dossier du projet DebitManager.
-- [ ] Extraire les activités, rôles, services, produits, particularités et données de test utiles au plan Power.
-- [ ] Écarter les mots de passe, clés et secrets de toute note, réponse ou modification de code.
-- [ ] Comparer les exigences Power avec les modèles et permissions existants de DebitManager.
-- [ ] Poser les questions restantes avant toute création de société ou écriture en base.
+- [x] Lire BARSANTEPLUS.docx depuis le dossier du projet DebitManager.
+- [x] Extraire les activités, rôles, services, produits, particularités et données de test utiles au plan Power.
+- [x] Écarter les mots de passe, clés et secrets de toute note, réponse ou modification de code.
+- [x] Comparer les exigences Power avec les modèles et permissions existants de DebitManager.
+- [x] Poser les questions restantes avant toute création de société ou écriture en base.
 
 > Périmètre strict : DebitManager uniquement ; ne pas consulter ni modifier Envol Africa.
 
 
 ## Décisions validées — BAR SANTE PLUS / Power
+- [x] Ajouter le plan d’abonnement **Power** au-dessus des trois plans existants, avec un prix de base de 150 000 XOF par mois.
+- [x] Prévoir dans l’administration SaaS la modification des prix des quatre plans et de leurs périodes.
+- [x] Créer BAR SANTE PLUS à Abomey, Bénin, avec Directeur comme propriétaire principal et tous les droits.
+- [x] Activer les six activités : boissons, repas, gym, lavage, auberge et Wi-Fi.
+- [x] Donner au superviseur le droit de créer le personnel, les activités et les prix, ainsi que de gérer les salaires et la liste du personnel.
+- [x] Configurer le magasin central boissons vers le magasin comptoir boissons ; créer un magasin cuisine séparé ; ne pas créer de magasin pour les autres activités.
+- [x] Configurer les encaissements par équipe avec remontée de fin de journée ; le gérant encaisse directement le Wi-Fi.
+- [x] Configurer l’auberge avec attribution des quatre chambres et paiement des nuitées/passes.
+- [x] Réserver ces particularités exclusivement au plan Power et ne pas modifier les plans standards.
 
-- [ ] Ajouter le plan d’abonnement **Power** au-dessus des trois plans existants, avec un prix de base de 150 000 XOF par mois.
-- [ ] Prévoir dans l’administration SaaS la modification des prix des quatre plans et de leurs périodes.
-- [ ] Créer BAR SANTE PLUS à Abomey, Bénin, avec Directeur comme propriétaire principal et tous les droits.
-- [ ] Activer les six activités : boissons, repas, gym, lavage, auberge et Wi-Fi.
-- [ ] Donner au superviseur le droit de créer le personnel, les activités et les prix, ainsi que de gérer les salaires et la liste du personnel.
-- [ ] Configurer le magasin central boissons vers le magasin comptoir boissons ; créer un magasin cuisine séparé ; ne pas créer de magasin pour les autres activités.
-- [ ] Configurer les encaissements par équipe avec remontée de fin de journée ; le gérant encaisse directement le Wi-Fi.
-- [ ] Configurer l’auberge avec attribution des quatre chambres et paiement des nuitées/passes.
-- [ ] Réserver ces particularités exclusivement au plan Power et ne pas modifier les plans standards.
+**État :** implementation et peuplement Supabase terminés ; validation Production après fusion de la PR #59.
 
 > Les mots de passe du document restent confidentiels et ne sont pas écrits dans ce suivi.
 
 
 ## Décision d’authentification — comptes de test Power
-
-- [ ] Générer des alias e-mail internes de test uniquement pour les membres sans e-mail dans le document.
-- [ ] Conserver les vrais numéros de téléphone comme identifiants opérationnels des membres.
-- [ ] Vérifier les doublons avant toute création de compte et ne pas modifier les utilisateurs existants.
-- [ ] Ne pas imposer le changement de mot de passe lors de la première connexion pour ce jeu d’essai.
+- [x] Générer des alias e-mail internes de test uniquement pour les membres sans e-mail dans le document.
+- [x] Conserver les vrais numéros de téléphone comme identifiants opérationnels des membres.
+- [x] Vérifier les doublons avant toute création de compte et ne pas modifier les utilisateurs existants.
+- [x] Ne pas imposer le changement de mot de passe lors de la première connexion pour ce jeu d’essai.
