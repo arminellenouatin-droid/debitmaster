@@ -19,6 +19,6 @@ export default async function StockPage() {
   const { data: employee } = context.employeeId ? await context.supabase.from("employees").select("stock_scope").eq("id", context.employeeId).maybeSingle() : { data: null };
   const firstName = auth.user.user_metadata?.first_name ?? "gérant";
   if (context.role === "MAGASINIER") return <DashboardShell firstName={firstName}><MagasinierClient stockScope={employee?.stock_scope ?? "BOTH"} firstName={firstName} companyName={"Établissement actif"} /></DashboardShell>;
-  if ((context.role === "ADMINISTRATEUR" || context.role === "SUPERVISEUR") && active.company?.activity_type === "POWER") return <DashboardShell firstName={firstName}><OwnerStockClient companyName={active.company?.name ?? "Établissement actif"} /></DashboardShell>;
+  if ((context.role === "ADMINISTRATEUR" || context.role === "SUPERVISEUR") && active.company?.activity_type === "POWER") return <DashboardShell firstName={firstName}><OwnerStockClient tenantId={active.tenantId ?? ""} companyName={active.company?.name ?? "Établissement actif"} /></DashboardShell>;
   return <DashboardShell firstName={firstName}><StockClient role={context.role ?? ""} stockScope={employee?.stock_scope ?? "BOTH"} /></DashboardShell>;
 }

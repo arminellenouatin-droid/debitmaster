@@ -566,3 +566,11 @@ Pour chaque formule, la réduction est calculée ainsi : `100 × (prix Base mens
 - [ ] Ajouter prix unitaires, quantités, total et lancement d’une commande d’approvisionnement boissons.
 - [ ] Afficher les demandes du magasin comptoir et permettre leur livraison au Superviseur.
 - [ ] Rendre les commandes lancées visibles au Propriétaire et au Chargé des inventaires.
+
+## Catalogue produits Power — catégories, sous-catégories et étiquettes
+
+- [ ] Vérifier les champs actuels des produits et catégories dans le code et les migrations.
+- [ ] Structurer Boissons et Repas avec leurs sous-catégories prévues.
+- [ ] Prévoir une étiquette de format/conditionnement modifiable pour les boissons.
+- [ ] Permettre au Superviseur de créer et modifier nom, catégorie, sous-catégorie, prix de vente et étiquette.
+- [ ] Conserver les prix d’achat et les seuils stock existants sans perte de données.
