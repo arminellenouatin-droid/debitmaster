@@ -2,6 +2,7 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { getAuthorizationContext, can } from "@/lib/authorization";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 type OrderLine = { productId: string; quantity: number; fulfillmentUnit?: "BEVERAGE" | "MEAL" };
 
@@ -13,12 +14,20 @@ export async function GET(request: Request) {
     if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
     if (!can(context, "orders.view")) return NextResponse.json({ error: "Permission insuffisante pour consulter les commandes." }, { status: 403 });
     if (tenantId && !tenantIds.includes(tenantId)) return NextResponse.json({ error: "Établissement non autorisé." }, { status: 403 });
-    let query = supabase.from("orders").select("id,tenant_id,order_number,table_label,location_label,customer_id,server_user_id,server_name,received_by_user_id,received_at,delivered_by_user_id,delivered_at,status,total_amount,currency,created_at,order_items(id,product_id,product_name,quantity,unit_price,total_price,fulfillment_unit,preparation_status,prepared_at,received_by_user_id,received_at,delivered_at),order_stock_allocations(id,server_user_id,product_id,quantity,status,allocated_at,settled_at)").order("created_at", { ascending: false }).limit(50);
+    const readClient = createSupabaseAdminClient();
+    let query = readClient.from("orders").select("id,tenant_id,order_number,table_label,location_label,customer_id,server_user_id,server_name,received_by_user_id,received_at,delivered_by_user_id,delivered_at,status,total_amount,currency,created_at,updated_at").order("created_at", { ascending: false }).limit(50);
     query = tenantId ? query.eq("tenant_id", tenantId) : query.in("tenant_id", tenantIds);
     if (context.role === "SERVEUR") query = query.eq("server_user_id", user.id);
     const { data, error } = await query;
-    if (error) return NextResponse.json({ error: "Impossible de charger les commandes." }, { status: 500 });
-    return NextResponse.json({ orders: data ?? [] });
+    if (error) { console.error("[orders.GET] orders query failed", { code: error.code, message: error.message }); return NextResponse.json({ error: "Impossible de charger les commandes.", diagnostic: "ORDERS_QUERY_FAILED" }, { status: 500 }); }
+    const orderRows = data ?? [];
+    const orderIds = orderRows.map((order) => order.id);
+    if (!orderIds.length) return NextResponse.json({ orders: [] });
+    const [itemsResult, allocationsResult] = await Promise.all([readClient.from("order_items").select("id,order_id,product_id,product_name,quantity,unit_price,total_price,fulfillment_unit,preparation_status,prepared_at,received_by_user_id,received_at,delivered_at").in("order_id", orderIds).limit(1000), readClient.from("order_stock_allocations").select("id,order_id,server_user_id,product_id,quantity,status,allocated_at,settled_at").in("order_id", orderIds).limit(1000)]);
+    if (itemsResult.error || allocationsResult.error) { console.error("[orders.GET] detail query failed", { items: itemsResult.error?.message, allocations: allocationsResult.error?.message }); return NextResponse.json({ error: "Impossible de charger les commandes.", diagnostic: "ORDERS_DETAIL_QUERY_FAILED" }, { status: 500 }); }
+    const itemsByOrder = new Map<string, typeof itemsResult.data>(); for (const item of itemsResult.data ?? []) { const rows = itemsByOrder.get(item.order_id) ?? []; rows.push(item); itemsByOrder.set(item.order_id, rows); }
+    const allocationsByOrder = new Map<string, typeof allocationsResult.data>(); for (const allocation of allocationsResult.data ?? []) { const rows = allocationsByOrder.get(allocation.order_id) ?? []; rows.push(allocation); allocationsByOrder.set(allocation.order_id, rows); }
+    return NextResponse.json({ orders: orderRows.map((order) => ({ ...order, order_items: itemsByOrder.get(order.id) ?? [], order_stock_allocations: allocationsByOrder.get(order.id) ?? [] })) });
   } catch { return NextResponse.json({ error: "Service temporairement indisponible." }, { status: 500 }); }
 }
 
