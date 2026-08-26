@@ -428,3 +428,13 @@ Pour chaque formule, la réduction est calculée ainsi : `100 × (prix Base mens
 - [x] Conserver les vrais numéros de téléphone comme identifiants opérationnels des membres.
 - [x] Vérifier les doublons avant toute création de compte et ne pas modifier les utilisateurs existants.
 - [x] Ne pas imposer le changement de mot de passe lors de la première connexion pour ce jeu d’essai.
+
+
+## Nouveau lot — en-tête de compte et notifications
+
+- [ ] Auditer le shell partagé, la route Profil/Paramètres, la déconnexion et la table des notifications.
+- [ ] Définir le compteur des notifications non lues et les états cloche vide, badge, chargement et erreur.
+- [ ] Ajouter l’accès Profil/Compte dans toutes les sections du dashboard.
+- [ ] Ajouter le menu de paramétrage du compte et la déconnexion sécurisée.
+- [ ] Ajouter la cloche de notifications et le badge coloré dans l’en-tête partagé.
+- [ ] Tester les rôles, le responsive, l’accessibilité clavier et le rafraîchissement du compteur.
