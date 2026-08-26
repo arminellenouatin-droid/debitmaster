@@ -92,9 +92,13 @@ export async function PATCH(request: Request) {
     }
     if (categoryId !== undefined) { const { data: category } = categoryId ? await supabase.from("categories").select("id").eq("id", categoryId).eq("tenant_id", tenantId).is("deleted_at", null).maybeSingle() : { data: null }; if (categoryId && !category) return NextResponse.json({ error: "Catégorie non autorisée." }, { status: 403 }); }
     const patch = { ...(name !== undefined ? { name } : {}), ...(categoryId !== undefined ? { category_id: categoryId } : {}), ...(price !== undefined ? { price } : {}), ...(stockFamily !== undefined ? { stock_family: stockFamily } : {}), ...(packagingLabel !== undefined ? { packaging_label: packagingLabel } : {}), ...(alertThreshold !== undefined ? { alert_threshold: alertThreshold } : {}), ...(safetyThreshold !== undefined ? { safety_threshold: safetyThreshold } : {}), updated_at: new Date().toISOString() };
-    const { data, error } = await supabase.from("products").update(patch).eq("id", productId).eq("tenant_id", tenantId).is("deleted_at", null).select("id,tenant_id,category_id,name,stock_family,price,packaging_label,current_stock,alert_threshold,safety_threshold").single();
-    if (error) return NextResponse.json({ error: "Impossible de paramétrer les alertes." }, { status: 400 });
-    return NextResponse.json({ product: data });
+    const { error } = await supabase.from("products").update(patch).eq("id", productId).eq("tenant_id", tenantId).is("deleted_at", null);
+    if (error) {
+      logDatabaseError("products.PATCH", error);
+      const message = error.code === "42501" ? "Permission refusée pour modifier ce produit." : error.code === "23514" ? "Les valeurs de seuil ne respectent pas les règles du produit." : "Impossible de paramétrer les alertes.";
+      return NextResponse.json({ error: message, diagnostic: databaseDiagnostic(error) }, { status: 400 });
+    }
+    return NextResponse.json({ product: { id: productId, tenant_id: tenantId, category_id: categoryId, name, stock_family: stockFamily, price, packaging_label: packagingLabel, alert_threshold: alertThreshold, safety_threshold: safetyThreshold } });
   } catch {
     return NextResponse.json({ error: "Requête invalide." }, { status: 400 });
   }
