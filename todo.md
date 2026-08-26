@@ -474,3 +474,14 @@ Pour chaque formule, la réduction est calculée ainsi : `100 × (prix Base mens
 - [ ] Identifier l’exception serveur qui transforme la connexion téléphone en message « Impossible de vous connecter pour le moment. ».
 - [ ] Corriger le fallback des comptes Auth historiques sans exposer les secrets.
 - [ ] Valider le build et le nouveau preview avant de demander un nouveau test production.
+
+## Incident refus d’identifiants BAR SANTE PLUS — nouveau test
+
+- [ ] Reproduire le refus avec le compte et le format exacts utilisés par l’utilisateur.
+- [ ] Vérifier le déploiement et comparer le mot de passe Auth réel sans l’exposer.
+- [ ] Corriger la cause exacte puis retester le login et l’accès tenant.
+
+## Suivi PR correctif login après fusion
+
+- [ ] Vérifier le commit final de connexion et le PR réellement ouvert après la fusion du PR précédent.
+- [ ] Confirmer que le lien communiqué pointe vers une révision non fusionnée contenant le correctif.
