@@ -574,3 +574,9 @@ Pour chaque formule, la réduction est calculée ainsi : `100 × (prix Base mens
 - [ ] Prévoir une étiquette de format/conditionnement modifiable pour les boissons.
 - [ ] Permettre au Superviseur de créer et modifier nom, catégorie, sous-catégorie, prix de vente et étiquette.
 - [ ] Conserver les prix d’achat et les seuils stock existants sans perte de données.
+
+## Bug à corriger — paramétrage des alertes produit
+
+- [x] Reproduire l’échec du paramétrage des seuils d’alerte et de sécurité.
+- [x] Vérifier le payload, le contrat API, les permissions et la contrainte des seuils.
+- [x] Corriger le flux puis valider sur le tenant Power BAR SANTE PLUS.
