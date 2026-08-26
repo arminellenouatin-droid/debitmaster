@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { getAuthorizationContext, can } from "@/lib/authorization";
 import { MtnMomoError, requestToPay } from "@/lib/mtn-momo";
+import { loadTenantMtnMomoCredentials } from "@/lib/mtn-momo-credentials";
 
 export async function POST(request: Request) {
   try {
@@ -35,7 +36,8 @@ export async function POST(request: Request) {
     if (paymentError || !payment) return NextResponse.json({ error: "Impossible de préparer le paiement MTN MoMo." }, { status: 400 });
 
     try {
-      const initiated = await requestToPay({ amount: requestedAmount, currency: order.currency || "XOF", customerPhone: mobileNumber, externalId: payment.id, payerMessage: `Commande ${order.order_number}`, payeeNote: `DebitManager ${order.order_number}` });
+      const credentials = await loadTenantMtnMomoCredentials(supabase, tenantId);
+      const initiated = await requestToPay({ amount: requestedAmount, currency: order.currency || "XOF", customerPhone: mobileNumber, externalId: payment.id, payerMessage: `Commande ${order.order_number}`, payeeNote: `DebitManager ${order.order_number}`, credentials: credentials ?? undefined });
       const { data: updatedPayment, error: referenceError } = await supabase.from("payments").update({ provider_reference: initiated.referenceId, updated_at: new Date().toISOString() }).eq("id", payment.id).eq("tenant_id", tenantId).select("id,tenant_id,order_id,provider,status,amount,currency,provider_reference,paid_at,created_at").single();
       if (referenceError || !updatedPayment) return NextResponse.json({ error: "Paiement initié mais référence locale incomplète. Vérifiez le statut avant une nouvelle tentative." }, { status: 500 });
       return NextResponse.json({ payment: updatedPayment, status: "PENDING", referenceId: initiated.referenceId });

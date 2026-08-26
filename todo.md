@@ -438,3 +438,33 @@ Pour chaque formule, la réduction est calculée ainsi : `100 × (prix Base mens
 - [ ] Ajouter le menu de paramétrage du compte et la déconnexion sécurisée.
 - [ ] Ajouter la cloche de notifications et le badge coloré dans l’en-tête partagé.
 - [ ] Tester les rôles, le responsive, l’accessibilité clavier et le rafraîchissement du compteur.
+
+
+## Nouveau lot — paramètres spéciaux Power
+
+- [ ] Ajouter au compte propriétaire Power un réglage activé/désactivé pour le système zones et tables.
+- [ ] Rendre la table et la zone obligatoires uniquement quand ce réglage est activé.
+- [ ] Autoriser le service sans zone ni table quand le réglage est désactivé.
+- [ ] Ajouter le choix de paiement établissement **Simple** ou **Personnel**.
+- [ ] En mode Simple, conserver le compte MTN MoMo DebitManager et le reversement à l’établissement.
+- [ ] En mode Personnel, prévoir une configuration MTN MoMo propre à l’établissement sans exposer les secrets au navigateur.
+- [ ] Restreindre la modification de ces paramètres au propriétaire de l’établissement Power.
+- [ ] Tester les commandes, les paiements, les droits et les migrations sans modifier les plans standards.
+
+
+## Clarification validée — configuration MTN MoMo Personnel
+
+- [x] Afficher dans le compte propriétaire Power les champs de configuration MTN MoMo nécessaires au mode Personnel.
+- [x] Enregistrer les credentials via le serveur, jamais dans le navigateur ni en clair dans l’interface.
+- [x] Afficher uniquement l’état configuré et des informations masquées après enregistrement.
+- [ ] Ajouter un test de configuration qui ne déclenche aucun paiement.
+- [ ] Permettre le remplacement ou la suppression des credentials sans permettre leur relecture.
+
+
+## Décision de sécurité confirmée — secrets MTN MoMo Personnel
+
+- [x] Vérifier si un coffre de secrets privé est disponible dans le projet Supabase DebitManager : l’extension Vault n’est pas disponible.
+- [x] Chiffrer les credentials avec AES-256-GCM côté serveur et une clé secrète Vercel dédiée.
+- [x] Ne jamais renvoyer les secrets complets au navigateur ni les écrire dans les logs.
+- [x] Limiter la configuration, le remplacement et la suppression au propriétaire d’un établissement Power.
+- [ ] Ajouter un test d’authentification MTN MoMo sans déclencher de paiement.

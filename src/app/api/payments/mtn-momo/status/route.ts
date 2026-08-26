@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getAuthorizationContext } from "@/lib/authorization";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getCollectionStatus, MtnMomoError } from "@/lib/mtn-momo";
+import { loadTenantMtnMomoCredentials } from "@/lib/mtn-momo-credentials";
 
 const terminalProviderStatuses = new Set(["SUCCESSFUL", "FAILED", "REJECTED", "TIMEOUT", "CANCELLED"]);
 
@@ -22,7 +23,8 @@ export async function GET(request: Request) {
     if (!context.tenantIds.includes(payment.tenant_id)) return NextResponse.json({ error: "Paiement non autorisé." }, { status: 403 });
     if (["SUCCEEDED", "FAILED", "REFUNDED"].includes(payment.status) || !payment.provider_reference) return NextResponse.json({ payment, providerStatus: payment.status });
 
-    const providerPayload = await getCollectionStatus(payment.provider_reference);
+    const credentials = await loadTenantMtnMomoCredentials(context.supabase, payment.tenant_id);
+    const providerPayload = await getCollectionStatus(payment.provider_reference, credentials ?? undefined);
     const providerStatus = typeof providerPayload?.status === "string" ? providerPayload.status.toUpperCase() : "PENDING";
     const nextStatus = localStatus(providerStatus);
     if (nextStatus === "PENDING") return NextResponse.json({ payment, providerStatus });
