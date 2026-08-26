@@ -511,3 +511,19 @@ Pour chaque formule, la réduction est calculée ainsi : `100 × (prix Base mens
 - [ ] Vérifier pourquoi la réponse JSON du logout est affichée comme une page.
 - [ ] Rediriger le client vers `/connexion` après suppression de session.
 - [ ] Tester Sign out depuis BAR SANTE PLUS Power.
+
+## Rotation du mot de passe propriétaire — BAR SANTE PLUS Power
+
+- [ ] Lire la nouvelle valeur dans le document sans l’afficher.
+- [ ] Vérifier le compte propriétaire du tenant BAR SANTE PLUS.
+- [ ] Réinitialiser uniquement son mot de passe Auth.
+- [ ] Tester sa connexion avec la nouvelle valeur sans la révéler.
+
+## Paramètres de compte utilisateur — DebitManager
+
+- [x] Auditer la page Profil et les données de profil existantes.
+- [x] Ajouter la modification prénom, nom et e-mail avec validation serveur.
+- [x] Ajouter la modification du mot de passe avec confirmation et déconnexion de sécurité si nécessaire.
+- [x] Ajouter l’upload sécurisé de la photo de profil dans le profil.
+- [x] Vérifier que chaque utilisateur ne modifie que son propre compte.
+- [ ] Tester les comptes propriétaire et personnel de BAR SANTE PLUS Power après déploiement du correctif.
