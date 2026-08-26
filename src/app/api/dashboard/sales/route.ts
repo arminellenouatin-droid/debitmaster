@@ -28,7 +28,7 @@ export async function GET(request: Request) {
     const context = await getActiveTenantContext();
     if (!context.user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
     if (!context.tenantId || !context.company) return NextResponse.json({ error: "Aucun établissement actif." }, { status: 404 });
-    if (context.role !== "ADMINISTRATEUR" || context.employeeId !== null || !can(context, "reports.view")) return NextResponse.json({ error: "Accès réservé au propriétaire de l’établissement." }, { status: 403 });
+    if (!(context.role === "ADMINISTRATEUR" || context.role === "SUPERVISEUR") || !can(context, "reports.view")) return NextResponse.json({ error: "Accès réservé au propriétaire ou au superviseur de l’établissement." }, { status: 403 });
     const url = new URL(request.url);
     const { start, end, dayCount } = bounds(url);
     const since = start.toISOString(); const until = end.toISOString(); const tenantId = context.tenantId;

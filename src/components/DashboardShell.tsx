@@ -11,6 +11,7 @@ const navigation: ReadonlyArray<readonly [string, string, string]> = [
   ["◉", "Commandes", "/dashboard/orders"],
   ["▰", "Vente", "/dashboard/sales"],
   ["▤", "Gestion des stocks", "/dashboard/stock"],
+  ["⇩", "Approvisionnement", "/dashboard/supply"],
   ["♙", "Personnel", "/dashboard/personnel"],
   ["◫", "Finance", "/dashboard/finance"],
   ["✉", "Messages", "/dashboard/messages"],
@@ -30,7 +31,7 @@ export async function DashboardShell({ children, firstName }: { children: React.
       ? navigation.filter(([, label]) => ["Dashboard", "Gestion des stocks", "Profil"].includes(label))
       : activeContext.role === "GERANT"
         ? navigation.filter(([, label]) => ["Dashboard", "Commandes", "Profil"].includes(label) || (label === "Plan de salle" && activeContext.permissions.has("tables.view")) || (label === "Personnel" && activeContext.permissions.has("team.view")) || (label === "Finance" && activeContext.permissions.has("finance.view")))
-        : navigation.filter(([, label]) => label !== "Ventes");
+        : navigation.filter(([, label]) => label !== "Ventes" && label !== "Approvisionnement");
   const visibleNavigation = activeContext.company?.activity_type === "POWER" && activeContext.permissions.has("power.view") && !baseNavigation.some(([, label]) => label === "Gestion Power")
     ? [...baseNavigation.slice(0, -1), navigation.find(([, label]) => label === "Gestion Power")!, baseNavigation[baseNavigation.length - 1]]
     : baseNavigation;
