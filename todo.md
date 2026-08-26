@@ -595,3 +595,11 @@ Pour chaque formule, la réduction est calculée ainsi : `100 × (prix Base mens
 - [ ] Ajouter ventes, clients et caisse Lavage sans stock.
 - [ ] Ajouter ventes, chambres, pass, nuitées et occupation Auberge.
 - [ ] Relier les reversements des caisses d’activité à la caisse principale du gérant.
+
+## Audit global Power — BAR SANTE PLUS
+
+- [ ] Auditer les rôles, permissions, routes et menus de chaque compte Power.
+- [ ] Corriger la file des commandes et le pilotage refusé pour les comptes autorisés.
+- [ ] Vérifier que les comptes Gym, Lavage et Auberge n’accèdent pas aux stocks.
+- [ ] Réparer la persistance de la photo de profil et son affichage dans l’en-tête.
+- [ ] Tester chaque compte et chaque menu dans le navigateur sans exposer de données sensibles.
