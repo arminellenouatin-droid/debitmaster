@@ -542,3 +542,11 @@ Pour chaque formule, la réduction est calculée ainsi : `100 × (prix Base mens
 - [ ] Agréger le chiffre d’affaires payé par activité et par personne.
 - [ ] Ajouter filtres, indicateurs, tendance graphique et tableaux responsive.
 - [ ] Vérifier les flux d’encaissement des activités Power hors commandes lorsque leurs écrans de vente seront disponibles.
+
+## Supervision stocks propriétaire — BAR SANTE PLUS Power
+
+- [ ] Ajouter la vue propriétaire des stocks boissons et cuisine.
+- [ ] Afficher les magasins principal et comptoir pour les boissons.
+- [ ] Ajouter le détail par produit, secteur, type et période d’achat/vente.
+- [ ] Ajouter la situation des inventaires et les écarts constatés.
+- [ ] Vérifier l’isolation tenant et les données réelles avant PR.
