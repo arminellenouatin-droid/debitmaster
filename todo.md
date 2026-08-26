@@ -603,3 +603,16 @@ Pour chaque formule, la réduction est calculée ainsi : `100 × (prix Base mens
 - [ ] Vérifier que les comptes Gym, Lavage et Auberge n’accèdent pas aux stocks.
 - [ ] Réparer la persistance de la photo de profil et son affichage dans l’en-tête.
 - [ ] Tester chaque compte et chaque menu dans le navigateur sans exposer de données sensibles.
+
+## Mise à jour tarifs Power — BAR SANTE PLUS
+
+- [ ] Vérifier les tarifs actuels des prestations Gym et des chambres Auberge.
+- [ ] Appliquer les tarifs et unités confirmés par l’utilisateur.
+- [ ] Vérifier les valeurs finales sans exposer de données de connexion.
+
+## Séparation des prestations par activité — BAR SANTE PLUS
+
+- [ ] Limiter les prestations Gym au compte Secrétaire Gym et à l’activité Gym.
+- [ ] Limiter les prestations Auberge au compte affecté à l’activité Auberge.
+- [ ] Empêcher l’affichage croisé des prestations dans les autres comptes métier.
+- [ ] Vérifier la visibilité propriétaire/superviseur uniquement dans leurs vues de pilotage.

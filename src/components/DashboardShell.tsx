@@ -29,7 +29,16 @@ export async function DashboardShell({ children, firstName }: { children: React.
   }
   const isOwner = activeContext.role === "ADMINISTRATEUR" && activeContext.employeeId === null;
   const isPowerSupervisor = activeContext.role === "SUPERVISEUR" && activeContext.company?.activity_type === "POWER" && activeContext.permissions.has("power.view");
-  const serviceRole: keyof typeof serviceNavigation | null = activeContext.role === "GYM" || activeContext.role === "LAVAGE" || activeContext.role === "AUBERGE" ? activeContext.role as keyof typeof serviceNavigation : null;
+  let assignedServiceRole: keyof typeof serviceNavigation | null = null;
+  if (activeContext.employeeId && activeContext.tenantId) {
+    const admin = createSupabaseAdminClient();
+    const { data: assignment } = await admin.from("employee_activity_assignments").select("activity_id").eq("employee_id", activeContext.employeeId).eq("tenant_id", activeContext.tenantId).eq("is_active", true).limit(1).maybeSingle();
+    if (assignment?.activity_id) {
+      const { data: activity } = await admin.from("company_activities").select("activity_code").eq("id", assignment.activity_id).eq("tenant_id", activeContext.tenantId).maybeSingle();
+      if (activity?.activity_code === "GYM" || activity?.activity_code === "LAVAGE" || activity?.activity_code === "LODGING") assignedServiceRole = activity.activity_code === "LODGING" ? "AUBERGE" : activity.activity_code;
+    }
+  }
+  const serviceRole: keyof typeof serviceNavigation | null = activeContext.role === "GYM" || activeContext.role === "LAVAGE" || activeContext.role === "AUBERGE" ? activeContext.role as keyof typeof serviceNavigation : assignedServiceRole;
   const role = isOwner ? "Propriétaire" : activeContext.role || "Membre de l’équipe";
   const subscriptionStatus = activeContext.company ? subscriptionDisplayStatus(activeContext.company.status, activeContext.company.trial_ends_at, activeContext.company.subscription_expires_at) : "Indisponible";
   const baseNavigation: ReadonlyArray<NavItem> = serviceRole ? serviceNavigation[serviceRole] : isPowerSupervisor ? navigation.filter(([, label]) => label !== "Ventes") : activeContext.role === "SERVEUR" ? navigation.filter(([, label]) => ["Dashboard", "Commandes", "Profil"].includes(label)) : activeContext.role === "MAGASINIER" ? navigation.filter(([, label]) => ["Dashboard", "Gestion des stocks", "Profil"].includes(label)) : activeContext.role === "GERANT" ? navigation.filter(([, label]) => ["Dashboard", "Commandes", "Profil"].includes(label) || (label === "Plan de salle" && activeContext.permissions.has("tables.view")) || (label === "Personnel" && activeContext.permissions.has("team.view")) || (label === "Finance" && activeContext.permissions.has("finance.view"))) : navigation.filter(([, label]) => label !== "Ventes" && label !== "Approvisionnement");
