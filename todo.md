@@ -384,3 +384,14 @@ Pour chaque formule, la réduction est calculée ainsi : `100 × (prix Base mens
 - [ ] Reprendre le test sandbox de 1 000 XOF pour la serveuse Ella et documenter le résultat.
 
 > Ne jamais afficher ni consigner les secrets MTN MoMo ou les identifiants Supabase/Vercel dans ce fichier.
+
+
+## Nouveau lot — échec de vérification du statut MTN MoMo
+
+- [ ] Examiner la réponse et le code HTTP renvoyés par la route de statut MTN MoMo.
+- [ ] Vérifier le mapping des statuts fournisseur vers les statuts locaux et le comportement du polling.
+- [ ] Identifier si l’erreur vient du déploiement utilisé, des identifiants, de la référence ou d’un format de réponse inattendu.
+- [ ] Corriger la gestion du statut sans créer ni relancer un paiement en double.
+- [ ] Revalider le build, le webhook et le statut du paiement existant avant le prochain essai.
+
+> Ne jamais écrire dans ce fichier de numéro de téléphone, de référence MTN MoMo, de jeton ou de secret.

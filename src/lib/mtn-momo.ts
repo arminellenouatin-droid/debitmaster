@@ -18,7 +18,12 @@ type MtnConfig = {
 };
 
 export class MtnMomoError extends Error {
-  constructor(message: string, readonly status = 502, readonly providerBody?: unknown) {
+  constructor(
+    message: string,
+    readonly status = 502,
+    readonly providerBody?: unknown,
+    readonly providerHttpStatus?: number,
+  ) {
     super(message);
     this.name = "MtnMomoError";
   }
@@ -60,11 +65,17 @@ async function parseResponse(response: Response) {
 }
 
 async function request(path: string, init: RequestInit, expectedStatuses: number[] = [200]) {
-  const response = await fetch(`${config().baseUrl}${path}`, { ...init, cache: "no-store" });
+  let response: Response;
+  try {
+    response = await fetch(`${config().baseUrl}${path}`, { ...init, cache: "no-store" });
+  } catch (cause) {
+    throw new MtnMomoError("MTN MoMo est temporairement indisponible. Réessayez dans quelques instants.", 503, { cause: cause instanceof Error ? cause.message : "network_error" });
+  }
   const body = await parseResponse(response);
   if (!expectedStatuses.includes(response.status)) {
     const providerMessage = body && typeof body === "object" && "message" in body && typeof body.message === "string" ? body.message : "Réponse MTN MoMo inattendue.";
-    throw new MtnMomoError(providerMessage, 502, body);
+    const clientStatus = response.status === 401 || response.status === 403 ? 503 : response.status === 404 ? 503 : response.status >= 500 ? 503 : 502;
+    throw new MtnMomoError(providerMessage, clientStatus, body, response.status);
   }
   return body as MtnResponse | null;
 }
@@ -88,6 +99,13 @@ function providerCurrency(current: MtnConfig, requestedCurrency: string) {
   const normalized = requestedCurrency.trim().toUpperCase() || "XOF";
   // MTN MoMo sandbox accepte EUR uniquement ; XOF reste la devise métier et production du Bénin.
   return current.targetEnvironment.toLowerCase() === "sandbox" ? current.sandboxCurrency : normalized;
+}
+
+export function isProviderCurrencyAccepted(providerCurrencyValue: string | undefined, businessCurrency: string) {
+  if (!providerCurrencyValue?.trim()) return true;
+  const current = config();
+  const expected = providerCurrency(current, businessCurrency);
+  return providerCurrencyValue.trim().toUpperCase() === expected;
 }
 
 function commonHeaders(token: string, subscriptionKey: string, referenceId: string, callbackUrl: string) {
@@ -115,9 +133,27 @@ export async function requestToPay(input: { amount: number; currency: string; cu
   return { referenceId };
 }
 
+const statusRetryableHttpCodes = new Set([404, 408, 425, 429, 500, 502, 503, 504]);
+
+function wait(milliseconds: number) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
 export async function getCollectionStatus(referenceId: string) {
   const { token, current, subscriptionKey } = await accessToken("collection");
-  return request(`/collection/v1_0/requesttopay/${encodeURIComponent(referenceId)}`, { method: "GET", headers: { Authorization: `Bearer ${token}`, "Ocp-Apim-Subscription-Key": subscriptionKey, "X-Target-Environment": current.targetEnvironment, Accept: "application/json" } });
+  const init = { method: "GET", headers: { Authorization: `Bearer ${token}`, "Ocp-Apim-Subscription-Key": subscriptionKey, "X-Target-Environment": current.targetEnvironment, Accept: "application/json" } } satisfies RequestInit;
+  let lastError: MtnMomoError | null = null;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      return await request(`/collection/v1_0/requesttopay/${encodeURIComponent(referenceId)}`, init);
+    } catch (cause) {
+      if (!(cause instanceof MtnMomoError)) throw cause;
+      lastError = cause;
+      if (!cause.providerHttpStatus || !statusRetryableHttpCodes.has(cause.providerHttpStatus) || attempt === 2) break;
+      await wait(500 * (attempt + 1));
+    }
+  }
+  throw lastError ?? new MtnMomoError("Statut MTN MoMo indisponible.", 503);
 }
 
 export async function transfer(input: { amount: number; currency: string; recipientPhone: string; externalId: string; payerMessage: string; payeeNote: string }) {
