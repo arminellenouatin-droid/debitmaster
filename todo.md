@@ -616,3 +616,11 @@ Pour chaque formule, la réduction est calculée ainsi : `100 × (prix Base mens
 - [ ] Limiter les prestations Auberge au compte affecté à l’activité Auberge.
 - [ ] Empêcher l’affichage croisé des prestations dans les autres comptes métier.
 - [ ] Vérifier la visibilité propriétaire/superviseur uniquement dans leurs vues de pilotage.
+
+## WIFI — compte Gérant BAR SANTE PLUS
+
+- [ ] Enregistrer les tickets reçus par type et quantité.
+- [ ] Paramétrer 100 XOF pour 3 heures, 500 XOF pour 72 heures et 2 500 XOF pour un mois.
+- [ ] Enregistrer les tickets vendus à la demande des clients.
+- [ ] Calculer le solde disponible par type de ticket.
+- [ ] Relier les ventes WIFI au Dashboard et à la caisse centrale du Gérant.
