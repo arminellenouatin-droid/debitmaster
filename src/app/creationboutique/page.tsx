@@ -4,7 +4,7 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 
-const activities = [{ value: "BUVETTE", label: "Buvette", text: "Pour un point de vente simple et rapide." }, { value: "BAR_RESTAURANT", label: "Bar & restaurant", text: "Pour gérer salle, cuisine, commandes et stocks." }, { value: "NIGHTCLUB_LOUNGE", label: "Nightclub & lounge", text: "Pour les établissements avec service et ambiance." }];
+const activities = [{ value: "BUVETTE", label: "Buvette", text: "Pour un point de vente simple et rapide." }, { value: "BAR_RESTAURANT", label: "Bar & restaurant", text: "Pour gérer salle, cuisine, commandes et stocks." }, { value: "NIGHTCLUB_LOUNGE", label: "Nightclub & lounge", text: "Pour les établissements avec service et ambiance." }, { value: "POWER", label: "Power — multi-activités", text: "Pour réunir boissons, repas, gym, lavage, auberge et Wi-Fi." }];
 
 export default function CreateCompanyPage() {
   const router = useRouter();

@@ -1,14 +1,19 @@
-// DebitManager subscription: catalogue, calcul du tarif et initialisation MTN MoMo Collection côté serveur.
+// DebitManager subscription: catalogue XOF administrable, Power multi-activités et initialisation MTN MoMo Collection côté serveur.
 import { NextResponse } from "next/server";
 import { getAuthorizationContext } from "@/lib/authorization";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { MtnMomoError, requestToPay } from "@/lib/mtn-momo";
-import { addSubscriptionPeriod, getSubscriptionActivityCatalog, getSubscriptionCatalog, getSubscriptionPlan, getSubscriptionPrice } from "@/lib/subscription-plans";
+import { addSubscriptionPeriod, getSubscriptionActivityCatalog, getSubscriptionCatalog, getSubscriptionPlan, getSubscriptionPrice, normalizeActivityCode, type SubscriptionPriceOverride } from "@/lib/subscription-plans";
 
 function ownerTenantId(context: Awaited<ReturnType<typeof getAuthorizationContext>>, requestedTenantId: string) {
   if (context.employeeId) return null;
   const tenantId = requestedTenantId || context.tenantIds[0] || "";
   return (context.tenantIds as string[]).includes(tenantId) ? tenantId : null;
+}
+
+async function loadPriceOverrides(supabase: Awaited<ReturnType<typeof getAuthorizationContext>>["supabase"]) {
+  const { data } = await supabase.from("saas_plan_prices").select("activity_code,plan_code,price_xof,description").eq("is_active", true).limit(100);
+  return (data ?? []) as SubscriptionPriceOverride[];
 }
 
 export async function GET(request: Request) {
@@ -26,18 +31,16 @@ export async function GET(request: Request) {
       .maybeSingle();
     if (companyError || !company) return NextResponse.json({ error: "Établissement introuvable." }, { status: 404 });
 
-    const { data: payments, error: paymentsError } = await context.supabase
-      .from("saas_subscription_payments")
-      .select("id,plan,amount,currency,status,provider_reference,period_start,period_end,paid_at,created_at")
-      .eq("tenant_id", tenantId)
-      .order("created_at", { ascending: false })
-      .limit(12);
+    const [{ data: payments, error: paymentsError }, overrides] = await Promise.all([
+      context.supabase.from("saas_subscription_payments").select("id,plan,amount,currency,status,provider_reference,period_start,period_end,paid_at,created_at").eq("tenant_id", tenantId).order("created_at", { ascending: false }).limit(12),
+      loadPriceOverrides(context.supabase),
+    ]);
     if (paymentsError) return NextResponse.json({ error: "Impossible de charger l’historique d’abonnement." }, { status: 500 });
 
     return NextResponse.json({
       activity: { type: company.activity_type, currency: company.currency },
-      plans: getSubscriptionCatalog(company.activity_type),
-      activities: getSubscriptionActivityCatalog(),
+      plans: getSubscriptionCatalog(company.activity_type, overrides),
+      activities: getSubscriptionActivityCatalog(overrides),
       current: { plan: company.subscription_plan, status: company.status, trialEndsAt: company.trial_ends_at, expiresAt: company.subscription_expires_at },
       payments: payments ?? [],
     });
@@ -68,7 +71,8 @@ export async function POST(request: Request) {
       .maybeSingle();
     if (companyError || !company) return NextResponse.json({ error: "Établissement introuvable." }, { status: 404 });
 
-    const amount = getSubscriptionPrice(company.activity_type, plan);
+    const overrides = await loadPriceOverrides(context.supabase);
+    const amount = getSubscriptionPrice(company.activity_type, plan, overrides);
     const now = new Date();
     const existingEnd = company.subscription_expires_at ? new Date(company.subscription_expires_at) : null;
     const periodStart = existingEnd && existingEnd.getTime() > now.getTime() ? existingEnd : now;
@@ -78,7 +82,7 @@ export async function POST(request: Request) {
     const admin = createSupabaseAdminClient();
     const { data: payment, error: paymentError } = await admin
       .from("saas_subscription_payments")
-      .insert({ tenant_id: tenantId, provider: "MTN_MOMO", plan, amount, currency: company.currency || "XOF", status: "PENDING", period_start: periodStart.toISOString(), period_end: periodEnd.toISOString(), metadata: { activity_type: company.activity_type, duration_months: definition.durationMonths } })
+      .insert({ tenant_id: tenantId, provider: "MTN_MOMO", plan, amount, currency: company.currency || "XOF", status: "PENDING", period_start: periodStart.toISOString(), period_end: periodEnd.toISOString(), metadata: { activity_type: normalizeActivityCode(company.activity_type), duration_months: definition.durationMonths } })
       .select("id,tenant_id,plan,amount,currency,status,period_start,period_end")
       .single();
     if (paymentError || !payment) return NextResponse.json({ error: "Impossible de préparer l’abonnement." }, { status: 400 });
