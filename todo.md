@@ -468,3 +468,9 @@ Pour chaque formule, la réduction est calculée ainsi : `100 × (prix Base mens
 - [x] Ne jamais renvoyer les secrets complets au navigateur ni les écrire dans les logs.
 - [x] Limiter la configuration, le remplacement et la suppression au propriétaire d’un établissement Power.
 - [ ] Ajouter un test d’authentification MTN MoMo sans déclencher de paiement.
+
+## Incident connexion production — message générique
+
+- [ ] Identifier l’exception serveur qui transforme la connexion téléphone en message « Impossible de vous connecter pour le moment. ».
+- [ ] Corriger le fallback des comptes Auth historiques sans exposer les secrets.
+- [ ] Valider le build et le nouveau preview avant de demander un nouveau test production.
