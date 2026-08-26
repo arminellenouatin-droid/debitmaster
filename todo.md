@@ -300,3 +300,30 @@ Les coefficients sont automatiques selon l’activité : Buvette ×1, Bar restau
 - [ ] Afficher les quatre formules sous chacun des trois onglets.
 - [ ] Envoyer au paiement le montant correspondant au type sélectionné.
 - [ ] Vérifier le responsive, les montants et le build, puis publier le correctif.
+
+
+## Complément grille tarifaire — contenu des offres
+
+- [ ] Extraire du document métier les fonctionnalités exactes de Base, Moyenne, Semestrielle et Suprême.
+- [ ] Distinguer les services inclus et les variations entre formules sans inventer de contenu.
+- [ ] Ajouter le détail lisible sous chaque carte tarifaire des trois onglets d’activité.
+- [ ] Vérifier l’affichage mobile, les montants et le build, puis mettre à jour le PR dédié.
+
+
+## Nouvelle définition confirmée — offres d’activité et réductions
+
+Les offres sont organisées par activité : **Bar/buvette** pour la vente de boissons seules ; **Bar restaurant** pour boissons et repas ; **Boîte de nuit/Lounge bar** pour boissons, champagnes, autres spiritueux et vins. Chaque activité propose quatre durées de paiement : **1 mois, 3 mois, 6 mois et 12 mois**. La réduction augmente avec la durée.
+
+- [ ] Définir les pourcentages exacts de réduction pour 3, 6 et 12 mois si le document ne les précise pas.
+- [ ] Afficher le contenu métier de chaque activité sous son offre.
+- [ ] Afficher les quatre durées, le prix remisé, le prix de référence et l’économie réalisée.
+- [ ] Synchroniser l’offre et la durée sélectionnées avec Moneroo.
+
+
+## Réductions calculées — règle confirmée
+
+Pour chaque formule, la réduction est calculée ainsi : `100 × (prix Base mensuel − prix de la période / nombre de mois) / prix Base mensuel`. Les taux issus des prix Bar/buvette sont : 1 mois = 0 %, 3 mois = 13,33 %, 6 mois = 20 %, 12 mois = 33,33 %. Le prix final de chaque activité applique ensuite son coefficient propre.
+
+- [ ] Ajouter ces taux et les économies aux données retournées par l’API.
+- [ ] Afficher prix total, prix mensuel moyen, réduction et économie sous chaque offre.
+- [ ] Vérifier que Moneroo reçoit le prix total exact de la formule et de l’activité sélectionnées.

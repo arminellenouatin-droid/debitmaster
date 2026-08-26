@@ -10,12 +10,14 @@ const planDefinitions: Record<SubscriptionPlanCode, { label: string; durationMon
   SUPREME: { label: "Suprême", durationMonths: 12, basePriceXof: 400000, description: "La formule annuelle pour piloter sereinement toute l’année." },
 };
 
-const activityDefinitions: Record<string, { label: string; multiplier: number }> = {
-  BAR: { label: "Bar", multiplier: 1 },
-  BUVETTE: { label: "Bar", multiplier: 1 },
-  BAR_RESTAURANT: { label: "Bar restaurant", multiplier: 1.5 },
-  NIGHTCLUB_LOUNGE: { label: "Boîte de nuit / Lounge", multiplier: 2 },
+const activityDefinitions: Record<string, { label: string; multiplier: number; includedServices: string[] }> = {
+  BAR: { label: "Bar", multiplier: 1, includedServices: ["Vente de boissons seules", "Bières, sucreries et boissons énergisantes"] },
+  BUVETTE: { label: "Bar", multiplier: 1, includedServices: ["Vente de boissons seules", "Bières, sucreries et boissons énergisantes"] },
+  BAR_RESTAURANT: { label: "Bar restaurant", multiplier: 1.5, includedServices: ["Vente de boissons et de repas", "Configuration des repas et des plats"] },
+  NIGHTCLUB_LOUNGE: { label: "Boîte de nuit / Lounge", multiplier: 2, includedServices: ["Vente de boissons, champagnes, spiritueux et vins", "Gestion adaptée à une activité de nuit et lounge"] },
 };
+
+const commonServices = ["Commandes, ventes et paiements clients", "Stocks, inventaire et approvisionnements", "Équipe, horaires, tables, rapports et KPI"];
 
 export const subscriptionActivityCodes = ["BAR", "BAR_RESTAURANT", "NIGHTCLUB_LOUNGE"] as const;
 
@@ -45,14 +47,19 @@ export function getSubscriptionCatalog(activityType: string) {
   const activity = getActivityPricing(activityType);
   return subscriptionPlanCodes.map((code) => {
     const definition = planDefinitions[code];
-    return { code, label: definition.label, durationMonths: definition.durationMonths, priceXof: Math.round(definition.basePriceXof * activity.multiplier), basePriceXof: definition.basePriceXof, description: definition.description };
+    const priceXof = Math.round(definition.basePriceXof * activity.multiplier);
+    const baseMonthlyPriceXof = Math.round(planDefinitions.BASE.basePriceXof * activity.multiplier);
+    const monthlyPriceXof = Math.round(priceXof / definition.durationMonths);
+    const savingsXof = Math.max(0, baseMonthlyPriceXof * definition.durationMonths - priceXof);
+    const discountPercent = baseMonthlyPriceXof > 0 ? (1 - monthlyPriceXof / baseMonthlyPriceXof) * 100 : 0;
+    return { code, label: definition.label, durationMonths: definition.durationMonths, priceXof, basePriceXof: definition.basePriceXof, monthlyPriceXof, savingsXof, discountPercent, description: definition.description };
   });
 }
 
 export function getSubscriptionActivityCatalog() {
   return subscriptionActivityCodes.map((code) => {
     const activity = getActivityPricing(code);
-    return { code, label: activity.label, multiplier: activity.multiplier, plans: getSubscriptionCatalog(code) };
+    return { code, label: activity.label, multiplier: activity.multiplier, includedServices: activity.includedServices, commonServices, plans: getSubscriptionCatalog(code) };
   });
 }
 
