@@ -91,8 +91,8 @@
 - [x] Ajouter le bouton « S’affilier » et le parcours inscription/connexion/acceptation.
 - [x] Générer le lien affilié et rattacher les établissements aux renouvellements.
 - [x] Calculer 10 % de commission et afficher le suivi dans l’espace affilié.
-- [ ] Tester les scénarios d’inscription, d’abonnement, de renouvellement et d’accès.
-- [ ] Documenter et préparer le PR de livraison.
+- [ ] Tester les scénarios d’inscription, d’abonnement, de renouvellement et d’accès avec les variables Supabase de production.
+- [x] Documenter et préparer le PR de livraison.
 
 > Décision fonctionnelle : une personne peut être affiliée sans posséder d’établissement. L’attribution du lien doit rester attachée à l’établissement pour ses renouvellements futurs.
 
