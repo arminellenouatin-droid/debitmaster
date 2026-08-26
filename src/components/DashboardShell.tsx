@@ -9,6 +9,7 @@ const navigation: ReadonlyArray<readonly [string, string, string]> = [
   ["▦", "Plan de salle", "/dashboard/tables"],
   ["＋", "Ventes", "/dashboard/orders"],
   ["◉", "Commandes", "/dashboard/orders"],
+  ["▰", "Vente", "/dashboard/sales"],
   ["▤", "Gestion des stocks", "/dashboard/stock"],
   ["♙", "Personnel", "/dashboard/personnel"],
   ["◫", "Finance", "/dashboard/finance"],
