@@ -24,11 +24,17 @@ export const permissionCatalog = [
   { key: "reports.view", label: "Consulter les rapports", group: "Pilotage" },
   { key: "messages.view", label: "Consulter les messages", group: "Messagerie" },
   { key: "messages.send", label: "Envoyer des messages", group: "Messagerie" },
+  { key: "activities.view", label: "Consulter les activités", group: "Power" },
+  { key: "activities.manage", label: "Gérer les activités", group: "Power" },
+  { key: "services.view", label: "Consulter les services", group: "Power" },
+  { key: "services.manage", label: "Gérer les services et leurs prix", group: "Power" },
+  { key: "team.salary.manage", label: "Gérer les salaires", group: "Équipe" },
+  { key: "power.view", label: "Consulter les modules Power", group: "Power" },
 ] as const;
 
 export const defaultRolePermissions: Record<string, string[]> = {
   SERVEUR: ["orders.view", "orders.create", "orders.receive", "orders.deliver", "tables.view", "payments.create"],
-  SUPERVISEUR: ["orders.view", "stock.view", "stock.audit", "team.view", "reports.view", "reports.daily_close", "messages.view", "messages.send", "tables.view"],
+  SUPERVISEUR: permissionCatalog.map((permission) => permission.key),
   MAGASINIER: ["stock.view", "stock.receive", "stock.issue", "stock.handoff", "products.manage"],
   GERANT: ["orders.view", "orders.prepare", "orders.handoff", "stock.view", "stock.accept_counter", "team.view", "team.manage", "tables.view", "tables.manage", "finance.view", "reports.view", "reports.daily_close", "messages.view", "messages.send"],
   BARMAN: ["orders.view", "orders.create", "stock.view", "tables.view", "payments.create"],
@@ -37,9 +43,17 @@ export const defaultRolePermissions: Record<string, string[]> = {
   APPROVISIONNEMENT: ["stock.view", "stock.receive", "stock.issue", "reports.view"],
   CUISINIER: ["orders.view", "orders.prepare", "orders.handoff"],
   CHEF_CUISINE: ["orders.view", "orders.prepare", "stock.view", "stock.accept_kitchen", "messages.view", "messages.send"],
+  GYM: ["services.view", "payments.create", "power.view"],
+  AUBERGE: ["services.view", "payments.create", "power.view"],
+  LAVAGE: ["services.view", "payments.create", "power.view"],
+  WIFI: ["services.view", "payments.create", "power.view"],
+  SECURITE: ["power.view"],
+  INVENTAIRE: ["stock.view", "stock.audit", "reports.view"],
+  GERANT_ADJOINT: ["orders.view", "orders.prepare", "orders.handoff", "stock.view", "stock.accept_counter", "team.view", "team.manage", "tables.view", "tables.manage", "finance.view", "reports.view", "reports.daily_close", "messages.view", "messages.send", "activities.view", "services.view", "power.view"],
+  CAISSIER: ["finance.view", "payments.create", "reports.view", "power.view"],
   ADMINISTRATEUR: permissionCatalog.map((permission) => permission.key),
 };
 
 export const roleLabels: Record<string, string> = {
-  SERVEUR: "Serveur", SUPERVISEUR: "Superviseur", MAGASINIER: "Magasinier", GERANT: "Gérant", BARMAN: "Barman", SECRETAIRE: "Secrétaire", COMPTABLE: "Comptable", APPROVISIONNEMENT: "Approvisionnement", CUISINIER: "Cuisinier", CHEF_CUISINE: "Chef cuisine", ADMINISTRATEUR: "Administrateur",
+  SERVEUR: "Serveur", SUPERVISEUR: "Superviseur", MAGASINIER: "Magasinier", GERANT: "Gérant", BARMAN: "Barman", SECRETAIRE: "Secrétaire", COMPTABLE: "Comptable", APPROVISIONNEMENT: "Approvisionnement", CUISINIER: "Cuisinier", CHEF_CUISINE: "Chef cuisine", SECURITE: "Sécurité", INVENTAIRE: "Chargé d’inventaire", GYM: "Équipe gym", AUBERGE: "Équipe auberge", LAVAGE: "Équipe lavage", WIFI: "Équipe Wi-Fi", GERANT_ADJOINT: "Gérant adjoint", CAISSIER: "Caissier", ADMINISTRATEUR: "Administrateur",
 };
