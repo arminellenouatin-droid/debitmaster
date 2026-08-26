@@ -1,10 +1,9 @@
-// DebitManager subscription: catalogue, calcul du tarif et initialisation Moneroo côté serveur.
+// DebitManager subscription: catalogue, calcul du tarif et initialisation MTN MoMo Collection côté serveur.
 import { NextResponse } from "next/server";
 import { getAuthorizationContext } from "@/lib/authorization";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { MtnMomoError, requestToPay } from "@/lib/mtn-momo";
 import { addSubscriptionPeriod, getSubscriptionActivityCatalog, getSubscriptionCatalog, getSubscriptionPlan, getSubscriptionPrice } from "@/lib/subscription-plans";
-
-const monerooApiUrl = "https://api.moneroo.io/v1/payments/initialize";
 
 function ownerTenantId(context: Awaited<ReturnType<typeof getAuthorizationContext>>, requestedTenantId: string) {
   if (context.employeeId) return null;
@@ -49,15 +48,17 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json() as { tenantId?: string; plan?: string };
+    const body = await request.json() as { tenantId?: string; plan?: string; mobileNumber?: string };
     const context = await getAuthorizationContext();
     if (!context.user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
     const tenantId = ownerTenantId(context, typeof body.tenantId === "string" ? body.tenantId : "");
     if (!tenantId) return NextResponse.json({ error: "Seul le propriétaire peut modifier l’abonnement." }, { status: 403 });
 
     const plan = typeof body.plan === "string" ? body.plan.toUpperCase() : "";
+    const mobileNumber = typeof body.mobileNumber === "string" ? body.mobileNumber.trim() : "";
     const definition = getSubscriptionPlan(plan);
     if (!definition) return NextResponse.json({ error: "Formule d’abonnement invalide." }, { status: 400 });
+    if (!mobileNumber) return NextResponse.json({ error: "Le numéro MTN MoMo utilisé pour l’abonnement est obligatoire." }, { status: 400 });
 
     const { data: company, error: companyError } = await context.supabase
       .from("companies")
@@ -68,43 +69,38 @@ export async function POST(request: Request) {
     if (companyError || !company) return NextResponse.json({ error: "Établissement introuvable." }, { status: 404 });
 
     const amount = getSubscriptionPrice(company.activity_type, plan);
-    const apiKey = process.env.MONEROO_API_KEY;
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "");
-    if (!apiKey || !appUrl) return NextResponse.json({ error: "Moneroo ou l’URL publique de retour n’est pas configuré." }, { status: 503 });
-
     const now = new Date();
     const existingEnd = company.subscription_expires_at ? new Date(company.subscription_expires_at) : null;
     const periodStart = existingEnd && existingEnd.getTime() > now.getTime() ? existingEnd : now;
     const periodEnd = addSubscriptionPeriod(periodStart, plan);
     if (!amount || !periodEnd) return NextResponse.json({ error: "Tarif d’abonnement indisponible." }, { status: 503 });
+
     const admin = createSupabaseAdminClient();
     const { data: payment, error: paymentError } = await admin
       .from("saas_subscription_payments")
-      .insert({ tenant_id: tenantId, provider: "MONEROO", plan, amount, currency: company.currency || "XOF", status: "PENDING", period_start: periodStart.toISOString(), period_end: periodEnd.toISOString(), metadata: { activity_type: company.activity_type, duration_months: definition.durationMonths } })
+      .insert({ tenant_id: tenantId, provider: "MTN_MOMO", plan, amount, currency: company.currency || "XOF", status: "PENDING", period_start: periodStart.toISOString(), period_end: periodEnd.toISOString(), metadata: { activity_type: company.activity_type, duration_months: definition.durationMonths } })
       .select("id,tenant_id,plan,amount,currency,status,period_start,period_end")
       .single();
     if (paymentError || !payment) return NextResponse.json({ error: "Impossible de préparer l’abonnement." }, { status: 400 });
 
-    const monerooResponse = await fetch(monerooApiUrl, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify({ amount, currency: company.currency || "XOF", description: `Abonnement DebitManager ${definition.label}`, return_url: `${appUrl}/dashboard/settings?subscription=${encodeURIComponent(payment.id)}`, customer: { email: context.user.email ?? "", first_name: context.user.user_metadata?.first_name ?? "", last_name: context.user.user_metadata?.last_name ?? "" }, metadata: { subscription_payment_id: payment.id, tenant_id: tenantId, plan } }),
-    });
-    const result = await monerooResponse.json().catch(() => null) as { data?: { id?: string; checkout_url?: string }; message?: string } | null;
-    if (!monerooResponse.ok || !result?.data?.id || !result.data.checkout_url) {
+    try {
+      const initiated = await requestToPay({ amount, currency: company.currency || "XOF", customerPhone: mobileNumber, externalId: payment.id, payerMessage: `Abonnement ${definition.label}`, payeeNote: `DebitManager ${company.name}` });
+      const { data: updated, error: referenceError } = await admin
+        .from("saas_subscription_payments")
+        .update({ provider_reference: initiated.referenceId, updated_at: new Date().toISOString() })
+        .eq("id", payment.id)
+        .eq("status", "PENDING")
+        .select("id,tenant_id,plan,amount,currency,status,period_start,period_end,provider_reference")
+        .single();
+      if (referenceError || !updated) return NextResponse.json({ error: "Paiement initié mais référence locale d’abonnement incomplète. Vérifiez le statut avant une nouvelle tentative." }, { status: 500 });
+      return NextResponse.json({ payment: updated, status: "PENDING", referenceId: initiated.referenceId });
+    } catch (cause) {
       await admin.from("saas_subscription_payments").update({ status: "FAILED", updated_at: new Date().toISOString() }).eq("id", payment.id).eq("status", "PENDING");
-      return NextResponse.json({ error: result?.message ?? "Moneroo n’a pas pu initialiser l’abonnement." }, { status: 502 });
+      if (cause instanceof MtnMomoError) return NextResponse.json({ error: cause.message }, { status: cause.status });
+      return NextResponse.json({ error: "MTN MoMo n’a pas pu initialiser l’abonnement." }, { status: 502 });
     }
-
-    const { data: updated, error: referenceError } = await admin
-      .from("saas_subscription_payments")
-      .update({ provider_reference: result.data.id, updated_at: new Date().toISOString() })
-      .eq("id", payment.id)
-      .select("id,tenant_id,plan,amount,currency,status,period_start,period_end,provider_reference")
-      .single();
-    if (referenceError || !updated) return NextResponse.json({ error: "Référence locale d’abonnement incomplète." }, { status: 500 });
-    return NextResponse.json({ payment: updated, checkoutUrl: result.data.checkout_url });
-  } catch {
-    return NextResponse.json({ error: "Impossible de préparer l’abonnement Moneroo." }, { status: 500 });
+  } catch (cause) {
+    if (cause instanceof MtnMomoError) return NextResponse.json({ error: cause.message }, { status: cause.status });
+    return NextResponse.json({ error: "Impossible de préparer l’abonnement MTN MoMo." }, { status: 500 });
   }
 }
