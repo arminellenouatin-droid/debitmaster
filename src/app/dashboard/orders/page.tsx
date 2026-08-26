@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { DashboardShell } from "@/components/DashboardShell";
 import { OrdersClient } from "./OrdersClient";
+import { OwnerOrdersClient } from "./OwnerOrdersClient";
 import { ServeurClient } from "../ServeurClient";
 import { GerantClient } from "../GerantClient";
 import { getAuthorizationContext } from "@/lib/authorization";
@@ -24,5 +25,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
     const active = await getActiveTenantContext();
     return <DashboardShell firstName={auth.user.user_metadata?.first_name ?? "gérant"}><ServeurClient tenantId={active.tenantId ?? ""} firstName={auth.user.user_metadata?.first_name ?? "serveur"} companyName={active.company?.name ?? "Établissement actif"} initialTab="orders" /></DashboardShell>;
   }
+  const active = await getActiveTenantContext();
+  if (authorization.role === "ADMINISTRATEUR") return <DashboardShell firstName={auth.user.user_metadata?.first_name ?? "propriétaire"}><OwnerOrdersClient companyName={active.company?.name ?? "Établissement actif"} /></DashboardShell>;
   return <DashboardShell firstName={auth.user.user_metadata?.first_name ?? "gérant"}><OrdersClient initialTableLabel={params.table ?? ""} /></DashboardShell>;
 }
