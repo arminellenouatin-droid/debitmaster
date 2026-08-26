@@ -9,7 +9,8 @@ export async function GET() {
     if (!context.employeeId || context.role !== "SERVEUR" || !can(context, "orders.view")) return NextResponse.json({ error: "Cet espace est réservé aux serveurs et serveuses." }, { status: 403 });
     const tenantId = context.tenantIds[0];
     if (!tenantId) return NextResponse.json({ error: "Aucun établissement actif." }, { status: 404 });
-    const [{ data: employee }, { data: assignments, error: assignmentError }, { data: zoneAssignments, error: zoneAssignmentError }, { data: orders, error: orderError }, { data: commissions, error: commissionError }] = await Promise.all([
+    const [{ data: company }, { data: employee }, { data: assignments, error: assignmentError }, { data: zoneAssignments, error: zoneAssignmentError }, { data: orders, error: orderError }, { data: commissions, error: commissionError }] = await Promise.all([
+      context.supabase.from("companies").select("activity_type,zones_tables_enabled").eq("id", tenantId).maybeSingle(),
       context.supabase.from("employees").select("id,first_name,last_name,position,service_start_time,service_end_time,rest_day").eq("id", context.employeeId).eq("tenant_id", tenantId).maybeSingle(),
       context.supabase.from("employee_table_assignments").select("id,table_id,dining_tables(id,label,zone,zone_id,capacity,status)").eq("tenant_id", tenantId).eq("employee_id", context.employeeId).limit(100),
       context.supabase.from("employee_zone_assignments").select("id,zone_id,work_zones(id,name,is_active,dining_tables(id,label,zone,zone_id,capacity,status))").eq("tenant_id", tenantId).eq("employee_id", context.employeeId).limit(100),
@@ -21,6 +22,6 @@ export async function GET() {
     const sales = visibleOrders.reduce((sum, order) => sum + (order.total_amount ?? 0), 0);
     const paidSales = visibleOrders.reduce((sum, order) => sum + (order.payments ?? []).filter((payment) => ["PAID", "SUCCESS"].includes(payment.status)).reduce((paymentSum, payment) => paymentSum + Number(payment.amount ?? 0), 0), 0);
     const commissionTotal = (commissions ?? []).reduce((sum, commission) => sum + (commission.commission_amount ?? 0), 0);
-    return NextResponse.json({ employee, assignments: assignments ?? [], zoneAssignments: zoneAssignments ?? [], orders: visibleOrders, metrics: { sales, paidSales, orderCount: visibleOrders.length, commissionTotal }, commissions: commissions ?? [] });
+    return NextResponse.json({ zonesTablesEnabled: company?.activity_type === "POWER" ? company.zones_tables_enabled !== false : true, employee, assignments: assignments ?? [], zoneAssignments: zoneAssignments ?? [], orders: visibleOrders, metrics: { sales, paidSales, orderCount: visibleOrders.length, commissionTotal }, commissions: commissions ?? [] });
   } catch { return NextResponse.json({ error: "Service temporairement indisponible." }, { status: 500 }); }
 }

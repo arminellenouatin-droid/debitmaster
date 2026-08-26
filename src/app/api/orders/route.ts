@@ -31,22 +31,29 @@ export async function POST(request: Request) {
     const zoneId = typeof body.zoneId === "string" && body.zoneId ? body.zoneId : null;
     const customerId = typeof body.customerId === "string" ? body.customerId : null;
     const lines = Array.isArray(body.lines) ? body.lines as OrderLine[] : [];
-    if (!tenantId || !tableLabel || !locationLabel || !lines.length || lines.length > 50) return NextResponse.json({ error: "Établissement, emplacement, numéro de table et au moins une ligne de commande sont requis." }, { status: 400 });
+    if (!tenantId || !lines.length || lines.length > 50) return NextResponse.json({ error: "Établissement et au moins une ligne de commande sont requis." }, { status: 400 });
     const context = await getAuthorizationContext();
     const { supabase, user, tenantIds } = context;
     if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
     if (!can(context, "orders.create")) return NextResponse.json({ error: "Permission insuffisante pour créer une commande." }, { status: 403 });
     if (!tenantIds.includes(tenantId)) return NextResponse.json({ error: "Établissement non autorisé." }, { status: 403 });
-    if (context.role === "SERVEUR") {
+    const { data: company, error: companyError } = await supabase.from("companies").select("activity_type,zones_tables_enabled").eq("id", tenantId).maybeSingle();
+    if (companyError || !company) return NextResponse.json({ error: "Configuration de l’établissement introuvable." }, { status: 500 });
+    const zonesTablesEnabled = company.activity_type === "POWER" ? company.zones_tables_enabled !== false : true;
+    if (zonesTablesEnabled && (!tableLabel || !locationLabel)) return NextResponse.json({ error: "Emplacement et numéro de table requis lorsque les zones et tables sont activées." }, { status: 400 });
+    const effectiveTableLabel = zonesTablesEnabled ? tableLabel : null;
+    const effectiveLocationLabel = zonesTablesEnabled ? locationLabel : null;
+    const effectiveZoneId = zonesTablesEnabled ? zoneId : null;
+    if (context.role === "SERVEUR" && zonesTablesEnabled) {
       const [{ data: assignments }, { data: zoneAssignments }] = await Promise.all([
         supabase.from("employee_table_assignments").select("dining_tables(label,zone,zone_id)").eq("tenant_id", tenantId).eq("employee_id", context.employeeId).limit(100),
-        zoneId ? supabase.from("employee_zone_assignments").select("zone_id,work_zones(name,is_active)").eq("tenant_id", tenantId).eq("employee_id", context.employeeId).eq("zone_id", zoneId).limit(1) : Promise.resolve({ data: [] }),
+        effectiveZoneId ? supabase.from("employee_zone_assignments").select("zone_id,work_zones(name,is_active)").eq("tenant_id", tenantId).eq("employee_id", context.employeeId).eq("zone_id", effectiveZoneId).limit(1) : Promise.resolve({ data: [] }),
       ]);
       const assignedDiningTables = (assignments ?? []).flatMap((assignment) => Array.isArray(assignment.dining_tables) ? assignment.dining_tables : assignment.dining_tables ? [assignment.dining_tables] : []);
-      const directTable = assignedDiningTables.some((table) => table.label === tableLabel && (table.zone ?? "Emplacement général") === locationLabel && (!zoneId || table.zone_id === zoneId));
+      const directTable = assignedDiningTables.some((table) => table.label === effectiveTableLabel && (table.zone ?? "Emplacement général") === effectiveLocationLabel && (!effectiveZoneId || table.zone_id === effectiveZoneId));
       const assignedZone = (zoneAssignments ?? []).some((assignment) => {
         const zone = Array.isArray(assignment.work_zones) ? assignment.work_zones[0] : assignment.work_zones;
-        return zone?.name === locationLabel && zone.is_active;
+        return zone?.name === effectiveLocationLabel && zone.is_active;
       });
       if (!directTable && !assignedZone) return NextResponse.json({ error: "Cette table ne correspond pas à l’emplacement qui vous est attribué." }, { status: 403 });
     }
@@ -63,7 +70,7 @@ export async function POST(request: Request) {
     const orderLines = normalizedLines.map((line) => { const product = productMap.get(line.productId)!; const inferredUnit = String(product.product_type ?? "").toUpperCase().includes("FOOD") || String(product.product_type ?? "").toUpperCase().includes("MEAL") ? "MEAL" : "BEVERAGE"; return { tenant_id: tenantId, product_id: product.id, product_name: product.name, quantity: line.quantity, unit_price: product.price, total_price: product.price * line.quantity, fulfillment_unit: line.fulfillmentUnit ?? inferredUnit, preparation_status: "PENDING" }; });
     const totalAmount = orderLines.reduce((total, line) => total + line.total_price, 0);
     const orderNumber = `DM-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}-${randomUUID().slice(0, 8).toUpperCase()}`;
-    const { data: order, error: orderError } = await supabase.from("orders").insert({ tenant_id: tenantId, order_number: orderNumber, table_label: tableLabel, location_label: locationLabel, customer_id: customerId, server_user_id: context.employeeId && context.role === "SERVEUR" ? user.id : null, server_name: user.user_metadata?.first_name ?? null, total_amount: totalAmount, currency: "XOF" }).select("id,tenant_id,order_number,table_label,location_label,customer_id,server_user_id,server_name,status,total_amount,currency,created_at").single();
+    const { data: order, error: orderError } = await supabase.from("orders").insert({ tenant_id: tenantId, order_number: orderNumber, table_label: effectiveTableLabel, location_label: effectiveLocationLabel, customer_id: customerId, server_user_id: context.employeeId && context.role === "SERVEUR" ? user.id : null, server_name: user.user_metadata?.first_name ?? null, total_amount: totalAmount, currency: "XOF" }).select("id,tenant_id,order_number,table_label,location_label,customer_id,server_user_id,server_name,status,total_amount,currency,created_at").single();
     if (orderError || !order) return NextResponse.json({ error: "Impossible de créer la commande." }, { status: 400 });
     const { data: insertedLines, error: linesError } = await supabase.from("order_items").insert(orderLines.map((line) => ({ ...line, order_id: order.id }))).select("id,product_id,product_name,quantity,unit_price,total_price");
     if (linesError) { await supabase.from("orders").delete().eq("id", order.id).eq("tenant_id", tenantId); return NextResponse.json({ error: "Impossible d’enregistrer les lignes de commande." }, { status: 400 }); }
