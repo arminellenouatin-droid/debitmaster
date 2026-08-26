@@ -373,3 +373,14 @@ Pour chaque formule, la réduction est calculée ainsi : `100 × (prix Base mens
 - [ ] Contrôler la route API de création et les contraintes Supabase/RLS.
 - [ ] Corriger le blocage et afficher un retour explicite à la serveuse.
 - [ ] Tester création, rafraîchissement des commandes et réception côté gérant/cuisine.
+
+
+## Nouveau lot — diagnostic MTN MoMo « Currency not supported »
+
+- [x] Tracer la valeur de devise construite par le formulaire de paiement et les routes serveur.
+- [x] Vérifier le code pays, la devise et le produit MTN MoMo associés au sandbox Bénin/XOF.
+- [x] Corriger le mapping sans relancer de paiement avant validation.
+- [x] Contrôler le build et le déploiement Production.
+- [ ] Reprendre le test sandbox de 1 000 XOF pour la serveuse Ella et documenter le résultat.
+
+> Ne jamais afficher ni consigner les secrets MTN MoMo ou les identifiants Supabase/Vercel dans ce fichier.
