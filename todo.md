@@ -535,3 +535,10 @@ Pour chaque formule, la réduction est calculée ainsi : `100 × (prix Base mens
 - [ ] Afficher les états prise en charge, préparation, prêtes à remettre et remise au service.
 - [ ] Ajouter les volumes, montants, détail de journée et filtres opérationnels.
 - [ ] Vérifier que cette évolution reste limitée à BAR SANTE PLUS Power.
+
+## Vente propriétaire — BAR SANTE PLUS Power
+
+- [ ] Ajouter l’onglet Vente au sidebar du propriétaire.
+- [ ] Agréger le chiffre d’affaires payé par activité et par personne.
+- [ ] Ajouter filtres, indicateurs, tendance graphique et tableaux responsive.
+- [ ] Vérifier les flux d’encaissement des activités Power hors commandes lorsque leurs écrans de vente seront disponibles.
