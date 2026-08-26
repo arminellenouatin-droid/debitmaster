@@ -13,7 +13,7 @@ export async function GET() {
     context.supabase.from("companies").select("id,name,activity_type,status,currency,created_at,affiliate_id").is("deleted_at", null).order("created_at", { ascending: false }).limit(500),
     context.supabase.from("saas_subscription_payments").select("id,tenant_id,plan,amount,currency,status,paid_at,created_at").order("created_at", { ascending: false }).limit(1000),
     context.supabase.from("platform_affiliates").select("id,user_id,code,display_name,commission_rate,status,payout_threshold_xof,created_at").order("created_at", { ascending: false }).limit(500),
-    context.supabase.from("affiliate_payout_requests").select("id,affiliate_id,amount,currency,status,payment_method,requested_at,reviewed_at,rejection_reason").order("requested_at", { ascending: false }).limit(500),
+    context.supabase.from("affiliate_payout_requests").select("id,affiliate_id,amount,currency,status,payment_method,payment_account_ref,payout_reference,requested_at,reviewed_at,rejection_reason").order("requested_at", { ascending: false }).limit(500),
   ]);
   if (companiesError || paymentsError || affiliatesError || payoutsError) return jsonError("Lecture du cockpit SaaS impossible", 500);
 
