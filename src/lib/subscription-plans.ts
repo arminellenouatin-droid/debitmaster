@@ -45,7 +45,12 @@ export function getSubscriptionCatalog(activityType: string) {
   const activity = getActivityPricing(activityType);
   return subscriptionPlanCodes.map((code) => {
     const definition = planDefinitions[code];
-    return { code, label: definition.label, durationMonths: definition.durationMonths, priceXof: Math.round(definition.basePriceXof * activity.multiplier), basePriceXof: definition.basePriceXof, description: definition.description };
+    const priceXof = Math.round(definition.basePriceXof * activity.multiplier);
+    const baseMonthlyPriceXof = Math.round(planDefinitions.BASE.basePriceXof * activity.multiplier);
+    const monthlyPriceXof = Math.round(priceXof / definition.durationMonths);
+    const savingsXof = Math.max(0, baseMonthlyPriceXof * definition.durationMonths - priceXof);
+    const discountPercent = baseMonthlyPriceXof > 0 ? (1 - monthlyPriceXof / baseMonthlyPriceXof) * 100 : 0;
+    return { code, label: definition.label, durationMonths: definition.durationMonths, priceXof, basePriceXof: definition.basePriceXof, monthlyPriceXof, savingsXof, discountPercent, description: definition.description };
   });
 }
 
