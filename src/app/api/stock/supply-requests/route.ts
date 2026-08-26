@@ -34,6 +34,7 @@ export async function POST(request: Request) {
     if (!context.tenantIds.includes(tenantId)) return NextResponse.json({ error: "Établissement non autorisé." }, { status: 403 });
     const { data: product } = await context.supabase.from("products").select("id,stock_family").eq("id", productId).eq("tenant_id", tenantId).is("deleted_at", null).maybeSingle();
     if (!product) return NextResponse.json({ error: "Produit non autorisé." }, { status: 403 });
+    if (context.role === "SUPERVISEUR" && product.stock_family !== "BEVERAGE") return NextResponse.json({ error: "Le Superviseur ne peut approvisionner que les boissons." }, { status: 403 });
     if (context.role === "MAGASINIER" && context.employeeId) {
       const { data: employee } = await context.supabase.from("employees").select("stock_scope").eq("id", context.employeeId).maybeSingle();
       if (employee?.stock_scope !== "BOTH" && employee?.stock_scope !== product.stock_family) return NextResponse.json({ error: "Ce produit est hors du périmètre de stock attribué." }, { status: 403 });

@@ -12,7 +12,7 @@ export async function GET(request: Request) {
     const context = await getActiveTenantContext();
     if (!context.user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
     if (!context.tenantId || !context.company) return NextResponse.json({ error: "Aucun établissement actif." }, { status: 404 });
-    if (context.role !== "ADMINISTRATEUR" || context.employeeId !== null || context.company.activity_type !== "POWER" || !can(context, "stock.view")) return NextResponse.json({ error: "Accès réservé au propriétaire Power." }, { status: 403 });
+    if (!(context.role === "ADMINISTRATEUR" || context.role === "SUPERVISEUR") || context.company.activity_type !== "POWER" || !can(context, "stock.view")) return NextResponse.json({ error: "Accès réservé au propriétaire ou au superviseur Power." }, { status: 403 });
     const url = new URL(request.url); const { start, end } = period(url); const tenantId = context.tenantId;
     const [productsResult, storesResult, movementsResult, purchasesResult, controlsResult] = await Promise.all([
       context.supabase.from("products").select("id,name,product_type,unit,stock_family,current_stock,alert_threshold,safety_threshold").eq("tenant_id", tenantId).is("deleted_at", null).order("name").limit(1000),

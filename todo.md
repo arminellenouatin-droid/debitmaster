@@ -550,3 +550,11 @@ Pour chaque formule, la réduction est calculée ainsi : `100 × (prix Base mens
 - [ ] Ajouter le détail par produit, secteur, type et période d’achat/vente.
 - [ ] Ajouter la situation des inventaires et les écarts constatés.
 - [ ] Vérifier l’isolation tenant et les données réelles avant PR.
+
+## Superviseur Power — pilotage et approvisionnement boissons
+
+- [ ] Donner au Superviseur les onglets de pilotage du propriétaire selon la matrice autorisée.
+- [ ] Ajouter l’onglet Approvisionnement limité aux boissons.
+- [ ] Sélectionner les produits en alerte et saisir les quantités à commander.
+- [ ] Générer un bon de commande depuis l’approvisionnement.
+- [ ] Vérifier les restrictions tenant, rôle et absence d’accès cuisine.
