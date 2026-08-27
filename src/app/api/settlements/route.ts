@@ -1,6 +1,7 @@
 // DebitManager settlements: aucune sortie d’argent automatique; la demande reste VERIFYING pendant 4 heures.
 import { NextResponse } from "next/server";
 import { getAuthorizationContext, can } from "@/lib/authorization";
+import { emitTenantNotification } from "@/lib/notifications";
 
 export async function GET(request: Request) {
   try {
@@ -29,6 +30,8 @@ export async function POST(request: Request) {
       const message = error.message.includes("NO_AVAILABLE_FUNDS") ? "Aucun paiement Mobile Money disponible pour un reversement." : error.message.includes("OWNER_REQUIRED") ? "Seul le propriétaire de l’établissement peut demander un reversement." : "Impossible de préparer le reversement.";
       return NextResponse.json({ error: message }, { status: error.message.includes("OWNER_REQUIRED") ? 403 : 409 });
     }
+    const settlementId = typeof data === "string" ? data : data?.id;
+    await emitTenantNotification({ tenantId, actorUserId: context.user.id, subject: "Demande de reversement créée", body: "Une demande de reversement de l’établissement est disponible pour contrôle.", eventType: "ESTABLISHMENT_SETTLEMENT_REQUESTED", entityId: settlementId ?? null, actionPath: "/dashboard/finance?tab=settlements", actionPermission: "finance.view", operatorPositions: ["SUPERVISEUR", "COMPTABLE"], dedupeKey: settlementId ? `settlement-requested:${settlementId}` : null });
     return NextResponse.json({ settlement: data }, { status: 201 });
   } catch { return NextResponse.json({ error: "Requête invalide." }, { status: 400 }); }
 }

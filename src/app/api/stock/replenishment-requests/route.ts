@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { getAuthorizationContext, can } from "@/lib/authorization";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { emitTenantNotification } from "@/lib/notifications";
 
 type Line = { productId: string; quantity: number };
 const jsonError = (error: string, status = 400) => NextResponse.json({ error }, { status });
@@ -55,6 +56,7 @@ export async function POST(request: Request) {
     if (createError || !created) return jsonError("Impossible d’enregistrer la demande.");
     const { error: itemsError } = await admin.from("counter_replenishment_request_items").insert(lines.map((line) => ({ request_id: created.id, tenant_id: tenantId, product_id: line.productId, requested_quantity: line.quantity, unit_cost_snapshot: costs.get(line.productId) ?? 0 })));
     if (itemsError) { await admin.from("counter_replenishment_requests").delete().eq("id", created.id); return jsonError("Impossible d’enregistrer les lignes de la demande."); }
+    await emitTenantNotification({ tenantId, actorUserId: context.user.id, subject: "Nouvelle demande du magasin comptoir", body: `Le Gérant demande ${lines.length} produit(s) au magasin central.`, eventType: "COUNTER_REPLENISHMENT_REQUESTED", entityId: created.id, actionPath: "/dashboard/stock?tab=replenishment", actionPermission: "stock.audit", operatorPositions: ["SUPERVISEUR"], dedupeKey: `counter-replenishment-requested:${created.id}`, metadata: { requestId: created.id } });
     return NextResponse.json({ request: created }, { status: 201 });
   } catch { return jsonError("Requête invalide."); }
 }
@@ -69,18 +71,20 @@ export async function PATCH(request: Request) {
     const context = await getAuthorizationContext();
     if (!context.user || !context.tenantIds.includes(tenantId)) return jsonError("Établissement non autorisé.", 403);
     const admin = createSupabaseAdminClient();
-    const { data: current } = await admin.from("counter_replenishment_requests").select("id,status,tenant_id").eq("id", requestId).eq("tenant_id", tenantId).maybeSingle();
+    const { data: current } = await admin.from("counter_replenishment_requests").select("id,status,tenant_id,requested_by").eq("id", requestId).eq("tenant_id", tenantId).maybeSingle();
     if (!current) return jsonError("Demande introuvable.", 404);
     if (action === "validate") {
       if (context.role !== "SUPERVISEUR" || !can(context, "stock.audit")) return jsonError("Seul le Superviseur autorisé peut valider cette demande.", 403);
       const { data, error } = await context.supabase.rpc("validate_counter_replenishment", { p_request_id: requestId });
       if (error) return jsonError(error.message.includes("INSUFFICIENT") ? "Stock central insuffisant ou déjà réservé." : "Impossible de valider la demande.", 409);
+      await emitTenantNotification({ tenantId, actorUserId: context.user.id, operatorUserIds: [current.requested_by], subject: "Demande comptoir validée", body: "Votre demande de mise à disposition a été validée et attend la livraison.", eventType: "COUNTER_REPLENISHMENT_VALIDATED", entityId: requestId, actionPath: "/dashboard/stock?tab=replenishment", actionPermission: "stock.accept_counter", dedupeKey: `counter-replenishment-validated:${requestId}` });
       return NextResponse.json({ request: data });
     }
     if (action === "deliver") {
       if (context.role !== "GERANT" || !can(context, "stock.accept_counter")) return jsonError("Seul le Gérant autorisé peut confirmer la livraison.", 403);
       const { data, error } = await context.supabase.rpc("deliver_counter_replenishment", { p_request_id: requestId });
       if (error) return jsonError(error.message.includes("SOURCE_STOCK") ? "Le stock central a changé ; la livraison doit être vérifiée." : "Impossible de confirmer la livraison.", 409);
+      await emitTenantNotification({ tenantId, actorUserId: context.user.id, operatorUserIds: [current.requested_by], subject: "Demande comptoir livrée", body: "La mise à disposition demandée a été livrée et enregistrée.", eventType: "COUNTER_REPLENISHMENT_DELIVERED", entityId: requestId, actionPath: "/dashboard/stock?tab=replenishment", actionPermission: "stock.view", dedupeKey: `counter-replenishment-delivered:${requestId}` });
       return NextResponse.json({ request: data });
     }
     if (context.role !== "SUPERVISEUR" || !can(context, "stock.receive")) return jsonError("Seul le Superviseur autorisé peut modifier cette demande.", 403);

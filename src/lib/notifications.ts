@@ -28,11 +28,13 @@ export async function emitTenantNotification(input: NotificationInput) {
   ]);
 
   const recipientIds = new Set<string>();
-  for (const id of input.operatorUserIds ?? []) if (id) recipientIds.add(id);
-  if (company?.owner_user_id) recipientIds.add(company.owner_user_id);
-  for (const employee of globalEmployees ?? []) if (employee.user_id) recipientIds.add(employee.user_id);
-  for (const employee of operators ?? []) if (employee.user_id) recipientIds.add(employee.user_id);
-  if (input.actorUserId) recipientIds.delete(input.actorUserId);
+  const globalRecipientIds = new Set<string>();
+  const operatorIds = new Set<string>();
+  for (const id of input.operatorUserIds ?? []) if (id) { recipientIds.add(id); operatorIds.add(id); }
+  if (company?.owner_user_id) { recipientIds.add(company.owner_user_id); globalRecipientIds.add(company.owner_user_id); }
+  for (const employee of globalEmployees ?? []) if (employee.user_id) { recipientIds.add(employee.user_id); globalRecipientIds.add(employee.user_id); }
+  for (const employee of operators ?? []) if (employee.user_id) { recipientIds.add(employee.user_id); operatorIds.add(employee.user_id); }
+  if (input.actorUserId && !globalRecipientIds.has(input.actorUserId)) recipientIds.delete(input.actorUserId);
   if (!recipientIds.size) return;
 
   const rows = [...recipientIds].map((recipientUserId) => ({
@@ -45,7 +47,7 @@ export async function emitTenantNotification(input: NotificationInput) {
     entity_id: input.entityId ?? null,
     action_path: input.actionPath,
     action_permission: input.actionPermission ?? null,
-    operator_user_id: (input.operatorUserIds ?? []).includes(recipientUserId) ? recipientUserId : null,
+    operator_user_id: operatorIds.has(recipientUserId) ? recipientUserId : null,
     dedupe_key: input.dedupeKey ? `${input.dedupeKey}:${recipientUserId}` : null,
     metadata: input.metadata ?? {},
   }));
