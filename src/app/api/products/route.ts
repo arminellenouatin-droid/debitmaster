@@ -65,6 +65,34 @@ export async function POST(request: Request) {
   }
 }
 
+export async function DELETE(request: Request) {
+  try {
+    const body = await request.json();
+    const tenantId = typeof body.tenantId === "string" ? body.tenantId : "";
+    const productId = typeof body.productId === "string" ? body.productId : "";
+    if (!tenantId || !productId) return NextResponse.json({ error: "Produit et établissement requis." }, { status: 400 });
+    const context = await getAuthorizationContext();
+    const { supabase, user, tenantIds } = context;
+    if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
+    if (!can(context, "products.manage")) return NextResponse.json({ error: "Permission insuffisante pour supprimer ce produit." }, { status: 403 });
+    if (!tenantIds.includes(tenantId)) return NextResponse.json({ error: "Établissement non autorisé." }, { status: 403 });
+    const { data: product } = await supabase.from("products").select("id,current_stock").eq("id", productId).eq("tenant_id", tenantId).is("deleted_at", null).maybeSingle();
+    if (!product) return NextResponse.json({ error: "Produit introuvable." }, { status: 404 });
+    const { data: positions, error: positionsError } = await supabase.from("store_inventory").select("quantity,reserved_quantity").eq("tenant_id", tenantId).eq("product_id", productId).limit(100);
+    if (positionsError) return NextResponse.json({ error: "Impossible de vérifier le stock du produit." }, { status: 400 });
+    const remaining = (positions ?? []).reduce((sum, position) => sum + Number(position.quantity ?? 0) + Number(position.reserved_quantity ?? 0), 0);
+    if (Number(product.current_stock ?? 0) > 0 || remaining > 0) return NextResponse.json({ error: "Ce produit ne peut pas être supprimé tant qu’il reste du stock. Videz les magasins puis réessayez." }, { status: 409 });
+    const { error } = await supabase.from("products").update({ deleted_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq("id", productId).eq("tenant_id", tenantId).is("deleted_at", null);
+    if (error) {
+      logDatabaseError("products.DELETE", error);
+      return NextResponse.json({ error: "Impossible de supprimer le produit.", diagnostic: databaseDiagnostic(error) }, { status: 400 });
+    }
+    return NextResponse.json({ ok: true, productId });
+  } catch {
+    return NextResponse.json({ error: "Requête invalide." }, { status: 400 });
+  }
+}
+
 export async function PATCH(request: Request) {
   try {
     const body = await request.json();
