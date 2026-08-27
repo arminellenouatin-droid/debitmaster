@@ -785,3 +785,71 @@ Pour chaque formule, la réduction est calculée ainsi : `100 × (prix Base mens
 - [ ] Ajouter la déclaration du point dans Trésorerie Serveuse.
 - [ ] Ajouter le contrôle et la validation dans Caisse centrale Gérant.
 - [ ] Transférer les espèces validées entre les caisses et conserver la trace Mobile Money.
+
+## Nouveau périmètre — Repas et cuisine
+
+- [ ] Figer le modèle métier : intrants achetés, stock cuisine, recettes, préparation et repas vendus.
+- [ ] Distinguer les quatre comptes : Serveuse/Serveur, Chef cuisinier, Cuisinier et Chargée des approvisionnements.
+- [ ] Préserver le circuit existant des boissons et ne pas mélanger les stocks de boissons avec les intrants cuisine.
+- [ ] Faire préciser les parcours et responsabilités détaillés avant toute implémentation.
+
+### Clarification — circuit de préparation des repas
+
+- [ ] Router la partie repas d’une commande vers le Chef cuisine tout en conservant le même numéro de commande client.
+- [ ] Permettre au Chef cuisine de consulter le détail et les quantités de la partie repas.
+- [ ] Permettre au Chef cuisine d’attribuer la préparation à un Cuisinier précis.
+- [ ] Permettre au Cuisinier de préparer puis de déclarer la partie repas prête.
+- [ ] Permettre au Chef cuisine de constater et valider l’état « Repas prêt ».
+- [ ] Notifier la Serveuse/Serveur concerné afin qu’il puisse livrer le client.
+- [ ] Maintenir la séparation des responsabilités entre préparation cuisine, livraison client et encaissement.
+
+### Clarification — affectation multi-cuisiniers
+
+- [ ] Permettre plusieurs affectations de préparation pour une même commande de repas.
+- [ ] Autoriser le partage d’une quantité identique entre plusieurs cuisiniers.
+- [ ] Autoriser l’affectation de lignes de repas différentes à des cuisiniers différents.
+- [ ] Conserver le numéro de commande parent sur chaque affectation.
+- [ ] Suivre pour chaque affectation le repas, la quantité, le cuisinier, le statut et les quantités restantes.
+- [ ] Ne déclarer la partie repas globalement prête qu’après préparation de toutes les affectations nécessaires.
+
+### Clarification — supervision et approvisionnement cuisine
+
+- [ ] Prévoir un seul lieu physique : le **Magasin cuisine** pour tous les intrants cuisine.
+- [ ] Donner au Chef cuisine une vue des commandes repas et de leur avancement côté Cuisiniers.
+- [ ] Donner au Chef cuisine une vue du stock des intrants et des consommations de fin de journée.
+- [ ] Permettre au Chef cuisine de lancer une demande lorsqu’un intrant atteint le seuil critique.
+- [ ] Router les demandes d’intrants vers la Chargée des approvisionnements.
+- [ ] Permettre à la Chargée des approvisionnements de modifier une demande, ajouter des intrants, acheter et enregistrer l’entrée au Magasin cuisine.
+- [ ] Modéliser son double rôle de Superviseure et Chargée des approvisionnements côté cuisine, sans lui attribuer automatiquement les droits d’opérateur des autres unités.
+
+### Clarification — périmètre Responsable approvisionnement cuisine
+
+- [ ] Limiter son tableau de bord aux commandes, besoins, productions, consommations et stocks du pôle Cuisine/Repas.
+- [ ] Lui transmettre uniquement les demandes d’intrants formulées par le Chef cuisine.
+- [ ] Lui permettre d’exécuter, modifier et compléter les demandes d’approvisionnement cuisine.
+- [ ] Exclure des écrans, API et requêtes ses données de boissons, du Gérant et des autres activités Power.
+- [ ] Tester que ses permissions de supervision cuisine ne donnent pas accès aux opérations boissons ou aux autres domaines.
+
+### Clarification — validation des achats cuisine
+
+- [ ] Faire passer les demandes d’intrants du Chef cuisine à la Chargée des approvisionnements.
+- [ ] Permettre à la Chargée des approvisionnements d’ajuster, réduire ou compléter les lignes avant soumission.
+- [ ] Faire de « Soumettre » une transmission au Promoteur, sans déclencher d’achat.
+- [ ] Notifier le Promoteur et afficher la demande cuisine dans son espace de validation.
+- [ ] Autoriser l’achat uniquement après validation explicite du Promoteur.
+- [ ] Bloquer l’achat et l’entrée en stock tant que la demande n’est pas validée.
+- [ ] Conserver la traçabilité de la demande initiale, des modifications et de la validation.
+
+### Confirmation — un seul Chef cuisine
+
+- [ ] Modéliser un seul compte Chef cuisine pour BAR SANTE PLUS.
+- [ ] Conserver les comptes Serveuse/Serveur, Cuisinier et Chargée des approvisionnements comme intervenants du volet Repas.
+- [ ] Ne modifier aucun écran, rôle ou flux du volet Boissons.
+- [ ] Router les demandes d’approvisionnement cuisine au Promoteur pour validation avant achat.
+
+## Démarrage implémentation — premier bloc Repas
+
+- [ ] Auditer les composants, routes et migrations cuisine déjà présents.
+- [ ] Implémenter uniquement les éléments Repas validés à ce stade.
+- [ ] Conserver inchangés les écrans, API, statuts, stocks et permissions du circuit Boissons.
+- [ ] Tester le premier bloc en production/preview et relever les éléments manquants avant extension.
