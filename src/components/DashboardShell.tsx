@@ -10,9 +10,9 @@ const navigation: ReadonlyArray<readonly [string, string, string]> = [
 ];
 type NavItem = readonly [string, string, string];
 const serviceNavigation: Record<"GYM" | "LAVAGE" | "AUBERGE", ReadonlyArray<NavItem>> = {
-  GYM: [["⌂", "Dashboard", "/dashboard"], ["▰", "Vente", "/dashboard/service-sales"], ["♙", "Clients", "/dashboard/clients"], ["◫", "Abonnement", "/dashboard/subscriptions"], ["▤", "Caisse", "/dashboard/cash"], ["⚙", "Profil", "/dashboard/settings"]],
-  LAVAGE: [["⌂", "Dashboard", "/dashboard"], ["▰", "Vente", "/dashboard/service-sales"], ["♙", "Clients", "/dashboard/clients"], ["▤", "Caisse", "/dashboard/cash"], ["⚙", "Profil", "/dashboard/settings"]],
-  AUBERGE: [["⌂", "Dashboard", "/dashboard"], ["▰", "Vente", "/dashboard/service-sales"], ["◫", "Occupation", "/dashboard/occupancy"], ["♙", "Clients", "/dashboard/clients"], ["⚙", "Profil", "/dashboard/settings"]],
+  GYM: [["⌂", "Dashboard", "/dashboard"], ["▰", "Vente", "/dashboard/service-sales"], ["▤", "Liste des services", "/dashboard/services?activity=GYM"], ["◫", "Abonnements", "/dashboard/subscriptions"], ["⚙", "Profil", "/dashboard/settings"]],
+  LAVAGE: [["⌂", "Dashboard", "/dashboard"], ["▰", "Vente", "/dashboard/service-sales"], ["▤", "Liste des prestations", "/dashboard/services?activity=LAVAGE"], ["◫", "Caisse lavage", "/dashboard/cash"], ["⚙", "Profil", "/dashboard/settings"]],
+  AUBERGE: [["⌂", "Dashboard", "/dashboard"], ["▰", "Vente", "/dashboard/service-sales"], ["◫", "Liste et occupation", "/dashboard/occupancy"], ["▤", "Caisse auberge", "/dashboard/cash"], ["⚙", "Profil", "/dashboard/settings"]],
 } as const;
 
 export async function DashboardShell({ children, firstName }: { children: React.ReactNode; firstName: string }) {

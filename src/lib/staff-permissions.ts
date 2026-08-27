@@ -43,7 +43,7 @@ export const defaultRolePermissions: Record<string, string[]> = {
   COMPTABLE: ["finance.view", "reports.view"],
   APPROVISIONNEMENT: ["stock.view", "stock.receive", "stock.issue", "reports.view"],
   CUISINIER: ["orders.view", "orders.prepare", "orders.handoff"],
-  CHEF_CUISINE: ["orders.view", "orders.prepare", "stock.view", "stock.accept_kitchen", "messages.view", "messages.send"],
+  CHEF_CUISINE: ["orders.view", "orders.prepare", "stock.view", "stock.accept_kitchen", "products.manage", "messages.view", "messages.send"],
   GYM: ["services.view", "payments.create", "power.view"],
   AUBERGE: ["services.view", "payments.create", "power.view"],
   LAVAGE: ["services.view", "payments.create", "power.view"],
