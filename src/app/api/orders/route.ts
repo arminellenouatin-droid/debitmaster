@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { getAuthorizationContext, can } from "@/lib/authorization";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { emitTenantNotification } from "@/lib/notifications";
 
 type OrderLine = { productId: string; quantity: number; fulfillmentUnit?: "BEVERAGE" | "MEAL" };
 
@@ -83,6 +84,21 @@ export async function POST(request: Request) {
     if (orderError || !order) return NextResponse.json({ error: "Impossible de créer la commande." }, { status: 400 });
     const { data: insertedLines, error: linesError } = await supabase.from("order_items").insert(orderLines.map((line) => ({ ...line, order_id: order.id }))).select("id,product_id,product_name,quantity,unit_price,total_price");
     if (linesError) { await supabase.from("orders").delete().eq("id", order.id).eq("tenant_id", tenantId); return NextResponse.json({ error: "Impossible d’enregistrer les lignes de commande." }, { status: 400 }); }
+    const units = new Set((orderLines.map((line) => line.fulfillment_unit)));
+    const operatorPositions = [...units].flatMap((unit) => unit === "MEAL" ? ["CHEF_CUISINE", "CUISINIER"] : ["GERANT"]);
+    await emitTenantNotification({
+      tenantId,
+      actorUserId: user.id,
+      subject: `Nouvelle commande ${order.order_number}`,
+      body: `${order.server_name || "Une serveuse"} a envoyé une commande de ${totalAmount.toLocaleString("fr-FR")} XOF à préparer.`,
+      eventType: "ORDER_CREATED",
+      entityId: order.id,
+      actionPath: `/dashboard/orders?orderId=${encodeURIComponent(order.id)}`,
+      actionPermission: "orders.prepare",
+      operatorPositions,
+      dedupeKey: `order-created:${order.id}`,
+      metadata: { units: [...units], orderNumber: order.order_number },
+    });
     return NextResponse.json({ order: { ...order, order_items: insertedLines ?? [] } }, { status: 201 });
   } catch { return NextResponse.json({ error: "Requête invalide." }, { status: 400 }); }
 }
@@ -148,6 +164,22 @@ export async function PATCH(request: Request) {
     const auditFields = status === "DELIVERED" ? { delivered_by_user_id: user.id, delivered_at: new Date().toISOString() } : {};
     const { data, error } = await supabase.from("orders").update({ status, ...auditFields, updated_at: new Date().toISOString() }).eq("id", orderId).eq("tenant_id", tenantId).eq("status", current.status).select("id,tenant_id,order_number,table_label,customer_id,server_user_id,server_name,received_by_user_id,received_at,delivered_by_user_id,delivered_at,status,total_amount,currency,created_at,updated_at").single();
     if (error || !data) return NextResponse.json({ error: "La commande a changé entre-temps. Actualisez la file cuisine." }, { status: 409 });
+    if (data.server_user_id && ["READY", "HANDED_OFF", "DELIVERED"].includes(status)) {
+      const nextAction = status === "READY" ? "orders.receive" : status === "HANDED_OFF" ? "orders.deliver" : null;
+      await emitTenantNotification({
+        tenantId,
+        actorUserId: user.id,
+        operatorUserIds: [data.server_user_id],
+        subject: `Commande ${data.order_number} : ${status === "READY" ? "prête" : status === "HANDED_OFF" ? "remise au service" : "livrée"}`,
+        body: `La commande ${data.order_number} a changé d’état. Consultez-la dans votre espace.`,
+        eventType: `ORDER_${status}`,
+        entityId: data.id,
+        actionPath: `/dashboard/orders?orderId=${encodeURIComponent(data.id)}`,
+        actionPermission: nextAction,
+        dedupeKey: `order-${status.toLowerCase()}:${data.id}`,
+        metadata: { orderNumber: data.order_number, status },
+      });
+    }
     return NextResponse.json({ order: data });
   } catch { return NextResponse.json({ error: "Requête invalide." }, { status: 400 }); }
 }
