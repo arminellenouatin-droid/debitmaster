@@ -695,3 +695,11 @@ Pour chaque formule, la réduction est calculée ainsi : `100 × (prix Base mens
 - [ ] Ajouter un champ quantité par produit dans la recherche catalogue hors alerte.
 - [ ] Ajouter la quantité saisie à la fiche sans imposer l’ajout unité par unité.
 - [ ] Vérifier que le calcul de valeur et le payload d’envoi conservent la quantité choisie.
+
+## Blocage transmission Demande Gérant → Superviseur
+
+- [ ] Reproduire une demande envoyée par le Gérant et vérifier sa présence en base.
+- [ ] Vérifier que l’espace Superviseur lit la table et le statut corrects dans le même tenant.
+- [ ] Afficher les demandes REQUESTED reçues dans une zone opérationnelle distincte de la règle informative.
+- [ ] Permettre au Superviseur de modifier, retirer et valider les lignes reçues.
+- [ ] Vérifier la réservation du stock central après validation.
