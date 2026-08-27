@@ -674,3 +674,10 @@ Pour chaque formule, la réduction est calculée ainsi : `100 × (prix Base mens
 - [ ] Déduire physiquement le magasin central et créditer le magasin comptoir uniquement après confirmation de réception par le Gérant.
 - [ ] Empêcher qu’une quantité réservée soit réutilisée dans une autre demande ou une autre opération.
 - [ ] Définir et tester les cas de stock insuffisant, annulation et livraison partielle avant implémentation.
+
+## Extension Demande Gérant — produits hors alerte
+
+- [ ] Permettre au Gérant de rechercher toutes les boissons actives du catalogue, même hors seuil d’alerte.
+- [ ] Ajouter une quantité et un bouton Ajouter pour chaque produit sélectionné manuellement.
+- [ ] Éviter les doublons en fusionnant une nouvelle quantité avec une ligne déjà présente dans la fiche.
+- [ ] Conserver le calcul du coût moyen pondéré et la réservation après validation du Superviseur.
