@@ -667,3 +667,10 @@ Pour chaque formule, la réduction est calculée ainsi : `100 × (prix Base mens
 - [x] Reproduire la modification du prix de vente et vérifier le payload ainsi que la persistance.
 - [x] Ajouter une suppression de produit protégée, avec confirmation et règles de stock non nul.
 - [ ] Tester les quatre opérations dans le tenant Power BAR SANTE PLUS avant le PR.
+
+## Règle confirmée — réservation des demandes comptoir
+
+- [ ] À la validation par le Superviseur, réserver et verrouiller les quantités dans le magasin central.
+- [ ] Déduire physiquement le magasin central et créditer le magasin comptoir uniquement après confirmation de réception par le Gérant.
+- [ ] Empêcher qu’une quantité réservée soit réutilisée dans une autre demande ou une autre opération.
+- [ ] Définir et tester les cas de stock insuffisant, annulation et livraison partielle avant implémentation.
