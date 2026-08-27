@@ -718,3 +718,10 @@ Pour chaque formule, la réduction est calculée ainsi : `100 × (prix Base mens
 - [ ] Afficher produits, quantités, prix unitaires, sous-totaux, client, table et total.
 - [ ] Permettre au Gérant d’ouvrir chaque commande avant de cliquer sur Préparer.
 - [ ] Conserver les statuts de préparation et la notification côté Serveuse.
+
+## File de service Gérant — actions explicites
+
+- [ ] Afficher Détails et Préparer côte à côte sur chaque commande de la file de service.
+- [ ] Ouvrir le détail de la commande au clic sur Détails, sans lancer la préparation.
+- [ ] Afficher en priorité les boissons et quantités à remettre à la Serveuse.
+- [ ] Vérifier que Préparer reste une action séparée et contrôlée par permission.
