@@ -703,3 +703,18 @@ Pour chaque formule, la réduction est calculée ainsi : `100 × (prix Base mens
 - [ ] Afficher les demandes REQUESTED reçues dans une zone opérationnelle distincte de la règle informative.
 - [ ] Permettre au Superviseur de modifier, retirer et valider les lignes reçues.
 - [ ] Vérifier la réservation du stock central après validation.
+
+## Commandes — recherche Serveuse et détail Gérant
+
+- [ ] Activer la saisie réelle dans la recherche de produits de la Serveuse.
+- [ ] Filtrer la recherche selon Boissons ou Repas sans perdre les produits disponibles du tenant.
+- [ ] Rendre chaque commande reçue par le Gérant ouvrable.
+- [ ] Afficher détail, quantités, prix et total avant le bouton Préparer.
+- [ ] Conserver les transitions de statut et l’identité de la Serveuse.
+
+## Commande Serveuse → Gérant — détail avant préparation
+
+- [ ] Reproduire une commande envoyée par une Serveuse et vérifier les champs retournés au Gérant.
+- [ ] Afficher produits, quantités, prix unitaires, sous-totaux, client, table et total.
+- [ ] Permettre au Gérant d’ouvrir chaque commande avant de cliquer sur Préparer.
+- [ ] Conserver les statuts de préparation et la notification côté Serveuse.

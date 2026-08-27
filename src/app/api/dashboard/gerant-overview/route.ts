@@ -17,22 +17,26 @@ export async function GET(request: Request) {
     const since = new Date(Date.now() - range * 24 * 60 * 60 * 1000).toISOString();
     const admin = createSupabaseAdminClient();
 
-    const [employeesResult, ordersResult, paymentsResult, productsResult, tablesResult, commissionsResult] = await Promise.all([
+    const [employeesResult, ordersResult, orderItemsResult, paymentsResult, productsResult, tablesResult, commissionsResult] = await Promise.all([
       admin.from("employees").select("id,user_id,first_name,last_name,phone,position,status,service_start_time,service_end_time,rest_day").eq("tenant_id", tenantId).eq("position", "SERVEUR").is("deleted_at", null).order("first_name").limit(100),
       admin.from("orders").select("id,order_number,server_user_id,server_name,table_label,status,total_amount,currency,received_by_user_id,received_at,delivered_by_user_id,delivered_at,created_at,updated_at").eq("tenant_id", tenantId).gte("created_at", since).order("created_at", { ascending: false }).limit(500),
+      admin.from("order_items").select("id,order_id,product_name,quantity,unit_price,total_price,fulfillment_unit,preparation_status,prepared_at").eq("tenant_id", tenantId).gte("created_at", since).limit(2000),
       admin.from("payments").select("id,order_id,amount,status,payment_method,paid_at,created_at").eq("tenant_id", tenantId).gte("created_at", since).limit(500),
       admin.from("products").select("id,name,current_stock,alert_threshold,safety_threshold,product_type,unit,stock_family,price").eq("tenant_id", tenantId).is("deleted_at", null).order("name").limit(500),
       admin.from("dining_tables").select("id,label,zone,zone_id,status,capacity").eq("tenant_id", tenantId).is("deleted_at", null).order("zone").order("label").limit(200),
       admin.from("employee_sales_commissions").select("id,employee_id,order_id,base_amount,commission_amount,status,created_at").eq("tenant_id", tenantId).gte("created_at", since).order("created_at", { ascending: false }).limit(500),
     ]);
 
-    const failures = [employeesResult, ordersResult, paymentsResult, productsResult, tablesResult, commissionsResult].filter((result) => result.error);
+    const failures = [employeesResult, ordersResult, orderItemsResult, paymentsResult, productsResult, tablesResult, commissionsResult].filter((result) => result.error);
     if (failures.length) {
       console.error("[gerant-overview.GET] query failed", failures.map((result) => ({ code: result.error?.code, message: result.error?.message })));
       return NextResponse.json({ error: "Impossible de charger le pilotage Gérant.", diagnostic: "GERANT_OVERVIEW_QUERY_FAILED" }, { status: 500 });
     }
 
-    const orders = ordersResult.data ?? [];
+    const rawOrders = ordersResult.data ?? [];
+    const itemsByOrder = new Map<string, NonNullable<typeof orderItemsResult.data>>();
+    for (const item of orderItemsResult.data ?? []) { const rows = itemsByOrder.get(item.order_id) ?? []; rows.push(item); itemsByOrder.set(item.order_id, rows); }
+    const orders = rawOrders.map((order) => ({ ...order, order_items: itemsByOrder.get(order.id) ?? [] }));
     const payments = paymentsResult.data ?? [];
     const products = productsResult.data ?? [];
     const commissions = commissionsResult.data ?? [];
