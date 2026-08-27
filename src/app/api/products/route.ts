@@ -16,7 +16,8 @@ export async function GET(request: Request) {
     const canViewCatalog = can(context, "stock.view") || can(context, "products.manage") || can(context, "orders.create");
     if (!canViewCatalog) return NextResponse.json({ error: "Permission insuffisante pour consulter le catalogue." }, { status: 403 });
     if (tenantId && !tenantIds.includes(tenantId)) return NextResponse.json({ error: "Établissement non autorisé." }, { status: 403 });
-    const query = supabase.from("products").select("id,tenant_id,category_id,name,product_type,stock_family,unit,price,current_stock,alert_threshold,safety_threshold,image_url,packaging_label,created_at").is("deleted_at", null).order("name").limit(100);
+    let query = supabase.from("products").select("id,tenant_id,category_id,name,product_type,stock_family,unit,price,current_stock,alert_threshold,safety_threshold,image_url,packaging_label,created_at").is("deleted_at", null).order("name").limit(100);
+    if (context.role === "CHEF_CUISINE") query = query.eq("stock_family", "KITCHEN");
     const { data, error } = await (tenantId ? query.eq("tenant_id", tenantId) : query.in("tenant_id", tenantIds));
     if (error) return NextResponse.json({ error: "Impossible de charger les produits." }, { status: 500 });
     const products = data ?? [];
@@ -49,6 +50,7 @@ export async function POST(request: Request) {
     if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
     if (!can(context, "products.manage")) return NextResponse.json({ error: "Permission insuffisante pour gérer le catalogue." }, { status: 403 });
     if (!tenantIds.includes(tenantId)) return NextResponse.json({ error: "Établissement non autorisé." }, { status: 403 });
+    if (context.role === "CHEF_CUISINE" && stockFamily !== "KITCHEN") return NextResponse.json({ error: "Le Chef cuisine ne peut gérer que les produits de la cuisine." }, { status: 403 });
     if (context.role === "MAGASINIER" && context.employeeId) {
       const { data: employee } = await supabase.from("employees").select("stock_scope").eq("id", context.employeeId).maybeSingle();
       if (employee?.stock_scope !== "BOTH" && employee?.stock_scope !== stockFamily) return NextResponse.json({ error: "Cette famille de stock est hors de votre périmètre." }, { status: 403 });
@@ -76,8 +78,9 @@ export async function DELETE(request: Request) {
     if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
     if (!can(context, "products.manage")) return NextResponse.json({ error: "Permission insuffisante pour supprimer ce produit." }, { status: 403 });
     if (!tenantIds.includes(tenantId)) return NextResponse.json({ error: "Établissement non autorisé." }, { status: 403 });
-    const { data: product } = await supabase.from("products").select("id,current_stock").eq("id", productId).eq("tenant_id", tenantId).is("deleted_at", null).maybeSingle();
+    const { data: product } = await supabase.from("products").select("id,current_stock,stock_family").eq("id", productId).eq("tenant_id", tenantId).is("deleted_at", null).maybeSingle();
     if (!product) return NextResponse.json({ error: "Produit introuvable." }, { status: 404 });
+    if (context.role === "CHEF_CUISINE" && product.stock_family !== "KITCHEN") return NextResponse.json({ error: "Le Chef cuisine ne peut gérer que les produits de la cuisine." }, { status: 403 });
     const { data: positions, error: positionsError } = await supabase.from("store_inventory").select("quantity,reserved_quantity").eq("tenant_id", tenantId).eq("product_id", productId).limit(100);
     if (positionsError) return NextResponse.json({ error: "Impossible de vérifier le stock du produit." }, { status: 400 });
     const remaining = (positions ?? []).reduce((sum, position) => sum + Number(position.quantity ?? 0) + Number(position.reserved_quantity ?? 0), 0);
@@ -113,6 +116,7 @@ export async function PATCH(request: Request) {
     if (!tenantIds.includes(tenantId)) return NextResponse.json({ error: "Établissement non autorisé." }, { status: 403 });
     const { data: existingProduct } = await supabase.from("products").select("id,stock_family").eq("id", productId).eq("tenant_id", tenantId).is("deleted_at", null).maybeSingle();
     if (!existingProduct) return NextResponse.json({ error: "Produit introuvable." }, { status: 404 });
+    if (context.role === "CHEF_CUISINE" && (existingProduct.stock_family !== "KITCHEN" || (stockFamily !== undefined && stockFamily !== "KITCHEN"))) return NextResponse.json({ error: "Le Chef cuisine ne peut gérer que les produits de la cuisine." }, { status: 403 });
     if (context.role === "MAGASINIER" && context.employeeId) {
       const { data: employee } = await supabase.from("employees").select("stock_scope").eq("id", context.employeeId).maybeSingle();
       if (employee?.stock_scope !== "BOTH" && employee?.stock_scope !== existingProduct.stock_family) return NextResponse.json({ error: "Ce produit est hors de votre périmètre de stock." }, { status: 403 });
