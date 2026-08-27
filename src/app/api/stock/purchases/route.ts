@@ -32,7 +32,10 @@ export async function POST(request: Request) {
     if (!can(context, "stock.receive")) return NextResponse.json({ error: "Permission insuffisante pour entrer un stock." }, { status: 403 });
     if (!context.tenantIds.includes(tenantId)) return NextResponse.json({ error: "Établissement non autorisé." }, { status: 403 });
     const { data, error } = await context.supabase.rpc("record_stock_purchase", { p_tenant_id: tenantId, p_store_id: storeId, p_product_id: productId, p_quantity: quantity, p_purchase_unit_price: purchaseUnitPrice, p_invoice_number: invoiceNumber });
-    if (error) return NextResponse.json({ error: "Impossible d’enregistrer l’entrée de stock." }, { status: 400 });
+    if (error) {
+      const message = error.message?.includes("STORE_PRODUCT_FAMILY_MISMATCH") ? "Ce produit doit être réceptionné dans un magasin principal de la même famille : boissons ou cuisine." : error.message?.includes("COUNTER_STORE_RECEIPT_FORBIDDEN") ? "Les achats ne peuvent pas entrer directement dans le magasin comptoir." : "Impossible d’enregistrer l’entrée de stock.";
+      return NextResponse.json({ error: message }, { status: 400 });
+    }
     return NextResponse.json({ purchase: data }, { status: 201 });
   } catch { return NextResponse.json({ error: "Requête invalide." }, { status: 400 }); }
 }
