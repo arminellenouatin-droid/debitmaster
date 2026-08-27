@@ -731,3 +731,9 @@ Pour chaque formule, la réduction est calculée ainsi : `100 × (prix Base mens
 - [ ] Ne modifier aucune règle métier, transition, stock, paiement, rôle ou écran opérationnel existant.
 - [ ] Brancher uniquement les notifications sur les événements déjà implémentés.
 - [ ] Conserver les actions dans les comptes et flux existants ; la notification sert seulement de raccourci.
+
+### Blocage PR #85 — conflit todo.md
+
+- [ ] Comparer todo.md entre main et la branche notifications.
+- [ ] Résoudre uniquement le conflit todo.md sans modifier le code métier.
+- [ ] Conserver les éléments de suivi du centre de notifications et valider le PR.
