@@ -681,3 +681,10 @@ Pour chaque formule, la réduction est calculée ainsi : `100 × (prix Base mens
 - [ ] Ajouter une quantité et un bouton Ajouter pour chaque produit sélectionné manuellement.
 - [ ] Éviter les doublons en fusionnant une nouvelle quantité avec une ligne déjà présente dans la fiche.
 - [ ] Conserver le calcul du coût moyen pondéré et la réservation après validation du Superviseur.
+
+## Catalogue boissons Gérant indépendant du stock
+
+- [ ] Afficher au Gérant toutes les boissons actives créées par le Superviseur, même sans ligne de stock comptoir.
+- [ ] Distinguer visuellement catalogue disponible et quantité actuellement en stock comptoir.
+- [ ] Permettre la sélection et la demande d’une boisson dont le stock comptoir est nul ou inexistant.
+- [ ] Vérifier que la validation du Superviseur réserve uniquement le stock central disponible.
