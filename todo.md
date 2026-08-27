@@ -688,3 +688,10 @@ Pour chaque formule, la réduction est calculée ainsi : `100 × (prix Base mens
 - [ ] Distinguer visuellement catalogue disponible et quantité actuellement en stock comptoir.
 - [ ] Permettre la sélection et la demande d’une boisson dont le stock comptoir est nul ou inexistant.
 - [ ] Vérifier que la validation du Superviseur réserve uniquement le stock central disponible.
+
+## Recherche et quantité manuelle — Demande Gérant
+
+- [ ] Normaliser les accents et la casse pour que « beninoise » trouve « Béninoise ».
+- [ ] Ajouter un champ quantité par produit dans la recherche catalogue hors alerte.
+- [ ] Ajouter la quantité saisie à la fiche sans imposer l’ajout unité par unité.
+- [ ] Vérifier que le calcul de valeur et le payload d’envoi conservent la quantité choisie.
