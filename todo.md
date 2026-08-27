@@ -726,6 +726,17 @@ Pour chaque formule, la réduction est calculée ainsi : `100 × (prix Base mens
 - [ ] Afficher en priorité les boissons et quantités à remettre à la Serveuse.
 - [ ] Vérifier que Préparer reste une action séparée et contrôlée par permission.
 
+### Règle confirmée — notifications non intrusives
+
+- [ ] Ne modifier aucune règle métier, transition, stock, paiement, rôle ou écran opérationnel existant.
+- [ ] Brancher uniquement les notifications sur les événements déjà implémentés.
+- [ ] Conserver les actions dans les comptes et flux existants ; la notification sert seulement de raccourci.
+
+### Blocage PR #85 — conflit todo.md
+
+- [ ] Comparer todo.md entre main et la branche notifications.
+- [ ] Résoudre uniquement le conflit todo.md sans modifier le code métier.
+- [ ] Conserver les éléments de suivi du centre de notifications et valider le PR.
 ## Blocage Gérant — autorisation Commandes
 
 - [ ] Identifier l’endpoint exact qui renvoie le 403 dans l’écran Commandes.

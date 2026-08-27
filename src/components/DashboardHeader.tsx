@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useLiveRefresh } from "@/hooks/useLiveRefresh";
 
-type Notification = { id: string; subject: string | null; body: string; created_at: string };
+type Notification = { id: string; subject: string | null; body: string; created_at: string; action_path: string | null; action_allowed: boolean; };
 
 type DashboardHeaderProps = {
   firstName: string;
@@ -23,6 +23,10 @@ export function DashboardHeader({ firstName, companyName, tenantId, role, isOwne
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loadingNotifications, setLoadingNotifications] = useState(false);
   const [notificationError, setNotificationError] = useState("");
+
+  async function markRead(notificationId: string) {
+    await fetch("/api/notifications", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ tenantId, notificationId }) });
+  }
 
   async function loadNotifications() {
     if (!tenantId) return;
@@ -60,7 +64,7 @@ export function DashboardHeader({ firstName, companyName, tenantId, role, isOwne
       </details>
       <details className="relative">
         <summary onClick={() => { if (!notifications.length) void loadNotifications(); }} aria-label={unreadCount ? `${unreadCount} notification${unreadCount > 1 ? "s" : ""} non lue${unreadCount > 1 ? "s" : ""}` : "Notifications"} className="relative flex min-h-11 min-w-11 cursor-pointer list-none items-center justify-center rounded-lg text-[var(--primary)] transition hover:bg-[var(--surface-muted)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--secondary)]"><svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.9"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" /><path d="M10 21h4" /></svg>{unreadCount > 0 && <span className="absolute right-0.5 top-0.5 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-[var(--danger)] px-1 text-[10px] font-black leading-none text-white">{unreadCount > 9 ? "9+" : unreadCount}</span>}</summary>
-        <div className="absolute right-0 top-[calc(100%+0.5rem)] z-30 w-[min(22rem,calc(100vw-2rem))] rounded-xl border border-[var(--line)] bg-[var(--surface)] p-3 shadow-[0_18px_40px_-24px_var(--primary)]"><div className="flex items-center justify-between gap-3 px-1"><p className="text-sm font-black text-[var(--primary)]">Notifications</p>{loadingNotifications && <span className="text-xs font-semibold text-[var(--muted)]">Actualisation…</span>}</div>{notificationError && <p role="alert" className="mt-3 rounded-lg bg-[#fff1ef] px-3 py-2 text-xs font-bold text-[var(--danger)]">{notificationError}</p>}{!loadingNotifications && !notificationError && !notifications.length && <p className="mt-3 px-1 py-2 text-sm leading-5 text-[var(--muted)]">Aucune notification non lue.</p>}{notifications.length > 0 && <div className="mt-2 max-h-72 space-y-1 overflow-y-auto">{notifications.map((notification) => <Link key={notification.id} href="/dashboard/messages" className="block rounded-lg px-3 py-3 transition hover:bg-[var(--surface-muted)]"><p className="text-xs font-black text-[var(--primary)]">{notification.subject || "Nouveau message"}</p><p className="mt-1 line-clamp-2 text-xs leading-5 text-[var(--muted)]">{notification.body}</p><time className="mt-1 block text-[10px] font-bold text-[var(--muted)] date">{dateFormatter.format(new Date(notification.created_at))}</time></Link>)}</div>}<Link href="/dashboard/messages" className="mt-2 block border-t border-[var(--line)] px-1 pt-3 text-xs font-black text-[var(--primary)]">Ouvrir tous les messages</Link></div>
+        <div className="absolute right-0 top-[calc(100%+0.5rem)] z-30 w-[min(22rem,calc(100vw-2rem))] rounded-xl border border-[var(--line)] bg-[var(--surface)] p-3 shadow-[0_18px_40px_-24px_var(--primary)]"><div className="flex items-center justify-between gap-3 px-1"><p className="text-sm font-black text-[var(--primary)]">Notifications</p>{loadingNotifications && <span className="text-xs font-semibold text-[var(--muted)]">Actualisation…</span>}</div>{notificationError && <p role="alert" className="mt-3 rounded-lg bg-[#fff1ef] px-3 py-2 text-xs font-bold text-[var(--danger)]">{notificationError}</p>}{!loadingNotifications && !notificationError && !notifications.length && <p className="mt-3 px-1 py-2 text-sm leading-5 text-[var(--muted)]">Aucune notification non lue.</p>}{notifications.length > 0 && <div className="mt-2 max-h-72 space-y-1 overflow-y-auto">{notifications.map((notification) => <Link key={notification.id} href={notification.action_path || "/dashboard/messages"} onClick={() => { void markRead(notification.id); }} className="block rounded-lg px-3 py-3 transition hover:bg-[var(--surface-muted)]"><p className="text-xs font-black text-[var(--primary)]">{notification.subject || "Nouveau message"}</p><p className="mt-1 line-clamp-2 text-xs leading-5 text-[var(--muted)]">{notification.body}</p><time className="mt-1 block text-[10px] font-bold text-[var(--muted)] date">{dateFormatter.format(new Date(notification.created_at))}</time></Link>)}</div>}<Link href="/dashboard/messages" className="mt-2 block border-t border-[var(--line)] px-1 pt-3 text-xs font-black text-[var(--primary)]">Ouvrir tous les messages</Link></div>
       </details>
     </div>
   </header>;
