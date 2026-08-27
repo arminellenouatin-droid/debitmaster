@@ -5,7 +5,6 @@ import { databaseDiagnostic, logDatabaseError } from "@/lib/database-error";
 
 const productTypes = ["UNIT", "SERVICE", "MENU"] as const;
 const stockFamilies = ["BEVERAGE", "KITCHEN"] as const;
-const packagingLabels = ["33", "50", "65", "Cannette", "100", "125", "150"] as const;
 const normalizeLabel = (value: unknown) => typeof value === "string" && value.trim() ? value.trim().slice(0, 80) : null;
 
 export async function GET(request: Request) {
@@ -44,7 +43,7 @@ export async function POST(request: Request) {
     const currentStock = Number(body.currentStock ?? 0);
     const alertThreshold = Number(body.alertThreshold ?? 10);
     const safetyThreshold = Number(body.safetyThreshold ?? 5);
-    if (!tenantId || name.length < 2 || !productTypes.includes(productType as (typeof productTypes)[number]) || !stockFamilies.includes(stockFamily as (typeof stockFamilies)[number]) || (packagingLabel !== null && !packagingLabels.includes(packagingLabel as (typeof packagingLabels)[number]) && stockFamily === "BEVERAGE") || !Number.isInteger(price) || price < 0 || !Number.isInteger(currentStock) || currentStock < 0 || !Number.isInteger(alertThreshold) || alertThreshold < 0 || !Number.isInteger(safetyThreshold) || safetyThreshold < 0) return NextResponse.json({ error: "Nom, type et valeurs de stock valides requis." }, { status: 400 });
+    if (!tenantId || name.length < 2 || !productTypes.includes(productType as (typeof productTypes)[number]) || !stockFamilies.includes(stockFamily as (typeof stockFamilies)[number]) || !Number.isInteger(price) || price < 0 || !Number.isInteger(currentStock) || currentStock < 0 || !Number.isInteger(alertThreshold) || alertThreshold < 0 || !Number.isInteger(safetyThreshold) || safetyThreshold < 0) return NextResponse.json({ error: "Nom, type et valeurs de stock valides requis." }, { status: 400 });
     const context = await getAuthorizationContext();
     const { supabase, user, tenantIds } = context;
     if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
@@ -78,7 +77,7 @@ export async function PATCH(request: Request) {
     const price = body.price === undefined ? undefined : Number(body.price);
     const packagingLabel = body.packagingLabel === undefined ? undefined : normalizeLabel(body.packagingLabel);
     const stockFamily = body.stockFamily === undefined ? undefined : (typeof body.stockFamily === "string" ? body.stockFamily : "");
-    if (!tenantId || !productId || (alertThreshold !== undefined && (!Number.isInteger(alertThreshold) || alertThreshold < 0)) || (safetyThreshold !== undefined && (!Number.isInteger(safetyThreshold) || safetyThreshold < 0)) || (alertThreshold !== undefined && safetyThreshold !== undefined && safetyThreshold > alertThreshold) || (price !== undefined && (!Number.isInteger(price) || price < 0)) || (name !== undefined && name.length < 2) || (stockFamily !== undefined && !stockFamilies.includes(stockFamily as (typeof stockFamilies)[number])) || (packagingLabel !== undefined && packagingLabel !== null && stockFamily === "BEVERAGE" && !packagingLabels.includes(packagingLabel as (typeof packagingLabels)[number]))) return NextResponse.json({ error: "Produit et seuils valides requis. Le seuil de sécurité doit être inférieur ou égal au seuil d’alerte." }, { status: 400 });
+    if (!tenantId || !productId || (alertThreshold !== undefined && (!Number.isInteger(alertThreshold) || alertThreshold < 0)) || (safetyThreshold !== undefined && (!Number.isInteger(safetyThreshold) || safetyThreshold < 0)) || (alertThreshold !== undefined && safetyThreshold !== undefined && safetyThreshold > alertThreshold) || (price !== undefined && (!Number.isInteger(price) || price < 0)) || (name !== undefined && name.length < 2) || (stockFamily !== undefined && !stockFamilies.includes(stockFamily as (typeof stockFamilies)[number]))) return NextResponse.json({ error: "Produit et seuils valides requis. Le seuil de sécurité doit être inférieur ou égal au seuil d’alerte." }, { status: 400 });
     const context = await getAuthorizationContext();
     const { supabase, user, tenantIds } = context;
     if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });

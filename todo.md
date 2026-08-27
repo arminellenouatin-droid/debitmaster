@@ -632,3 +632,30 @@ Pour chaque formule, la réduction est calculée ainsi : `100 × (prix Base mens
 - [ ] Corriger le contexte tenant, les permissions et les relations fragiles.
 - [ ] Vérifier le traitement client des erreurs de commandes.
 - [ ] Tester les écrans Gérant avant le PR de rattrapage.
+
+## Audit général design et UX
+
+- [ ] Auditer le design system, les tokens, la typographie et les contrastes.
+- [ ] Auditer le shell global, la sidebar, l’en-tête et la navigation mobile.
+- [ ] Auditer les dashboards et parcours par rôle Power.
+- [ ] Vérifier les états de chargement, vide, erreur, succès, désactivation et focus.
+- [ ] Vérifier le responsive, l’accessibilité et la densité des écrans métier.
+- [ ] Produire un rapport de recommandations priorisées et un plan de refonte.
+
+## Superviseur — catalogue et stocks Boissons / Repas
+
+- [x] Confirmer si le prix d’achat doit être saisi avec chaque entrée de stock et si le prix de vente reste au niveau du produit.
+- [x] Confirmer si les étiquettes concernent uniquement les boissons et quelle liste initiale doit être proposée.
+- [x] Confirmer si le Superviseur peut créer/modifier/supprimer les catégories et sous-catégories, ou seulement attribuer celles existantes.
+- [x] Confirmer les magasins concernés par l’entrée de stock pour boissons et repas.
+- [x] Auditer et corriger les permissions, APIs et écrans Superviseur pour ces opérations.
+
+## Règles confirmées — Superviseur catalogue et approvisionnement
+
+- [x] Saisir le prix d’achat à chaque entrée en stock, car il peut varier d’une facture à l’autre.
+- [x] Conserver le prix de vente au niveau du produit et le rendre modifiable par le Superviseur.
+- [x] Autoriser le Superviseur à créer, modifier et supprimer les catégories et sous-catégories selon les règles de stock existantes.
+- [x] Autoriser des étiquettes pour les boissons et permettre la création d’étiquettes spécifiques aux repas si nécessaire.
+- [x] Faire passer tous les achats par les magasins principaux : magasin central boissons pour les boissons et magasin cuisine pour les repas.
+- [x] Interdire tout approvisionnement direct du magasin comptoir.
+- [ ] Faire fonctionner le magasin comptoir par demande de mise à disposition de boissons depuis le magasin central, avec validation et traçabilité du transfert.
