@@ -6,7 +6,6 @@ export async function GET(request: Request) {
   try {
     const context = await getAuthorizationContext();
     if (!context.user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
-    if (!can(context, "messages.view")) return NextResponse.json({ count: 0, notifications: [] });
     const tenantId = new URL(request.url).searchParams.get("tenantId") ?? "";
     if (!tenantId || !context.tenantIds.includes(tenantId)) return NextResponse.json({ error: "Établissement non autorisé." }, { status: 403 });
     const { data, error } = await context.supabase
@@ -33,7 +32,6 @@ export async function PATCH(request: Request) {
     const body = await request.json() as { tenantId?: string; notificationId?: string };
     const context = await getAuthorizationContext();
     if (!context.user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
-    if (!can(context, "messages.view")) return NextResponse.json({ error: "Permission insuffisante." }, { status: 403 });
     if (!body.tenantId || !context.tenantIds.includes(body.tenantId) || !body.notificationId) return NextResponse.json({ error: "Notification invalide." }, { status: 400 });
     const { error } = await context.supabase
       .from("internal_messages")
