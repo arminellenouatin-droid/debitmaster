@@ -20,6 +20,7 @@ type NotificationInput = {
 
 export async function emitTenantNotification(input: NotificationInput) {
   if (!input.tenantId || !input.subject || !input.body || !input.actionPath.startsWith("/")) return;
+  try {
   const admin = createSupabaseAdminClient();
   const [{ data: company }, { data: globalEmployees }, { data: operators }] = await Promise.all([
     admin.from("companies").select("owner_user_id").eq("id", input.tenantId).is("deleted_at", null).maybeSingle(),
@@ -53,5 +54,8 @@ export async function emitTenantNotification(input: NotificationInput) {
   }));
 
   const { error } = await admin.from("internal_messages").upsert(rows, { onConflict: "tenant_id,dedupe_key", ignoreDuplicates: true });
-  if (error) throw new Error("Impossible d’émettre les notifications.");
+  if (error) console.error("[notifications] emission ignorée", { code: error.code, message: error.message });
+  } catch (error) {
+    console.error("[notifications] service indisponible, flux métier conservé", error instanceof Error ? error.message : error);
+  }
 }
