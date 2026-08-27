@@ -659,3 +659,11 @@ Pour chaque formule, la réduction est calculée ainsi : `100 × (prix Base mens
 - [x] Faire passer tous les achats par les magasins principaux : magasin central boissons pour les boissons et magasin cuisine pour les repas.
 - [x] Interdire tout approvisionnement direct du magasin comptoir.
 - [ ] Faire fonctionner le magasin comptoir par demande de mise à disposition de boissons depuis le magasin central, avec validation et traçabilité du transfert.
+
+## Blocage Superviseur — opérations catalogue et approvisionnement
+
+- [x] Reproduire la création de produit sans réaction et relever la réponse API exacte.
+- [x] Reproduire l’approvisionnement refusé et vérifier la fonction SQL, le magasin et la famille produit.
+- [x] Reproduire la modification du prix de vente et vérifier le payload ainsi que la persistance.
+- [x] Ajouter une suppression de produit protégée, avec confirmation et règles de stock non nul.
+- [ ] Tester les quatre opérations dans le tenant Power BAR SANTE PLUS avant le PR.
