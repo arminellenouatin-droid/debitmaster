@@ -737,3 +737,51 @@ Pour chaque formule, la réduction est calculée ainsi : `100 × (prix Base mens
 - [ ] Comparer todo.md entre main et la branche notifications.
 - [ ] Résoudre uniquement le conflit todo.md sans modifier le code métier.
 - [ ] Conserver les éléments de suivi du centre de notifications et valider le PR.
+## Blocage Gérant — autorisation Commandes
+
+- [ ] Identifier l’endpoint exact qui renvoie le 403 dans l’écran Commandes.
+- [ ] Vérifier la permission effective du rôle Gérant dans le tenant actif.
+- [ ] Corriger l’autorisation sans ouvrir les données aux autres établissements.
+- [ ] Remplacer les promesses non traitées par des erreurs visibles dans l’interface.
+- [ ] Retester la file de service et le détail d’une commande.
+
+## Trésorerie Serveuse — suivi financier personnel
+
+- [ ] Afficher les espèces encaissées et confirmées.
+- [ ] Afficher les paiements Mobile Money confirmés.
+- [ ] Afficher le total des reversements effectués en déduction.
+- [ ] Calculer et afficher le montant net encore détenu par la Serveuse.
+- [ ] Vérifier le calcul par période et l’isolation de la Serveuse dans son tenant.
+
+## Suivi financier individuel Serveuse — périmètre confirmé
+
+- [ ] Calculer le chiffre d’affaires des seules commandes lancées par la Serveuse.
+- [ ] Distinguer les paiements CASH confirmés et les paiements MOBILE_MONEY confirmés de ses commandes.
+- [ ] Attribuer les paiements Mobile Money à la Serveuse même lorsqu’ils arrivent sur le compte global.
+- [ ] Afficher les reversements déjà reçus par le Gérant pour cette Serveuse.
+- [ ] Calculer le solde personnel restant après reversements, sans mélanger les autres Serveuses.
+
+## Reversement Serveuse → Gérant — cycle confirmé
+
+- [ ] Calculer le solde espèces personnel de la Serveuse après paiements confirmés.
+- [ ] Permettre à la Serveuse de lancer une demande de reversement de son solde espèces.
+- [ ] Afficher au Gérant les ventes, le Mobile Money tracé et le solde cash attendu par Serveuse.
+- [ ] Permettre au Gérant de valider uniquement après réception physique.
+- [ ] Déduire le montant validé de la caisse personnelle Serveuse et l’ajouter à la caisse du Gérant.
+- [ ] Ne pas reverser une seconde fois les paiements Mobile Money déjà reçus sur le compte global.
+
+## Reversement Serveuse — règles d’écart confirmées
+
+- [ ] Inclure dans la déclaration le Mobile Money de la Serveuse pour contrôle, sans second transfert financier.
+- [ ] Inclure les espèces attendues et les espèces effectivement remises au Gérant.
+- [ ] Autoriser la validation même si le montant remis est inférieur au montant attendu.
+- [ ] Permettre de classer l’écart en solde restant à reverser ou en manquant.
+- [ ] Transférer uniquement les espèces effectivement validées de la caisse Serveuse vers la caisse Gérant.
+
+## Reversement Serveuse–Gérant — implémentation démarrée
+
+- [ ] Auditer les paiements CASH et MOBILE_MONEY confirmés par Serveuse.
+- [ ] Créer le registre des déclarations, validations, soldes restants et manquants.
+- [ ] Ajouter la déclaration du point dans Trésorerie Serveuse.
+- [ ] Ajouter le contrôle et la validation dans Caisse centrale Gérant.
+- [ ] Transférer les espèces validées entre les caisses et conserver la trace Mobile Money.
