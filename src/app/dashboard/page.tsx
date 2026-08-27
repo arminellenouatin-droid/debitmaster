@@ -25,6 +25,7 @@ export default async function DashboardPage() {
     const { data: employee } = authorization.employeeId ? await authorization.supabase.from("employees").select("stock_scope").eq("id", authorization.employeeId).maybeSingle() : { data: null };
     return <DashboardShell firstName={firstName}><MagasinierClient stockScope={employee?.stock_scope ?? "BOTH"} firstName={firstName} companyName={active.company?.name ?? "Établissement actif"} /></DashboardShell>;
   }
+  if (authorization.role === "CHEF_CUISINE" || authorization.role === "CUISINIER") redirect("/dashboard/meals");
   if (["GYM", "LAVAGE", "AUBERGE"].includes(authorization.role ?? "")) {
     const activityCode = authorization.role === "GYM" ? "GYM" : authorization.role === "LAVAGE" ? "LAVAGE" : "LODGING";
     return <DashboardShell firstName={firstName}><ServiceSalesClient tenantId={active.tenantId ?? ""} activityCode={activityCode} /></DashboardShell>;

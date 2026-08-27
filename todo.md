@@ -853,3 +853,19 @@ Pour chaque formule, la réduction est calculée ainsi : `100 × (prix Base mens
 - [ ] Implémenter uniquement les éléments Repas validés à ce stade.
 - [ ] Conserver inchangés les écrans, API, statuts, stocks et permissions du circuit Boissons.
 - [ ] Tester le premier bloc en production/preview et relever les éléments manquants avant extension.
+
+## Blocage après fusion PR #86 — comptes cuisine
+
+- [ ] Vérifier que le commit du PR #86 est bien déployé sur le domaine principal.
+- [ ] Vérifier que les comptes Thierry et Chef cuisine sont détectés avec les rôles attendus.
+- [ ] Vérifier que la navigation pointe vers `/dashboard/meals` et non vers l’ancien écran cuisine.
+- [ ] Tester la route dédiée, les affectations et les permissions avec le tenant BAR SANTE PLUS.
+- [ ] Corriger la cause identifiée sans modifier le circuit Boissons.
+
+## Diagnostic direct — session Chef cuisine
+
+- [ ] Vérifier l’URL et l’écran réellement affiché dans la session Chef cuisine.
+- [ ] Vérifier le rôle, le tenant BAR SANTE PLUS et les permissions résolues côté session.
+- [ ] Vérifier les réponses de `/api/orders` et `/api/kitchen/assignments`.
+- [ ] Corriger uniquement la cause de non-affichage constatée.
+- [ ] Retester la session Chef cuisine après correction.
