@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { getAuthorizationContext, can } from "@/lib/authorization";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { emitTenantNotification } from "@/lib/notifications";
 
 const allowed = new Set(["GYM", "LAVAGE", "LODGING"]);
 const normalize = (value: unknown) => typeof value === "string" ? value.trim() : "";
@@ -36,6 +37,17 @@ export async function POST(request: Request) {
     if (saleError || !sale) return NextResponse.json({ error: "Impossible d’enregistrer la vente du service." }, { status: 400 });
     const { error: cashError } = await admin.from("power_cash_movements").insert({ tenant_id: tenantId, activity_code: activityCode, sale_id: sale.id, movement_type: "SALE", amount_xof: sale.total_amount_xof, created_by: context.user!.id });
     if (cashError) { await admin.from("power_service_sales").delete().eq("id", sale.id).eq("tenant_id", tenantId); return NextResponse.json({ error: "Vente enregistrée mais caisse non alimentée. Opération annulée." }, { status: 400 }); }
+    await emitTenantNotification({
+      tenantId,
+      actorUserId: context.user!.id,
+      subject: `Nouvelle vente ${activityCode}`,
+      body: `${customerName} : ${sale.total_amount_xof.toLocaleString("fr-FR")} XOF encaissés.`,
+      eventType: "POWER_SERVICE_SALE_CREATED",
+      entityId: sale.id,
+      actionPath: `/dashboard/service-sales?activity=${encodeURIComponent(activityCode)}&saleId=${encodeURIComponent(sale.id)}`,
+      dedupeKey: `power-sale:${sale.id}`,
+      metadata: { activityCode, paymentMethod: sale.payment_method },
+    });
     return NextResponse.json({ sale }, { status: 201 });
   } catch { return NextResponse.json({ error: "Requête invalide." }, { status: 400 }); }
 }

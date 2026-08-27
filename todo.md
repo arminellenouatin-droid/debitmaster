@@ -725,3 +725,9 @@ Pour chaque formule, la réduction est calculée ainsi : `100 × (prix Base mens
 - [ ] Ouvrir le détail de la commande au clic sur Détails, sans lancer la préparation.
 - [ ] Afficher en priorité les boissons et quantités à remettre à la Serveuse.
 - [ ] Vérifier que Préparer reste une action séparée et contrôlée par permission.
+
+### Règle confirmée — notifications non intrusives
+
+- [ ] Ne modifier aucune règle métier, transition, stock, paiement, rôle ou écran opérationnel existant.
+- [ ] Brancher uniquement les notifications sur les événements déjà implémentés.
+- [ ] Conserver les actions dans les comptes et flux existants ; la notification sert seulement de raccourci.

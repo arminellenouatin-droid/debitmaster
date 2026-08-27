@@ -1,6 +1,7 @@
 // DebitManager store transfers API: l'envoi réserve, la réception confirmée débite et crédite atomiquement.
 import { NextResponse } from "next/server";
 import { getAuthorizationContext, can } from "@/lib/authorization";
+import { emitTenantNotification } from "@/lib/notifications";
 
 export async function GET(request: Request) {
   try {
@@ -33,6 +34,8 @@ export async function POST(request: Request) {
     if (!context.tenantIds.includes(tenantId)) return NextResponse.json({ error: "Établissement non autorisé." }, { status: 403 });
     const { data, error } = await context.supabase.rpc("create_store_transfer", { p_tenant_id: tenantId, p_source_store_id: sourceStoreId, p_destination_store_id: destinationStoreId, p_product_id: productId, p_quantity: quantity, p_notes: notes });
     if (error) return NextResponse.json({ error: "Impossible d’envoyer la livraison. Vérifiez le magasin source et le stock disponible." }, { status: 400 });
+    const transferId = typeof data === "string" ? data : data?.id;
+    await emitTenantNotification({ tenantId, actorUserId: context.user.id, subject: "Transfert de stock à réceptionner", body: "Une livraison est arrivée au magasin comptoir et attend votre confirmation.", eventType: "STORE_TRANSFER_SENT", entityId: transferId ?? null, actionPath: "/dashboard/stock?tab=transfers", actionPermission: "stock.accept_counter", operatorPositions: ["GERANT"], dedupeKey: transferId ? `store-transfer-sent:${transferId}` : null });
     return NextResponse.json({ transfer: data }, { status: 201 });
   } catch { return NextResponse.json({ error: "Requête invalide." }, { status: 400 }); }
 }
@@ -41,12 +44,15 @@ export async function PATCH(request: Request) {
   try {
     const body = await request.json();
     const transferId = typeof body.transferId === "string" ? body.transferId : "";
-    if (!transferId) return NextResponse.json({ error: "Transfert requis." }, { status: 400 });
+    const tenantId = typeof body.tenantId === "string" ? body.tenantId : "";
+    if (!transferId || !tenantId) return NextResponse.json({ error: "Établissement et transfert requis." }, { status: 400 });
     const context = await getAuthorizationContext();
     if (!context.user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
+    if (!context.tenantIds.includes(tenantId)) return NextResponse.json({ error: "Établissement non autorisé." }, { status: 403 });
     if (!can(context, "stock.accept_counter")) return NextResponse.json({ error: "Seul le Gérant autorisé peut confirmer cette réception." }, { status: 403 });
     const { data, error } = await context.supabase.rpc("receive_store_transfer", { p_transfer_id: transferId });
     if (error) return NextResponse.json({ error: "Impossible de confirmer la réception. Le transfert a peut-être déjà été traité." }, { status: 400 });
+    await emitTenantNotification({ tenantId, actorUserId: context.user.id, subject: "Transfert de stock réceptionné", body: "Le Gérant a confirmé la réception d’un transfert vers le magasin comptoir.", eventType: "STORE_TRANSFER_RECEIVED", entityId: transferId, actionPath: "/dashboard/stock?tab=transfers", actionPermission: "stock.view", operatorPositions: ["MAGASINIER"], dedupeKey: `store-transfer-received:${transferId}` });
     return NextResponse.json({ transfer: data });
   } catch { return NextResponse.json({ error: "Requête invalide." }, { status: 400 }); }
 }
