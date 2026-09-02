@@ -27,7 +27,7 @@ export async function GET(request: Request, { params }: Context) {
     if ("error" in resolved) return resolved.error;
     const { admin, company, table, payload } = resolved;
     const [{ data: products, error: productsError }, { data: categories, error: categoriesError }, { data: activities }, { data: services }, { data: rooms }] = await Promise.all([
-      admin.from("products").select("id,name,price,product_type,stock_family,unit,packaging_label,category_id").eq("tenant_id", payload.tenantId).is("deleted_at", null).in("stock_family", ["BEVERAGE", "KITCHEN"]).order("stock_family").order("name").limit(300),
+      admin.from("products").select("id,name,price,product_type,stock_family,unit,packaging_label,category_id,image_url").eq("tenant_id", payload.tenantId).is("deleted_at", null).in("stock_family", ["BEVERAGE", "KITCHEN"]).order("stock_family").order("name").limit(300),
       admin.from("categories").select("id,name,parent_id").eq("tenant_id", payload.tenantId).is("deleted_at", null).order("name").limit(100),
       admin.from("company_activities").select("id,activity_code,name").eq("tenant_id", payload.tenantId).eq("is_active", true).order("name").limit(20),
       admin.from("company_services").select("id,activity_id,name,description,price_xof,billing_unit").eq("tenant_id", payload.tenantId).eq("is_active", true).order("name").limit(100),
