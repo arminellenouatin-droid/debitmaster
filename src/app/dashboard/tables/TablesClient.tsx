@@ -3,6 +3,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
+import QRCode from "qrcode";
 
 type Company = { id: string; name: string };
 type DiningTable = {
@@ -14,6 +15,7 @@ type DiningTable = {
   status: "FREE" | "OCCUPIED" | "RESERVED";
   created_at: string;
   updated_at: string;
+  public_menu_url: string;
 };
 
 const statusLabels = { FREE: "Libre", OCCUPIED: "Occupée", RESERVED: "Réservée" } as const;
@@ -95,6 +97,21 @@ export function TablesClient({ canManage }: { canManage: boolean }) {
       setError(cause instanceof Error ? cause.message : "Impossible de créer la table.");
     } finally {
       setPending(false);
+    }
+  }
+
+  async function downloadQr(table: DiningTable) {
+    setError("");
+    setMessage("");
+    try {
+      const dataUrl = await QRCode.toDataURL(table.public_menu_url, { width: 900, margin: 3, errorCorrectionLevel: "M", color: { dark: "#141b2b", light: "#fffdf7" } });
+      const link = document.createElement("a");
+      link.href = dataUrl;
+      link.download = `menu-${table.label.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").toLowerCase() || "table"}.png`;
+      link.click();
+      setMessage(`QR de ${table.label} téléchargé.`);
+    } catch {
+      setError("Impossible de générer le QR de cette table.");
     }
   }
 
@@ -212,9 +229,13 @@ export function TablesClient({ canManage }: { canManage: boolean }) {
                   ) : (
                     <p className="mt-5 rounded-lg bg-white/55 px-3 py-2 text-xs font-bold text-[var(--muted)]">Consultation seule</p>
                   )}
-                  <Link href={`/dashboard/orders?table=${encodeURIComponent(table.label)}`} className="mt-3 inline-flex text-xs font-black text-[var(--primary)]">
-                    Prendre une commande →
-                  </Link>
+                  <div className="mt-3 flex flex-wrap items-center gap-3">
+                    <Link href={`/dashboard/orders?table=${encodeURIComponent(table.label)}`} className="inline-flex text-xs font-black text-[var(--primary)]">
+                      Prendre une commande →
+                    </Link>
+                    {canManage && <button type="button" onClick={() => downloadQr(table)} className="inline-flex text-xs font-black text-[var(--primary)] underline underline-offset-4">Télécharger le QR</button>}
+                    <a href={table.public_menu_url} target="_blank" rel="noreferrer" className="inline-flex text-xs font-bold text-[var(--muted)]">Ouvrir le menu</a>
+                  </div>
                 </article>
               ))}
             </div>

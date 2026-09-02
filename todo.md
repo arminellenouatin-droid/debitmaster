@@ -934,3 +934,31 @@ Pour chaque formule, la réduction est calculée ainsi : `100 × (prix Base mens
 - [ ] Localiser toutes les constantes et calculs de commission d’affiliation actuellement à 10 %.
 - [ ] Passer les nouveaux calculs d’affiliation à 15 % et préserver l’historique existant.
 - [ ] Tester les notifications et les calculs d’affiliation avant livraison.
+
+## Blocage de connexion — Chargé des inventaires
+
+- [x] Identifier le compte, le tenant BAR SANTE PLUS et le rôle réellement enregistrés sans exposer les identifiants.
+- [x] Auditer la route de connexion, la recherche du profil et le rattachement employé/tenant.
+- [x] Vérifier la cohérence du mot de passe côté Auth et les données de profil sans imprimer de secret.
+- [ ] Corriger la cause exacte sans modifier les comptes d’autres établissements.
+- [x] Valider la connexion et l’accès aux écrans autorisés du chargé des inventaires.
+
+## Expérience client QR — BAR SANTE PLUS
+
+- [ ] Analyser les tables, les produits, les commandes et les paiements déjà disponibles.
+- [ ] Définir une URL publique signée par établissement et table, sans exposer de données privées.
+- [ ] Construire le menu client dynamique avec catégories, recherche, quantités et panier.
+- [ ] Créer la commande client avec table obligatoire et routage boissons/guisine vers les opérateurs concernés.
+- [ ] Ajouter le paiement client selon les moyens actuellement supportés, avec état d’attente explicite.
+- [ ] Générer un QR téléchargeable devant chaque table depuis l’espace autorisé.
+- [ ] Tester isolation tenant, abus de lien, doublons, erreurs réseau, mobile et impression/téléchargement.
+
+## Extension confirmée — commande QR multi-activité
+
+- [ ] Autoriser une commande unique à contenir des produits et prestations de plusieurs activités.
+- [ ] Ajouter les prestations Gym, Auberge, Lavage et Wi-Fi au catalogue public avec leurs données réelles.
+- [ ] Ventiler une commande par destination opérationnelle sans dupliquer le montant global.
+- [ ] Ajouter le choix public Mobile Money ou espèces à remettre à une serveuse.
+- [ ] Enregistrer l’espèce comme encaissement en attente jusqu’à validation par une serveuse.
+- [ ] Faire remonter chaque destination dans sa section et dans les points du Gérant, du Superviseur et du Propriétaire.
+- [ ] Tester les commandes mixtes, la disponibilité des chambres, les paiements et l’isolation tenant.

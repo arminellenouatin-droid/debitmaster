@@ -1,9 +1,16 @@
 // DebitManager tables API: every read and write is bounded by the authorized tenant and tables RBAC permissions.
 import { NextResponse } from "next/server";
 import { getAuthorizationContext, can } from "@/lib/authorization";
+import { createPublicMenuToken } from "@/lib/public-menu-token";
 
 const statuses = ["FREE", "OCCUPIED", "RESERVED"] as const;
 type TableStatus = (typeof statuses)[number];
+
+function withPublicMenuLink(request: Request, table: { id: string; tenant_id: string; [key: string]: unknown }) {
+  const token = createPublicMenuToken({ tenantId: table.tenant_id, tableId: table.id });
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? new URL(request.url).origin;
+  return { ...table, public_menu_token: token, public_menu_url: `${baseUrl}/menu/${token}` };
+}
 
 export async function GET(request: Request) {
   try {
@@ -16,7 +23,8 @@ export async function GET(request: Request) {
     const query = supabase.from("dining_tables").select("id,tenant_id,label,zone,zone_id,capacity,status,created_at,updated_at").is("deleted_at", null).order("zone").order("label").limit(100);
     const { data, error } = await (tenantId ? query.eq("tenant_id", tenantId) : query.in("tenant_id", tenantIds));
     if (error) return NextResponse.json({ error: "Impossible de charger le plan de salle." }, { status: 500 });
-    return NextResponse.json({ tables: data ?? [], statuses });
+    const tables = (data ?? []).map((table) => withPublicMenuLink(request, table));
+    return NextResponse.json({ tables, statuses });
   } catch {
     return NextResponse.json({ error: "Service temporairement indisponible." }, { status: 500 });
   }
@@ -42,7 +50,7 @@ export async function POST(request: Request) {
     }
     const { data, error } = await supabase.from("dining_tables").insert({ tenant_id: tenantId, label, zone: zone ?? null, zone_id: zoneId, capacity, status: "FREE" }).select("id,tenant_id,label,zone,zone_id,capacity,status,created_at,updated_at").single();
     if (error) return NextResponse.json({ error: "Impossible de créer la table. Le libellé existe peut-être déjà." }, { status: 400 });
-    return NextResponse.json({ table: data }, { status: 201 });
+    return NextResponse.json({ table: withPublicMenuLink(request, data) }, { status: 201 });
   } catch {
     return NextResponse.json({ error: "Requête invalide." }, { status: 400 });
   }
@@ -68,7 +76,7 @@ export async function PATCH(request: Request) {
     const changes = { ...(statuses.includes(status as TableStatus) ? { status } : {}), ...(zoneId === undefined ? {} : { zone_id: zoneId }), updated_at: new Date().toISOString() };
     const { data, error } = await supabase.from("dining_tables").update(changes).eq("id", tableId).eq("tenant_id", tenantId).is("deleted_at", null).select("id,tenant_id,label,zone,zone_id,capacity,status,created_at,updated_at").single();
     if (error || !data) return NextResponse.json({ error: "Impossible de modifier cette table." }, { status: 400 });
-    return NextResponse.json({ table: data });
+    return NextResponse.json({ table: withPublicMenuLink(request, data) });
   } catch {
     return NextResponse.json({ error: "Requête invalide." }, { status: 400 });
   }
