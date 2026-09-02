@@ -33,12 +33,12 @@ export async function POST(request: Request) {
     if (!await access(context, tenantId, activityCode, true)) return NextResponse.json({ error: "Accès à l’encaissement de ce service refusé." }, { status: 403 });
     if (customerName.length < 2 || !Number.isSafeInteger(quantity) || quantity < 1 || !Number.isSafeInteger(unitPriceXof) || unitPriceXof < 0) return NextResponse.json({ error: "Client, quantité et prix valides requis." }, { status: 400 });
     const admin = createSupabaseAdminClient();
-    let room: { id: string; room_number: string; pass_price_xof: number; pass_duration_minutes: number; night_price_xof: number; night_duration_nights: number; occupied_until: string | null } | null = null;
+    let room: { id: string; room_number: string; pass_price_xof: number; pass_duration_minutes: number; night_price_xof: number; night_duration_nights: number; occupied_until: string | null; occupied_started_at: string | null } | null = null;
     let previousOccupiedUntil: string | null = null;
     if (activityCode === "LODGING") {
       const option = body.lodgingOption;
       if (!body.roomId || (option !== "PASS" && option !== "NIGHT")) return NextResponse.json({ error: "Chambre et option Nuitée ou Pass requises." }, { status: 400 });
-      const { data: roomData, error: roomError } = await admin.from("power_lodging_rooms").select("id,room_number,pass_price_xof,pass_duration_minutes,night_price_xof,night_duration_nights,occupied_until").eq("id", body.roomId).eq("tenant_id", tenantId).eq("is_active", true).maybeSingle();
+      const { data: roomData, error: roomError } = await admin.from("power_lodging_rooms").select("id,room_number,pass_price_xof,pass_duration_minutes,night_price_xof,night_duration_nights,occupied_started_at,occupied_until").eq("id", body.roomId).eq("tenant_id", tenantId).eq("is_active", true).maybeSingle();
       if (roomError || !roomData) return NextResponse.json({ error: "Chambre introuvable dans cet établissement." }, { status: 400 });
       room = roomData;
       previousOccupiedUntil = room.occupied_until;
@@ -47,15 +47,16 @@ export async function POST(request: Request) {
       durationMinutes = option === "PASS" ? room.pass_duration_minutes : room.night_duration_nights * 24 * 60;
     }
     if (!Number.isSafeInteger(unitPriceXof) || unitPriceXof < 0 || !Number.isSafeInteger(durationMinutes) || durationMinutes < 0) return NextResponse.json({ error: "Tarif ou durée invalide." }, { status: 400 });
+    const occupiedStartedAt = activityCode === "LODGING" ? new Date().toISOString() : null;
     const occupiedUntil = activityCode === "LODGING" ? new Date(Date.now() + durationMinutes * 60_000).toISOString() : null;
     const { data: sale, error: saleError } = await admin.from("power_service_sales").insert({ tenant_id: tenantId, activity_code: activityCode, service_id: normalize(body.serviceId) || null, customer_id: normalize(body.customerId) || null, customer_name: customerName.slice(0, 160), room_id: room?.id ?? null, quantity, unit_price_xof: unitPriceXof, payment_method: body.paymentMethod === "MOBILE_MONEY" ? "MOBILE_MONEY" : "CASH", payment_status: "PAID", membership_expires_at: body.membershipExpiresAt || null, duration_minutes: durationMinutes || null, created_by: context.user!.id }).select("id,tenant_id,activity_code,service_id,customer_id,customer_name,room_id,quantity,unit_price_xof,total_amount_xof,payment_method,payment_status,membership_expires_at,duration_minutes,created_at").single();
     if (saleError || !sale) return NextResponse.json({ error: "Impossible d’enregistrer la vente du service." }, { status: 400 });
     if (room && occupiedUntil) {
-      const { error: roomUpdateError } = await admin.from("power_lodging_rooms").update({ occupied_until: occupiedUntil, updated_at: new Date().toISOString() }).eq("id", room.id).eq("tenant_id", tenantId).is("occupied_until", previousOccupiedUntil);
+      const { error: roomUpdateError } = await admin.from("power_lodging_rooms").update({ occupied_started_at: occupiedStartedAt, occupied_until: occupiedUntil, updated_at: new Date().toISOString() }).eq("id", room.id).eq("tenant_id", tenantId).is("occupied_until", previousOccupiedUntil);
       if (roomUpdateError) { await admin.from("power_service_sales").delete().eq("id", sale.id).eq("tenant_id", tenantId); return NextResponse.json({ error: "La chambre vient d’être attribuée par un autre opérateur. Réessayez." }, { status: 409 }); }
     }
     const { error: cashError } = await admin.from("power_cash_movements").insert({ tenant_id: tenantId, activity_code: activityCode, sale_id: sale.id, movement_type: "SALE", amount_xof: sale.total_amount_xof, created_by: context.user!.id });
-    if (cashError) { await admin.from("power_service_sales").delete().eq("id", sale.id).eq("tenant_id", tenantId); if (room) await admin.from("power_lodging_rooms").update({ occupied_until: previousOccupiedUntil, updated_at: new Date().toISOString() }).eq("id", room.id).eq("tenant_id", tenantId); return NextResponse.json({ error: "Vente enregistrée mais caisse non alimentée. Opération annulée." }, { status: 400 }); }
+    if (cashError) { await admin.from("power_service_sales").delete().eq("id", sale.id).eq("tenant_id", tenantId); if (room) await admin.from("power_lodging_rooms").update({ occupied_started_at: room.occupied_started_at, occupied_until: previousOccupiedUntil, updated_at: new Date().toISOString() }).eq("id", room.id).eq("tenant_id", tenantId); return NextResponse.json({ error: "Vente enregistrée mais caisse non alimentée. Opération annulée." }, { status: 400 }); }
     await emitTenantNotification({
       tenantId,
       actorUserId: context.user!.id,

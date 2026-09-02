@@ -2,6 +2,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useLiveRefresh } from "@/hooks/useLiveRefresh";
 
 type Item = { id: string; product_name: string; quantity: number; unit_price: number; total_price: number; fulfillment_unit: string | null; preparation_status: string | null; prepared_at?: string | null };
@@ -29,6 +30,8 @@ export function OwnerOrdersClient({ tenantId, companyName }: { tenantId: string;
   const [error, setError] = useState("");
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [busyOrderId, setBusyOrderId] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const linkedOrderId = searchParams.get("orderId");
 
   const refresh = useCallback(async () => {
     const response = await fetch(`/api/dashboard/gerant-overview?range=${range}`, { cache: "no-store" });
@@ -36,6 +39,9 @@ export function OwnerOrdersClient({ tenantId, companyName }: { tenantId: string;
     setData(await response.json()); setError("");
   }, [range]);
   useEffect(() => { void refresh(); }, [refresh]);
+  useEffect(() => {
+    if (linkedOrderId && data?.orders.some((order) => order.id === linkedOrderId)) setExpandedOrderId(linkedOrderId);
+  }, [linkedOrderId, data]);
   useLiveRefresh(refresh);
 
   const prepareOrder = async (order: Order) => { setBusyOrderId(order.id); setError(""); const response = await fetch("/api/orders", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tenantId, orderId: order.id, status: "IN_PREPARATION" }) }); const body = await response.json().catch(() => ({})); setBusyOrderId(null); if (!response.ok) return setError(body.error ?? "Impossible de préparer la commande."); await refresh(); };
