@@ -37,7 +37,7 @@ export async function POST(request: Request) {
     await admin.auth.admin.deleteUser(userId);
     return errorResponse("Création du profil affilié impossible", 500);
   }
-  const affiliate = await admin.from("platform_affiliates").insert({ user_id: userId, code, display_name: displayName, commission_rate: 10, payout_threshold_xof: 20000, status: "ACTIVE" }).select("id,user_id,code,display_name,commission_rate,payout_threshold_xof,status,created_at").single();
+  const affiliate = await admin.from("platform_affiliates").insert({ user_id: userId, code, display_name: displayName, commission_rate: 15, payout_threshold_xof: 20000, status: "ACTIVE" }).select("id,user_id,code,display_name,commission_rate,payout_threshold_xof,status,created_at").single();
   if (affiliate.error) {
     await admin.from("profiles").delete().eq("id", userId);
     await admin.auth.admin.deleteUser(userId);

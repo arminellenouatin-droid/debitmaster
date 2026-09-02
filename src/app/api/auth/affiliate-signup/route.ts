@@ -70,7 +70,7 @@ export async function POST(request: Request) {
       user_id: userId,
       code,
       display_name: `${firstName} ${lastName}`.trim(),
-      commission_rate: 10,
+      commission_rate: 15,
       payout_threshold_xof: 20000,
       status: "ACTIVE",
     }).select("id,code,display_name,commission_rate,payout_threshold_xof,status").single();

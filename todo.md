@@ -869,3 +869,68 @@ Pour chaque formule, la réduction est calculée ainsi : `100 × (prix Base mens
 - [ ] Vérifier les réponses de `/api/orders` et `/api/kitchen/assignments`.
 - [ ] Corriger uniquement la cause de non-affichage constatée.
 - [ ] Retester la session Chef cuisine après correction.
+
+## Blocage — chargement des chambres Auberge
+
+- [ ] Vérifier que la migration `power_lodging_rooms` est appliquée sur Supabase de production.
+- [ ] Vérifier la réponse exacte de `/api/power/rooms` dans la session Auberge.
+- [ ] Contrôler le rôle, les permissions et le tenant du compte Mathias.
+- [ ] Vérifier la compatibilité entre les politiques RLS et les fonctions d’autorisation utilisées.
+- [ ] Corriger uniquement la cause du chargement des chambres puis retester en production.
+
+## Blocage — enregistrement vente Auberge
+
+- [ ] Reproduire la vente avec une chambre et une option valides.
+- [ ] Relever le statut et le message détaillé de `/api/power/service-sales`.
+- [ ] Vérifier les contraintes de `power_service_sales` et `power_cash_movements`.
+- [ ] Vérifier la permission de vente et les valeurs chambre/option/durée.
+- [ ] Corriger uniquement la cause racine et retester l’occupation de la chambre.
+
+## Correction — aperçu et occupation des chambres
+
+- [ ] Afficher les quatre chambres sous forme de cartes avec aperçu visuel.
+- [ ] Afficher une étiquette d’état « Libre » ou « Occupée » sur chaque carte.
+- [ ] Afficher l’heure de début d’occupation et l’heure prévue de libération.
+- [ ] Relier la vue aux chambres et ventes Auberge réelles, sans données fictives.
+- [ ] Faire redevenir automatiquement une chambre libre après expiration de son occupation.
+- [ ] Remplacer l’état vide générique par la vue opérationnelle des chambres.
+
+## Blocage — compte PDG
+
+- [ ] Reproduire le message « Authentification requise » dans la session PDG.
+- [ ] Vérifier la session Auth, la redirection et le rôle réellement résolu.
+- [ ] Contrôler le tenant actif et l’endpoint qui renvoie 401.
+- [ ] Corriger uniquement la cause racine sans modifier les comptes d’établissement.
+- [ ] Retester l’accès PDG et ses écrans principaux.
+
+### Suite diagnostic PDG
+
+- [ ] Inspecter la conservation de session entre la connexion et `/admin`.
+- [ ] Vérifier les appels `/api/admin/overview` et `/api/admin/pricing` avec la session PDG.
+- [ ] Appliquer le correctif minimal si la session est perdue côté navigateur ou serveur.
+
+## Vérification — centre de notifications
+
+- [ ] Vérifier la cloche, le compteur et la liste des notifications en production.
+- [ ] Tester GET et PATCH de l’API notifications avec la session courante.
+- [ ] Vérifier les destinations profondes vers commandes, repas, stocks, services et reversements.
+- [ ] Contrôler le mode opérateur ou consultation selon les permissions.
+- [ ] Vérifier l’isolation des notifications entre établissements.
+
+## Audit complet — notifications non opérationnelles
+
+- [ ] Vérifier le schéma, les colonnes, la migration et les RLS du centre de notifications.
+- [ ] Tracer l’émission des notifications dans chaque flux réellement déployé.
+- [ ] Vérifier la lecture, le compteur non lu, le marquage lu et la destination profonde.
+- [ ] Vérifier les permissions opérateur/consultation et la déduplication des destinataires.
+- [ ] Reproduire avec des événements réels sans créer de fausses données métier.
+- [ ] Corriger la cause racine, publier le PR dédié et valider la production.
+
+## Corrections prioritaires — notifications et affiliation
+
+- [ ] Auditer la cloche, le compteur, les appels API et les destinations profondes des notifications.
+- [ ] Vérifier l’émission des notifications sur les flux déjà existants sans modifier leur logique métier.
+- [ ] Corriger la réception réelle, le rafraîchissement et le marquage lu des notifications.
+- [ ] Localiser toutes les constantes et calculs de commission d’affiliation actuellement à 10 %.
+- [ ] Passer les nouveaux calculs d’affiliation à 15 % et préserver l’historique existant.
+- [ ] Tester les notifications et les calculs d’affiliation avant livraison.

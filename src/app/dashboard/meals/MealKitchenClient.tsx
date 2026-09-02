@@ -2,6 +2,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 type Role = "CHEF_CUISINE" | "CUISINIER";
 type MealOrder = { id: string; order_number: string; table_label: string | null; server_name: string | null; status: string; created_at: string; order_items?: { id: string; product_name: string; quantity: number; fulfillment_unit: string | null }[] };
@@ -23,6 +24,8 @@ export function MealKitchenClient({ tenantId, role, employeeId }: { tenantId: st
   const [busy, setBusy] = useState("");
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
+  const searchParams = useSearchParams();
+  const linkedOrderId = searchParams.get("orderId");
 
   const load = useCallback(async () => {
     setLoading(true); setError("");
@@ -42,6 +45,9 @@ export function MealKitchenClient({ tenantId, role, employeeId }: { tenantId: st
   }, [tenantId]);
 
   useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    if (linkedOrderId && orders.some((order) => order.id === linkedOrderId)) setNotice(`Commande ${orders.find((order) => order.id === linkedOrderId)?.order_number ?? "notifiée"} ouverte dans la file cuisine.`);
+  }, [linkedOrderId, orders]);
 
   const remaining = useMemo(() => {
     const totals = new Map<string, number>();

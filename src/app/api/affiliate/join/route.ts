@@ -33,7 +33,7 @@ export async function POST() {
       user_id: context.user.id,
       code: randomAffiliateCode(),
       display_name: displayName,
-      commission_rate: 10,
+      commission_rate: 15,
       payout_threshold_xof: 20000,
       status: "ACTIVE",
     }).select("id,code,display_name,commission_rate,payout_threshold_xof,status").single();
