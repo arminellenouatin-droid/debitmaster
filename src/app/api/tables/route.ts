@@ -8,9 +8,14 @@ const statuses = ["FREE", "OCCUPIED", "RESERVED"] as const;
 type TableStatus = (typeof statuses)[number];
 
 function withPublicMenuLink(request: Request, table: { id: string; tenant_id: string; [key: string]: unknown }) {
-  const token = createPublicMenuToken({ tenantId: table.tenant_id, tableId: table.id });
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? new URL(request.url).origin;
-  return { ...table, public_menu_token: token, public_menu_url: `${baseUrl}/menu/${token}` };
+  try {
+    const token = createPublicMenuToken({ tenantId: table.tenant_id, tableId: table.id });
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? new URL(request.url).origin;
+    return { ...table, public_menu_token: token, public_menu_url: `${baseUrl}/menu/${token}` };
+  } catch (error) {
+    console.error("[tables] Public menu token unavailable", error instanceof Error ? error.message : "unknown");
+    return { ...table, public_menu_token: null, public_menu_url: null };
+  }
 }
 
 export async function GET(request: Request) {
@@ -54,12 +59,7 @@ export async function POST(request: Request) {
       logDatabaseError("tables.POST", error);
       return NextResponse.json(databaseErrorResponse(error, "Impossible de créer la table. Vérifiez le libellé et la zone."), { status: error.code === "23505" ? 409 : 400 });
     }
-    try {
-      return NextResponse.json({ table: withPublicMenuLink(request, data) }, { status: 201 });
-    } catch (error) {
-      console.error("[tables.POST] Public menu token unavailable", error instanceof Error ? error.message : "unknown");
-      return NextResponse.json({ error: "Table créée, mais le lien QR n’est pas configuré sur le serveur. Contactez l’administrateur." }, { status: 503 });
-    }
+    return NextResponse.json({ table: withPublicMenuLink(request, data) }, { status: 201 });
   } catch (error) {
     console.error("[tables.POST] Invalid request", error instanceof Error ? error.message : "unknown");
     return NextResponse.json({ error: "La requête de création de table est invalide. Vérifiez les champs saisis." }, { status: 400 });
@@ -89,12 +89,7 @@ export async function PATCH(request: Request) {
       if (error) logDatabaseError("tables.PATCH", error);
       return NextResponse.json(error ? databaseErrorResponse(error, "Impossible de modifier cette table.") : { error: "Impossible de modifier cette table." }, { status: 400 });
     }
-    try {
-      return NextResponse.json({ table: withPublicMenuLink(request, data) });
-    } catch (error) {
-      console.error("[tables.PATCH] Public menu token unavailable", error instanceof Error ? error.message : "unknown");
-      return NextResponse.json({ error: "Table modifiée, mais le lien QR n’est pas configuré sur le serveur. Contactez l’administrateur." }, { status: 503 });
-    }
+    return NextResponse.json({ table: withPublicMenuLink(request, data) });
   } catch (error) {
     console.error("[tables.PATCH] Invalid request", error instanceof Error ? error.message : "unknown");
     return NextResponse.json({ error: "La requête de modification de table est invalide. Vérifiez les champs saisis." }, { status: 400 });

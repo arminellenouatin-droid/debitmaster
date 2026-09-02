@@ -965,8 +965,15 @@ Pour chaque formule, la réduction est calculée ainsi : `100 × (prix Base mens
 
 ## Bug création zone et table
 
-- [ ] Reproduire séparément la création d’une zone et d’une table.
-- [ ] Vérifier les champs envoyés par les formulaires, notamment tenantId, zoneId et capacité.
-- [ ] Auditer les routes `/api/zones` et `/api/tables` ainsi que leurs erreurs masquées.
-- [ ] Corriger la cause exacte et retourner un message exploitable.
-- [ ] Valider une création dans BAR SANTE PLUS sans affecter les autres tenants.
+- [x] Reproduire séparément la création d’une zone et d’une table.
+- [x] Vérifier les champs envoyés par les formulaires, notamment tenantId, zoneId et capacité.
+- [x] Auditer les routes `/api/zones` et `/api/tables` ainsi que leurs erreurs masquées.
+- [x] Corriger la gestion des erreurs et retourner un message exploitable, y compris lorsque la configuration QR manque.
+- [ ] Valider une création dans BAR SANTE PLUS après déploiement sans affecter les autres tenants.
+
+## Blocage chargement plan de salle
+
+- [ ] Reproduire le GET `/api/tables` et déterminer si l’échec vient de Supabase, du tenant ou du QR.
+- [ ] Vérifier la relation `dining_tables`/`work_zones` et la génération des liens publics.
+- [ ] Corriger le chargement sans masquer l’erreur réelle ni exposer de données sensibles.
+- [ ] Valider l’affichage des tables de BAR SANTE PLUS et l’isolation multi-tenant.

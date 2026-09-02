@@ -15,7 +15,7 @@ type DiningTable = {
   status: "FREE" | "OCCUPIED" | "RESERVED";
   created_at: string;
   updated_at: string;
-  public_menu_url: string;
+  public_menu_url: string | null;
 };
 
 const statusLabels = { FREE: "Libre", OCCUPIED: "Occupée", RESERVED: "Réservée" } as const;
@@ -104,14 +104,15 @@ export function TablesClient({ canManage }: { canManage: boolean }) {
     setError("");
     setMessage("");
     try {
+      if (!table.public_menu_url) throw new Error("QR_NOT_CONFIGURED");
       const dataUrl = await QRCode.toDataURL(table.public_menu_url, { width: 900, margin: 3, errorCorrectionLevel: "M", color: { dark: "#141b2b", light: "#fffdf7" } });
       const link = document.createElement("a");
       link.href = dataUrl;
       link.download = `menu-${table.label.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").toLowerCase() || "table"}.png`;
       link.click();
       setMessage(`QR de ${table.label} téléchargé.`);
-    } catch {
-      setError("Impossible de générer le QR de cette table.");
+    } catch (cause) {
+      setError(cause instanceof Error && cause.message === "QR_NOT_CONFIGURED" ? "Table affichée, mais le QR nécessite la configuration du secret serveur." : "Impossible de générer le QR de cette table.");
     }
   }
 
@@ -234,7 +235,7 @@ export function TablesClient({ canManage }: { canManage: boolean }) {
                       Prendre une commande →
                     </Link>
                     {canManage && <button type="button" onClick={() => downloadQr(table)} className="inline-flex text-xs font-black text-[var(--primary)] underline underline-offset-4">Télécharger le QR</button>}
-                    <a href={table.public_menu_url} target="_blank" rel="noreferrer" className="inline-flex text-xs font-bold text-[var(--muted)]">Ouvrir le menu</a>
+                    {table.public_menu_url && <a href={table.public_menu_url} target="_blank" rel="noreferrer" className="inline-flex text-xs font-bold text-[var(--muted)]">Ouvrir le menu</a>}
                   </div>
                 </article>
               ))}
