@@ -1066,3 +1066,11 @@ Pour chaque formule, la réduction est calculée ainsi : `100 × (prix Base mens
 - [ ] Exiger une justification pour les écarts au-dessus du seuil configuré.
 - [ ] Ajouter l’interface de saisie mobile et les états de session.
 - [ ] Tester le workflow complet sur BAR SANTE PLUS.
+
+## Blocage création session inventaire — 2026-09-02
+
+- [ ] Vérifier si la migration `20260902_physical_inventory_workflow.sql` est appliquée dans Supabase.
+- [ ] Vérifier le rôle réel, le tenant et la permission `stock.audit` du compte Innocent.
+- [ ] Vérifier le payload de création et la contrainte `created_by`.
+- [ ] Retourner le diagnostic serveur sans exposer les détails SQL.
+- [ ] Valider la création d’une session réelle après correction.
