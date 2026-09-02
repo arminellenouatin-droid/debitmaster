@@ -106,6 +106,10 @@ button { cursor: pointer; }
 .qr-availability.busy i { background: #f76019; box-shadow: 0 0 .6rem #f76019; }
 .qr-stay-overlay h3 { margin: 0 0 .35rem; color: #fff; font-size: clamp(1.6rem, 4vw, 2.4rem); }
 .qr-stay-overlay p { max-width: 30rem; margin: 0 0 1.2rem; color: #d5c4ab; font-size: .9rem; }
+.qr-room-options { display: flex; flex-wrap: wrap; gap: .55rem; }
+.qr-room-option { display: inline-flex; align-items: center; gap: .7rem; min-height: 2.55rem; padding: 0 .8rem; border: 1px solid rgba(255,222,168,.42); border-radius: .35rem; background: rgba(18,20,19,.72); color: #ffdea8; font-size: .72rem; font-weight: 800; }
+.qr-room-option strong { color: #ffb800; }
+.qr-room-option:hover { border-color: #ffb800; background: rgba(255,184,0,.16); }
 .qr-service-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: .75rem; }
 .qr-service-card { display: flex; align-items: start; gap: .8rem; padding: 1rem; border: 1px solid rgba(158,143,120,.2); border-radius: .55rem; background: #1e201f; }
 .qr-service-icon { color: #ffb800; font-size: 1.5rem; }
@@ -151,3 +155,33 @@ button { cursor: pointer; }
 .qr-payment-note { margin: .8rem 0 0; color: #9e8f78; font-size: .7rem; line-height: 1.5; text-align: center; }
 @media (max-width: 700px) { .qr-header { top: 2rem; padding-inline: 1rem; } .qr-hero { min-height: 31rem; margin-inline: 1rem; } .qr-hero-art { right: 3%; top: 14%; width: 8rem; height: 10rem; } .qr-section-heading { align-items: stretch; flex-direction: column; } .qr-search { width: 100%; } .qr-drink-row { grid-template-columns: 4.3rem minmax(0,1fr) auto; gap: .7rem; } .qr-drink-image { width: 4.3rem; height: 4.3rem; } .qr-service-grid { grid-template-columns: 1fr; } .qr-footer { justify-content: start; } .qr-bottom-nav { display: flex; } }
 @media (prefers-reduced-motion: reduce) { .qr-marquee-content { animation: none; } }
+
+/* QR poster modal — affiche imprimable inspirée de la référence fournie, avec prévisualisation avant toute action. */
+.qr-poster-overlay { position: fixed; inset: 0; z-index: 80; display: flex; align-items: center; justify-content: center; overflow: auto; padding: 1rem; background: rgba(4,8,6,.82); backdrop-filter: blur(12px); }
+.qr-poster-dialog { display: grid; width: min(100%, 42rem); max-height: calc(100vh - 2rem); overflow: auto; border: 1px solid #d9a83e; border-radius: .8rem; background: #06110d; box-shadow: 0 2rem 6rem rgba(0,0,0,.55); }
+.qr-poster-preview { position: relative; min-height: 49rem; overflow: hidden; padding: 2.25rem 2rem; color: #fff; background: linear-gradient(rgba(4,22,16,.97),rgba(3,18,13,.99)); border: 3px solid #d9a83e; }
+.qr-poster-preview::before { position: absolute; inset: .9rem; content: ""; border: 1px solid rgba(217,168,62,.7); pointer-events: none; }
+.qr-poster-content { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; text-align: center; }
+.qr-poster-logo { display: grid; place-items: center; width: 4.3rem; height: 4.3rem; margin-bottom: .7rem; border: 2px solid #d9a83e; border-radius: 50%; color: #d9a83e; font-size: 2rem; background: rgba(217,168,62,.05); }
+.qr-poster-label { margin: 0; color: #d9a83e; font-size: .9rem; font-weight: 800; letter-spacing: .26em; }
+.qr-poster-content h2 { max-width: 100%; margin: .45rem 0 1rem; color: #fff; font-family: Georgia, "Times New Roman", serif; font-size: clamp(2rem, 7vw, 3.6rem); line-height: 1.05; text-transform: uppercase; overflow-wrap: anywhere; }
+.qr-poster-separator { width: min(100%, 24rem); color: #d9a83e; font-size: 1rem; white-space: nowrap; }
+.qr-poster-scan { margin: 1.1rem 0 .3rem; color: #d9a83e; font-size: clamp(1.4rem, 4vw, 2rem); font-weight: 900; letter-spacing: .06em; }
+.qr-poster-message { margin: 0; font-size: clamp(.85rem, 2.2vw, 1.15rem); font-weight: 800; line-height: 1.35; text-transform: uppercase; }
+.qr-poster-qr { width: min(82vw, 20rem); aspect-ratio: 1; margin: 1.3rem auto 1rem; padding: 1rem; background: #fff; border: 3px solid #d9a83e; border-radius: 1rem; box-shadow: 0 .8rem 2rem rgba(0,0,0,.4); }
+.qr-poster-qr img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.qr-poster-table { margin: .1rem 0 0; color: #fff; font-size: .95rem; font-weight: 800; text-transform: uppercase; }
+.qr-poster-thanks { margin: 1rem 0 0; color: #d9a83e; font-family: Georgia, "Times New Roman", serif; font-size: 3rem; font-style: italic; }
+.qr-poster-confidence { margin: -.1rem 0 .65rem; font-size: .8rem; font-weight: 800; letter-spacing: .1em; }
+.qr-poster-phone { margin: 0; padding: .65rem 1.15rem; border-radius: 999px; background: #d9a83e; color: #07150f; font-size: .85rem; font-weight: 900; }
+.qr-poster-address { max-width: 90%; margin: .65rem 0 0; color: #d5c4ab; font-size: .75rem; }
+.qr-poster-decoration { position: absolute; color: rgba(217,168,62,.13); font-size: 5rem; }
+.qr-poster-decoration-one { left: .2rem; top: 45%; }
+.qr-poster-decoration-two { right: .8rem; bottom: 16%; }
+.qr-poster-actions { display: grid; grid-template-columns: repeat(3, 1fr) auto; gap: .6rem; padding: .8rem; background: #111c16; }
+.qr-poster-action, .qr-poster-close { min-height: 2.7rem; padding: 0 .75rem; border: 1px solid #d9a83e; border-radius: .4rem; background: transparent; color: #ffdea8; font-size: .75rem; font-weight: 900; cursor: pointer; }
+.qr-poster-action:hover { background: #d9a83e; color: #07150f; }
+.qr-poster-primary { background: #d9a83e; color: #07150f; }
+.qr-poster-close { border-color: rgba(255,255,255,.25); color: #d5c4ab; }
+@media (max-width: 600px) { .qr-poster-overlay { align-items: start; padding: .5rem; } .qr-poster-dialog { max-height: calc(100vh - 1rem); } .qr-poster-preview { min-height: 42rem; padding: 1.6rem 1rem; } .qr-poster-actions { grid-template-columns: 1fr 1fr; } .qr-poster-close { grid-column: span 2; } }
+@media print { .qr-poster-overlay { position: static; padding: 0; background: #fff; } .qr-poster-dialog { width: 100%; max-height: none; border: 0; box-shadow: none; } .qr-poster-preview { min-height: 100vh; } .qr-poster-actions { display: none; } }

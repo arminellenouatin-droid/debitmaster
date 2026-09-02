@@ -5,7 +5,7 @@ import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import QRCode from "qrcode";
 
-type Company = { id: string; name: string };
+type Company = { id: string; name: string; phone?: string | null; address?: string | null };
 type DiningTable = {
   id: string;
   tenant_id: string;
@@ -36,6 +36,7 @@ export function TablesClient({ canManage }: { canManage: boolean }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [poster, setPoster] = useState<{ table: DiningTable; qrDataUrl: string } | null>(null);
 
   async function load(id: string) {
     const response = await fetch(`/api/tables?tenantId=${encodeURIComponent(id)}`, { cache: "no-store" });
@@ -100,20 +101,42 @@ export function TablesClient({ canManage }: { canManage: boolean }) {
     }
   }
 
-  async function downloadQr(table: DiningTable) {
+  async function openQrPoster(table: DiningTable) {
     setError("");
     setMessage("");
     try {
       if (!table.public_menu_url) throw new Error("QR_NOT_CONFIGURED");
-      const dataUrl = await QRCode.toDataURL(table.public_menu_url, { width: 900, margin: 3, errorCorrectionLevel: "M", color: { dark: "#141b2b", light: "#fffdf7" } });
-      const link = document.createElement("a");
-      link.href = dataUrl;
-      link.download = `menu-${table.label.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").toLowerCase() || "table"}.png`;
-      link.click();
-      setMessage(`QR de ${table.label} téléchargé.`);
+      const qrDataUrl = await QRCode.toDataURL(table.public_menu_url, { width: 900, margin: 3, errorCorrectionLevel: "H", color: { dark: "#000000", light: "#ffffff" } });
+      setPoster({ table, qrDataUrl });
     } catch (cause) {
-      setError(cause instanceof Error && cause.message === "QR_NOT_CONFIGURED" ? "Table affichée, mais le QR nécessite la configuration du secret serveur." : "Impossible de générer le QR de cette table.");
+      setError(cause instanceof Error && cause.message === "QR_NOT_CONFIGURED" ? "Table affichée, mais le QR nécessite la configuration du secret serveur." : "Impossible de générer l’affiche QR de cette table.");
     }
+  }
+
+  function posterValues() {
+    const company = companies.find((item) => item.id === tenantId);
+    return { name: company?.name ?? "Établissement", phone: company?.phone || "Téléphone non renseigné", address: company?.address || "Adresse non renseignée" };
+  }
+
+  function printPoster() {
+    if (!poster) return;
+    const info = posterValues();
+    const printWindow = window.open("", "_blank", "noopener,noreferrer,width=900,height=1200");
+    if (!printWindow) { setError("Autorisez les fenêtres contextuelles pour imprimer l’affiche QR."); return; }
+    const safe = (value: string) => value.replace(/[&<>\"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\\\"": "&quot;", "'": "&#039;" } as Record<string, string>)[char] ?? char);
+    printWindow.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>QR - ${safe(info.name)}</title><style>*{box-sizing:border-box}body{margin:0;background:#fff;font-family:Arial,sans-serif}.poster-print{width:900px;min-height:1400px;margin:0 auto;padding:70px 65px;color:#fff;background:linear-gradient(135deg,#09261c,#06110d);border:3px solid #d9a83e;text-align:center}.poster-print h1{margin:20px 0 30px;font:700 60px Georgia,serif;text-transform:uppercase;line-height:1.05}.label{color:#d9a83e;font-size:27px;font-weight:700;letter-spacing:5px}.scan{margin:30px 0;color:#d9a83e;font-size:42px;font-weight:800}.message{font-size:27px;font-weight:700;line-height:1.35;text-transform:uppercase}.qr{width:570px;height:570px;margin:38px auto;padding:35px;background:#fff;border:5px solid #d9a83e;border-radius:35px}.qr img{width:100%;height:100%}.thanks{margin-top:40px}.thanks b{display:block;color:#d9a83e;font:italic 65px Georgia,serif}.phone{display:inline-block;margin-top:18px;padding:17px 40px;border-radius:50px;background:#d9a83e;color:#07150f;font-size:30px;font-weight:800}@media print{body{background:#fff}.poster-print{margin:0;width:100%;min-height:100vh;box-shadow:none}}</style></head><body><main class="poster-print"><div style="font-size:70px;color:#d9a83e">✦</div><div class="label">RESTAURANT</div><h1>${safe(info.name)}</h1><div style="color:#d9a83e;font-size:24px">◆ ───────── ◆</div><div class="scan">SCANNEZ LE QR CODE</div><div class="message">ET COMMANDEZ DIRECTEMENT<br>CE QUE VOUS VOULEZ</div><div class="qr"><img src="${poster.qrDataUrl}" alt="QR de ${safe(poster.table.label)}"></div><div style="font-size:25px;font-weight:700">TABLE ${safe(poster.table.label)} · ${safe(poster.table.zone || "Zone non renseignée")}</div><div class="thanks"><b>Merci</b><div style="font-size:25px;font-weight:700;letter-spacing:2px">POUR VOTRE CONFIANCE</div><div class="phone">☎ ${safe(info.phone)}</div><div style="margin-top:14px;font-size:18px">${safe(info.address)}</div></div></main><script>window.onload=()=>window.print();</script></body></html>`);
+    printWindow.document.close();
+  }
+
+  async function downloadPoster() {
+    if (!poster) return;
+    const info = posterValues();
+    const canvas = document.createElement("canvas"); canvas.width = 1800; canvas.height = 2800;
+    const context = canvas.getContext("2d"); if (!context) return;
+    const gradient = context.createLinearGradient(0, 0, 1800, 2800); gradient.addColorStop(0, "#09261c"); gradient.addColorStop(1, "#06110d"); context.fillStyle = gradient; context.fillRect(0, 0, canvas.width, canvas.height);
+    context.strokeStyle = "#d9a83e"; context.lineWidth = 12; context.strokeRect(25, 25, 1750, 2750);
+    context.textAlign = "center"; context.fillStyle = "#d9a83e"; context.font = "bold 54px Arial"; context.fillText("RESTAURANT", 900, 210); context.fillStyle = "#ffffff"; context.font = "bold 116px Georgia"; context.fillText(info.name.toUpperCase().slice(0, 22), 900, 350); context.fillStyle = "#d9a83e"; context.font = "bold 82px Arial"; context.fillText("SCANNEZ LE QR CODE", 900, 520); context.fillStyle = "#ffffff"; context.font = "bold 48px Arial"; context.fillText("ET COMMANDEZ DIRECTEMENT", 900, 610); context.fillText("CE QUE VOUS VOULEZ", 900, 675);
+    const qrImage = new Image(); qrImage.onload = () => { context.fillStyle = "#fff"; context.fillRect(260, 760, 1280, 1280); context.drawImage(qrImage, 330, 830, 1140, 1140); context.fillStyle = "#fff"; context.font = "bold 48px Arial"; context.fillText(`TABLE ${poster.table.label} · ${poster.table.zone || "Zone non renseignée"}`, 900, 2170); context.fillStyle = "#d9a83e"; context.font = "italic 120px Georgia"; context.fillText("Merci", 900, 2350); context.fillStyle = "#fff"; context.font = "bold 42px Arial"; context.fillText(`☎ ${info.phone}`.slice(0, 34), 900, 2460); context.font = "34px Arial"; context.fillText(info.address.slice(0, 52), 900, 2530); canvas.toBlob((blob) => { if (!blob) return; const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = `affiche-qr-${poster.table.label.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.png`; link.click(); URL.revokeObjectURL(link.href); }, "image/png"); }; qrImage.src = poster.qrDataUrl;
   }
 
   async function updateStatus(tableId: string, status: DiningTable["status"]) {
@@ -234,7 +257,7 @@ export function TablesClient({ canManage }: { canManage: boolean }) {
                     <Link href={`/dashboard/orders?table=${encodeURIComponent(table.label)}`} className="inline-flex text-xs font-black text-[var(--primary)]">
                       Prendre une commande →
                     </Link>
-                    {canManage && <button type="button" onClick={() => downloadQr(table)} className="inline-flex text-xs font-black text-[var(--primary)] underline underline-offset-4">Télécharger le QR</button>}
+                    {canManage && <button type="button" onClick={() => void openQrPoster(table)} className="inline-flex text-xs font-black text-[var(--primary)] underline underline-offset-4">Télécharger le QR</button>}
                     {table.public_menu_url && <a href={table.public_menu_url} target="_blank" rel="noreferrer" className="inline-flex text-xs font-bold text-[var(--muted)]">Ouvrir le menu</a>}
                   </div>
                 </article>
@@ -278,6 +301,7 @@ export function TablesClient({ canManage }: { canManage: boolean }) {
           </aside>
         )}
       </div>
+      {poster && (() => { const info = posterValues(); return <div className="qr-poster-overlay" role="presentation" onClick={() => setPoster(null)}><div className="qr-poster-dialog" role="dialog" aria-modal="true" aria-labelledby="qr-poster-title" onClick={(event) => event.stopPropagation()}><div className="qr-poster-preview"><div className="qr-poster-decoration qr-poster-decoration-one">♨</div><div className="qr-poster-decoration qr-poster-decoration-two">✦</div><div className="qr-poster-content"><div className="qr-poster-logo">✦</div><p className="qr-poster-label">RESTAURANT</p><h2 id="qr-poster-title">{info.name}</h2><div className="qr-poster-separator">◆ ───────── ◆</div><p className="qr-poster-scan">SCANNEZ LE QR CODE</p><p className="qr-poster-message">ET COMMANDEZ DIRECTEMENT<br />CE QUE VOUS VOULEZ</p><div className="qr-poster-qr"><img src={poster.qrDataUrl} alt={`QR de ${poster.table.label}`} /></div><p className="qr-poster-table">TABLE {poster.table.label} · {poster.table.zone || "Zone non renseignée"}</p><p className="qr-poster-thanks">Merci</p><p className="qr-poster-confidence">POUR VOTRE CONFIANCE</p><p className="qr-poster-phone">☎ {info.phone}</p><p className="qr-poster-address">{info.address}</p></div></div><div className="qr-poster-actions"><button type="button" onClick={printPoster} className="qr-poster-action qr-poster-primary">Imprimer</button><button type="button" onClick={() => void downloadPoster()} className="qr-poster-action">Télécharger</button><button type="button" onClick={() => void openQrPoster(poster.table)} className="qr-poster-action">Régénérer</button><button type="button" onClick={() => setPoster(null)} className="qr-poster-close">Fermer</button></div></div></div>; })()}
     </section>
   );
 }

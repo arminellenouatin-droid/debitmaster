@@ -15,7 +15,7 @@ export async function GET() {
     if (!context.tenantIds.length) return NextResponse.json({ companies: [] });
     const { data, error } = await context.supabase
       .from("companies")
-      .select("id,name,activity_type,country,currency,language,status,created_at")
+      .select("id,name,phone,address,activity_type,country,currency,language,status,created_at")
       .in("id", context.tenantIds)
       .is("deleted_at", null)
       .order("created_at", { ascending: false })
@@ -45,7 +45,7 @@ export async function POST(request: Request) {
     const referralCode = cookieStore.get("dm_affiliate_ref")?.value?.trim().toUpperCase() || "";
     const admin = referralCode ? createSupabaseAdminClient() : null;
     const { data: affiliate } = admin ? await admin.from("platform_affiliates").select("id,code").eq("code", referralCode).eq("status", "ACTIVE").maybeSingle() : { data: null };
-    const { data, error } = await supabase.from("companies").insert({ name, activity_type: activityType, unique_code: uniqueCode, owner_user_id: auth.user.id, affiliate_id: affiliate?.id ?? null }).select("id,name,activity_type,country,currency,language,status,created_at,affiliate_id").single();
+    const { data, error } = await supabase.from("companies").insert({ name, activity_type: activityType, unique_code: uniqueCode, owner_user_id: auth.user.id, affiliate_id: affiliate?.id ?? null }).select("id,name,phone,address,activity_type,country,currency,language,status,created_at,affiliate_id").single();
     if (error) {
       console.error("[companies.POST] Supabase insert failed", { code: error.code, hint: error.hint, message: error.message });
       const diagnostic = error.code === "42501" ? "TENANT_PERMISSION_DENIED" : error.code === "23505" ? "COMPANY_CODE_ALREADY_EXISTS" : error.code === "23502" ? "COMPANY_REQUIRED_FIELD_MISSING" : error.code === "23514" ? "COMPANY_INVALID_VALUE" : error.code === "23503" ? "COMPANY_REFERENCE_INVALID" : "COMPANY_CREATE_FAILED";
