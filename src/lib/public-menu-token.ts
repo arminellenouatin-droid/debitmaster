@@ -6,8 +6,11 @@ const TOKEN_VERSION = "v1";
 type MenuTokenPayload = { tenantId: string; tableId: string };
 
 function secret() {
-  const value = process.env.PUBLIC_MENU_TOKEN_SECRET ?? process.env.JWT_SECRET;
-  if (!value) throw new Error("PUBLIC_MENU_TOKEN_SECRET_MISSING");
+  const value =
+    process.env.MENU_TOKEN_SECRET ??
+    process.env.PUBLIC_MENU_TOKEN_SECRET ??
+    process.env.JWT_SECRET;
+  if (!value) throw new Error("MENU_TOKEN_SECRET_MISSING");
   return value;
 }
 

@@ -962,3 +962,18 @@ Pour chaque formule, la réduction est calculée ainsi : `100 × (prix Base mens
 - [ ] Enregistrer l’espèce comme encaissement en attente jusqu’à validation par une serveuse.
 - [ ] Faire remonter chaque destination dans sa section et dans les points du Gérant, du Superviseur et du Propriétaire.
 - [ ] Tester les commandes mixtes, la disponibilité des chambres, les paiements et l’isolation tenant.
+
+## Bug création zone et table
+
+- [x] Reproduire séparément la création d’une zone et d’une table.
+- [x] Vérifier les champs envoyés par les formulaires, notamment tenantId, zoneId et capacité.
+- [x] Auditer les routes `/api/zones` et `/api/tables` ainsi que leurs erreurs masquées.
+- [x] Corriger la gestion des erreurs et retourner un message exploitable, y compris lorsque la configuration QR manque.
+- [ ] Valider une création dans BAR SANTE PLUS après déploiement sans affecter les autres tenants.
+
+## Blocage chargement plan de salle
+
+- [ ] Reproduire le GET `/api/tables` et déterminer si l’échec vient de Supabase, du tenant ou du QR.
+- [ ] Vérifier la relation `dining_tables`/`work_zones` et la génération des liens publics.
+- [ ] Corriger le chargement sans masquer l’erreur réelle ni exposer de données sensibles.
+- [ ] Valider l’affichage des tables de BAR SANTE PLUS et l’isolation multi-tenant.

@@ -1,6 +1,7 @@
 // DebitManager work zones: tenant-scoped CRUD for the Gerant's Plan de site.
 import { NextResponse } from "next/server";
 import { can, getAuthorizationContext } from "@/lib/authorization";
+import { databaseErrorResponse, logDatabaseError } from "@/lib/database-error";
 
 function cleanName(value: unknown) {
   return typeof value === "string" ? value.trim().slice(0, 80) : "";
@@ -39,10 +40,14 @@ export async function POST(request: Request) {
     if (!context.user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
     if (!context.tenantIds.includes(tenantId) || !can(context, "tables.manage")) return NextResponse.json({ error: "Permission insuffisante pour créer une zone." }, { status: 403 });
     const { data, error } = await context.supabase.from("work_zones").insert({ tenant_id: tenantId, name, description: cleanDescription(body.description), created_by: context.user.id }).select("id,tenant_id,name,description,is_active,created_at,updated_at").single();
-    if (error) return NextResponse.json({ error: "Impossible de créer la zone. Ce nom existe peut-être déjà." }, { status: 409 });
+    if (error) {
+      logDatabaseError("zones.POST", error);
+      return NextResponse.json(databaseErrorResponse(error, "Impossible de créer la zone. Vérifiez le nom et réessayez."), { status: error.code === "23505" ? 409 : 400 });
+    }
     return NextResponse.json({ zone: data }, { status: 201 });
-  } catch {
-    return NextResponse.json({ error: "Requête invalide." }, { status: 400 });
+  } catch (error) {
+    console.error("[zones.POST] Invalid request", error instanceof Error ? error.message : "unknown");
+    return NextResponse.json({ error: "La requête de création de zone est invalide. Vérifiez les champs saisis." }, { status: 400 });
   }
 }
 
@@ -59,9 +64,13 @@ export async function PATCH(request: Request) {
     if (!context.tenantIds.includes(tenantId) || !can(context, "tables.manage")) return NextResponse.json({ error: "Permission insuffisante pour modifier une zone." }, { status: 403 });
     const changes = { ...(name ? { name } : {}), ...(isActive === undefined ? {} : { is_active: isActive }), updated_at: new Date().toISOString() };
     const { data, error } = await context.supabase.from("work_zones").update(changes).eq("id", zoneId).eq("tenant_id", tenantId).select("id,tenant_id,name,description,is_active,created_at,updated_at").single();
-    if (error || !data) return NextResponse.json({ error: "Impossible de modifier cette zone." }, { status: 400 });
+    if (error || !data) {
+      if (error) logDatabaseError("zones.PATCH", error);
+      return NextResponse.json(error ? databaseErrorResponse(error, "Impossible de modifier cette zone.") : { error: "Impossible de modifier cette zone." }, { status: 400 });
+    }
     return NextResponse.json({ zone: data });
-  } catch {
-    return NextResponse.json({ error: "Requête invalide." }, { status: 400 });
+  } catch (error) {
+    console.error("[zones.PATCH] Invalid request", error instanceof Error ? error.message : "unknown");
+    return NextResponse.json({ error: "La requête de modification de zone est invalide. Vérifiez les champs saisis." }, { status: 400 });
   }
 }
