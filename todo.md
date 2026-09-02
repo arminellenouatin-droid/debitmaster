@@ -977,3 +977,64 @@ Pour chaque formule, la réduction est calculée ainsi : `100 × (prix Base mens
 - [ ] Vérifier la relation `dining_tables`/`work_zones` et la génération des liens publics.
 - [ ] Corriger le chargement sans masquer l’erreur réelle ni exposer de données sensibles.
 - [ ] Valider l’affichage des tables de BAR SANTE PLUS et l’isolation multi-tenant.
+
+## Configuration secret QR
+
+- [ ] Vérifier le nom exact de la variable utilisée par le générateur de QR.
+- [ ] Contrôler uniquement la présence de la variable en production, jamais sa valeur.
+- [ ] Corriger le contrat ou la configuration pour générer des QR signés de façon stable.
+- [ ] Valider l’ouverture du menu public et le téléchargement du QR.
+
+## Ajout direct du secret QR dans Vercel
+
+- [ ] Ouvrir les réglages du projet Vercel `debitmaster`.
+- [ ] Générer localement une valeur aléatoire et l’enregistrer sous `PUBLIC_MENU_TOKEN_SECRET` sans l’afficher.
+- [ ] Cibler Production et Preview selon la confirmation reçue.
+- [ ] Vérifier le déploiement et la génération d’un lien QR.
+
+## Audit définitif secret QR
+
+- [ ] Comparer tous les noms de variables lus par le code avec celles présentes dans Vercel.
+- [ ] Vérifier que le déploiement actif contient bien la configuration sans lire la valeur du secret.
+- [ ] Tester la génération et la validation d’un jeton QR avec le domaine public attendu.
+- [ ] Corriger le décalage éventuel, redéployer et confirmer le résultat en production.
+
+## Bug menu public après scan QR
+
+- [ ] Vérifier l’URL réellement encodée dans le QR et son domaine.
+- [ ] Contrôler le format et la signature du jeton public sans exposer sa valeur.
+- [ ] Tester la réponse de `/api/public/menu/[token]` sur le déploiement actif.
+- [ ] Vérifier le rattachement tenant/table et le chargement du catalogue.
+- [ ] Corriger, redéployer et retester le menu public après scan.
+
+## Lien QR exact en échec
+
+- [ ] Tester le lien fourni sur le domaine de production.
+- [ ] Comparer la page menu et la réponse de l’API publique.
+- [ ] Vérifier la signature du jeton avec le secret actuellement configuré.
+- [ ] Corriger la cause et retester le même lien ou régénérer un QR compatible.
+
+## Refonte visuelle menu QR — maquette BAR SANTE PLUS
+
+- [ ] Reproduire la structure marquee, barre haute, hero et sections produits de la maquette.
+- [ ] Remplacer les données fictives par le catalogue réel tout en conservant la présentation demandée.
+- [ ] Maintenir le panier, la commande, le paiement et les états d’erreur existants.
+- [ ] Vérifier l’affichage mobile, les défilements horizontaux et l’accessibilité.
+- [ ] Pousser la mise à jour dans le PR dédié après validation du build.
+
+## Affiche QR et panier multi-activité
+
+- [ ] Ouvrir l’archive d’affiche QR et reprendre sa composition utile.
+- [ ] Ajouter une fenêtre de prévisualisation QR avec établissement, table, zone, téléphone et adresse.
+- [ ] Ajouter les actions Imprimer, Télécharger et Régénérer sans téléchargement immédiat.
+- [ ] Ajouter chambres et prestations Gym, Lavage et Wi‑Fi au panier client unifié.
+- [ ] Adapter l’API pour enregistrer et ventiler toutes les lignes de la commande.
+- [ ] Tester le panier mixte et les actions d’affiche QR.
+
+## Blocage chargement établissements — 2026-09-02
+
+- [ ] Reproduire le statut et le corps de réponse de `/api/companies`.
+- [ ] Vérifier si les colonnes `phone` et `address` sont présentes dans le schéma de production.
+- [ ] Contrôler les permissions et le rattachement tenant du compte connecté.
+- [ ] Corriger la requête sans casser les autres établissements.
+- [ ] Recompiler et valider le plan de salle après correction.

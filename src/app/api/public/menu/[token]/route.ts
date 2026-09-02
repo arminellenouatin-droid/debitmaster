@@ -14,7 +14,7 @@ async function resolve(token: string) {
   if (!payload) return { error: NextResponse.json({ error: "Lien de menu invalide ou expiré." }, { status: 404 }) } as const;
   const admin = createSupabaseAdminClient();
   const [{ data: company, error: companyError }, { data: table, error: tableError }] = await Promise.all([
-    admin.from("companies").select("id,name,phone,address,activity_type,zones_tables_enabled").eq("id", payload.tenantId).is("deleted_at", null).maybeSingle(),
+    admin.from("companies").select("id,name,activity_type,zones_tables_enabled").eq("id", payload.tenantId).is("deleted_at", null).maybeSingle(),
     admin.from("dining_tables").select("id,tenant_id,label,zone,status").eq("id", payload.tableId).eq("tenant_id", payload.tenantId).is("deleted_at", null).maybeSingle(),
   ]);
   if (companyError || tableError || !company || company.activity_type !== "POWER" || !table) return { error: NextResponse.json({ error: "Cette table n’est plus disponible." }, { status: 404 }) } as const;
@@ -36,7 +36,7 @@ export async function GET(request: Request, { params }: Context) {
     ]);
     if (productsError || categoriesError) return NextResponse.json({ error: "Le menu est momentanément indisponible." }, { status: 500 });
     const wifiTickets = [{ ticket_code: "3_HOURS", label: "Wi-Fi 3 heures", duration_label: "3 heures", unit_price_xof: 100 }, { ticket_code: "72_HOURS", label: "Wi-Fi 72 heures", duration_label: "72 heures", unit_price_xof: 500 }, { ticket_code: "1_MONTH", label: "Wi-Fi 1 mois", duration_label: "1 mois", unit_price_xof: 2500 }];
-    return NextResponse.json({ company: { id: company.id, name: company.name, phone: company.phone ?? null, address: company.address ?? null }, table: { id: table.id, label: table.label, zone: table.zone }, products: products ?? [], categories: categories ?? [], activities: activities ?? [], services: services ?? [], rooms: rooms ?? [], wifiTickets }, { headers: { "Cache-Control": "private, no-store" } });
+    return NextResponse.json({ company: { id: company.id, name: company.name }, table: { id: table.id, label: table.label, zone: table.zone }, products: products ?? [], categories: categories ?? [], activities: activities ?? [], services: services ?? [], rooms: rooms ?? [], wifiTickets }, { headers: { "Cache-Control": "private, no-store" } });
   } catch {
     return NextResponse.json({ error: "Le menu est momentanément indisponible." }, { status: 500 });
   }
