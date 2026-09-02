@@ -5,6 +5,7 @@ import { DashboardShell } from "@/components/DashboardShell";
 import { StockClient } from "./StockClient";
 import { OwnerStockClient } from "./OwnerStockClient";
 import { MagasinierClient } from "../MagasinierClient";
+import { InventoryManagerClient } from "../InventoryManagerClient";
 import { getAuthorizationContext } from "@/lib/authorization";
 import { getActiveTenantContext } from "@/lib/active-tenant";
 
@@ -19,6 +20,7 @@ export default async function StockPage() {
   const { data: employee } = context.employeeId ? await context.supabase.from("employees").select("stock_scope").eq("id", context.employeeId).maybeSingle() : { data: null };
   const firstName = auth.user.user_metadata?.first_name ?? "gérant";
   if (context.role === "MAGASINIER") return <DashboardShell firstName={firstName}><MagasinierClient stockScope={employee?.stock_scope ?? "BOTH"} firstName={firstName} companyName={"Établissement actif"} /></DashboardShell>;
+  if (context.role === "INVENTAIRE" || context.role === "RESPONSABLE_INVENTAIRE") return <DashboardShell firstName={firstName}><InventoryManagerClient tenantId={active.tenantId ?? ""} companyName={active.company?.name ?? "Établissement actif"} firstName={firstName} /></DashboardShell>;
   if ((context.role === "ADMINISTRATEUR" || context.role === "SUPERVISEUR") && active.company?.activity_type === "POWER") return <DashboardShell firstName={firstName}><OwnerStockClient tenantId={active.tenantId ?? ""} companyName={active.company?.name ?? "Établissement actif"} role={context.role === "SUPERVISEUR" ? "SUPERVISEUR" : "ADMINISTRATEUR"} /></DashboardShell>;
   return <DashboardShell firstName={firstName}><StockClient role={context.role ?? ""} stockScope={employee?.stock_scope ?? "BOTH"} /></DashboardShell>;
 }

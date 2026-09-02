@@ -1038,3 +1038,21 @@ Pour chaque formule, la réduction est calculée ainsi : `100 × (prix Base mens
 - [ ] Contrôler les permissions et le rattachement tenant du compte connecté.
 - [ ] Corriger la requête sans casser les autres établissements.
 - [ ] Recompiler et valider le plan de salle après correction.
+
+## Responsable des Inventaires — cadrage confirmé
+
+- [ ] Reprendre les KPI et graphiques demandés dans le dashboard inventaire.
+- [ ] Organiser les onglets stocks, mouvements, calcul théorique, inventaire physique, écarts, seuils et rapports.
+- [ ] Définir les permissions : consultation et constat des écarts, sans modification de l’historique achats/ventes.
+- [ ] Définir le workflow brouillon → validation → clôture avec validation exclusive du Propriétaire.
+- [ ] Prévoir la traçabilité, le verrouillage ou l’horodatage de comptage et les notifications critiques.
+- [ ] Confirmer avec l’utilisateur les arbitrages nécessaires avant implémentation. Validation finale Propriétaire confirmée.
+
+## Implémentation Responsable des Inventaires — démarrée
+
+- [ ] Auditer les APIs et composants stocks réutilisables.
+- [ ] Ajouter la navigation dédiée au rôle avec dashboard, stocks, mouvements, inventaires, écarts, seuils et rapports.
+- [ ] Construire les KPI du dashboard à partir des données réelles du tenant.
+- [ ] Ajouter le workflow physique brouillon → soumis → validé par Propriétaire → clôturé.
+- [ ] Appliquer les permissions sans modification des ventes et achats historiques.
+- [ ] Tester les flux sur BAR SANTE PLUS avant livraison.
