@@ -185,3 +185,60 @@ button { cursor: pointer; }
 .qr-poster-close { border-color: rgba(255,255,255,.25); color: #d5c4ab; }
 @media (max-width: 600px) { .qr-poster-overlay { align-items: start; padding: .5rem; } .qr-poster-dialog { max-height: calc(100vh - 1rem); } .qr-poster-preview { min-height: 42rem; padding: 1.6rem 1rem; } .qr-poster-actions { grid-template-columns: 1fr 1fr; } .qr-poster-close { grid-column: span 2; } }
 @media print { .qr-poster-overlay { position: static; padding: 0; background: #fff; } .qr-poster-dialog { width: 100%; max-height: none; border: 0; box-shadow: none; } .qr-poster-preview { min-height: 100vh; } .qr-poster-actions { display: none; } }
+
+/* Design DebitManager Inventaire: surface d’audit calme, responsive, actions de comptage lisibles et validation clairement séparée. */
+.inventory-workspace { display: grid; gap: 1.5rem; }
+.inventory-header { display: flex; justify-content: space-between; gap: 1.5rem; align-items: end; }
+.inventory-header h1 { margin-top: .55rem; color: var(--primary); font-size: clamp(2rem, 4vw, 3.3rem); font-weight: 900; letter-spacing: -.055em; }
+.inventory-header p:not(.inventory-eyebrow) { max-width: 50rem; margin-top: .7rem; color: var(--muted); line-height: 1.65; }
+.inventory-eyebrow { color: var(--secondary); font-size: .68rem; font-weight: 900; letter-spacing: .16em; text-transform: uppercase; }
+.inventory-return, .inventory-card-heading button { color: var(--primary); font-size: .8rem; font-weight: 900; }
+.inventory-tabs { display: flex; gap: .5rem; overflow-x: auto; border-bottom: 1px solid var(--line); padding-bottom: .7rem; }
+.inventory-tabs button { white-space: nowrap; border-radius: 999px; padding: .65rem .9rem; color: var(--muted); font-size: .78rem; font-weight: 900; }
+.inventory-tabs button:hover, .inventory-tabs button.is-active { background: var(--primary); color: white; }
+.inventory-alert, .inventory-notice { display: flex; justify-content: space-between; gap: 1rem; border-radius: .9rem; padding: .8rem 1rem; font-size: .82rem; font-weight: 800; }
+.inventory-alert { background: #ffdad6; color: #8c1d18; }
+.inventory-notice { background: var(--accent-soft); color: var(--primary); }
+.inventory-alert button { text-decoration: underline; }
+.inventory-loading, .inventory-empty { border: 1px dashed var(--line); border-radius: 1rem; padding: 2.5rem; color: var(--muted); text-align: center; }
+.inventory-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; }
+.inventory-kpis article, .inventory-card { border: 1px solid var(--line); border-radius: 1.15rem; background: var(--surface); padding: 1.15rem; box-shadow: 0 12px 32px rgba(20, 35, 30, .06); }
+.inventory-kpis article span, .inventory-kpis article small { display: block; color: var(--muted); font-size: .72rem; font-weight: 800; }
+.inventory-kpis article strong { display: block; margin: .45rem 0; color: var(--primary); font-size: 1.7rem; font-weight: 900; letter-spacing: -.04em; }
+.inventory-grid-two { display: grid; grid-template-columns: 1.2fr .8fr; gap: 1rem; }
+.inventory-card-heading { display: flex; justify-content: space-between; align-items: start; gap: 1rem; }
+.inventory-card h2, .inventory-toolbar h2 { margin-top: .25rem; color: var(--primary); font-size: 1.25rem; font-weight: 900; letter-spacing: -.025em; }
+.inventory-list { display: grid; gap: .25rem; margin-top: 1rem; }
+.inventory-list-row { display: flex; justify-content: space-between; align-items: center; gap: 1rem; border-top: 1px solid var(--line); padding: .8rem 0; }
+.inventory-list-row strong, .inventory-list-row span { display: block; }
+.inventory-list-row span, .inventory-note { color: var(--muted); font-size: .78rem; line-height: 1.6; }
+.inventory-status-normal, .inventory-status-alert, .inventory-status-critical { display: inline-flex; border-radius: 999px; padding: .25rem .55rem; font-size: .7rem; font-weight: 900; }
+.inventory-status-normal { background: #def7e5; color: #166534; }
+.inventory-status-alert { background: #fff0c2; color: #8a4b00; }
+.inventory-status-critical { background: #ffdad6; color: #8c1d18; }
+.inventory-formula { display: flex; flex-wrap: wrap; align-items: center; gap: .55rem; margin: 1.2rem 0; color: var(--muted); font-size: .78rem; font-weight: 800; }
+.inventory-formula b { color: var(--secondary); font-size: 1.1rem; }
+.inventory-formula strong { color: var(--primary); }
+.inventory-table-wrap { overflow-x: auto; margin-top: 1rem; }
+.inventory-table { width: 100%; border-collapse: collapse; min-width: 700px; }
+.inventory-table th { color: var(--muted); font-size: .66rem; font-weight: 900; letter-spacing: .08em; text-align: left; text-transform: uppercase; }
+.inventory-table th, .inventory-table td { border-bottom: 1px solid var(--line); padding: .8rem .55rem; vertical-align: middle; }
+.inventory-table td { color: var(--primary); font-size: .8rem; }
+.inventory-table td small { display: block; color: var(--muted); }
+.inventory-toolbar { display: flex; justify-content: space-between; gap: 1rem; align-items: end; }
+.inventory-filters { display: flex; gap: .5rem; }
+.inventory-filters input, .inventory-filters select, .inventory-audit-create input, .inventory-audit-select select, .inventory-count-input, .inventory-justification-input { min-height: 2.65rem; border: 1px solid var(--line); border-radius: .65rem; background: var(--background); padding: .55rem .7rem; color: var(--primary); font-size: .78rem; }
+.inventory-audit-create { display: flex; gap: .6rem; margin-top: 1.1rem; }
+.inventory-audit-create input { flex: 1; }
+.inventory-audit-select { display: grid; gap: .4rem; max-width: 28rem; margin-top: 1rem; color: var(--muted); font-size: .75rem; font-weight: 900; }
+.inventory-audit-meta { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 1rem; color: var(--muted); font-size: .75rem; }
+.inventory-audit-meta strong { color: var(--primary); }
+.inventory-count-input { width: 6rem; }
+.inventory-justification-input { min-width: 13rem; }
+.inventory-audit-actions { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; margin-top: 1rem; }
+.inventory-primary, .inventory-secondary { border-radius: .7rem; padding: .7rem 1rem; font-size: .78rem; font-weight: 900; }
+.inventory-primary { background: var(--primary); color: white; }
+.inventory-secondary { border: 1px solid var(--line); color: var(--primary); }
+.inventory-primary:disabled, .inventory-secondary:disabled { cursor: not-allowed; opacity: .5; }
+@media (max-width: 800px) { .inventory-header, .inventory-toolbar { align-items: stretch; flex-direction: column; } .inventory-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .inventory-grid-two { grid-template-columns: 1fr; } .inventory-filters, .inventory-audit-create { flex-direction: column; } .inventory-return { align-self: start; } }
+@media (max-width: 480px) { .inventory-kpis { grid-template-columns: 1fr; } .inventory-card { padding: .9rem; } }

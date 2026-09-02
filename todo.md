@@ -1056,3 +1056,13 @@ Pour chaque formule, la réduction est calculée ainsi : `100 × (prix Base mens
 - [ ] Ajouter le workflow physique brouillon → soumis → validé par Propriétaire → clôturé.
 - [ ] Appliquer les permissions sans modification des ventes et achats historiques.
 - [ ] Tester les flux sur BAR SANTE PLUS avant livraison.
+
+## Workflow inventaire physique — implémentation
+
+- [ ] Créer les tables de sessions d’inventaire et de lignes de comptage tenant-scoped.
+- [ ] Enregistrer le stock théorique au moment du comptage pour rendre l’écart traçable.
+- [ ] Ajouter les statuts brouillon, soumis, validé et clôturé.
+- [ ] Réserver la validation et la clôture au Propriétaire.
+- [ ] Exiger une justification pour les écarts au-dessus du seuil configuré.
+- [ ] Ajouter l’interface de saisie mobile et les états de session.
+- [ ] Tester le workflow complet sur BAR SANTE PLUS.
