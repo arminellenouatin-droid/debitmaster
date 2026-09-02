@@ -962,3 +962,11 @@ Pour chaque formule, la réduction est calculée ainsi : `100 × (prix Base mens
 - [ ] Enregistrer l’espèce comme encaissement en attente jusqu’à validation par une serveuse.
 - [ ] Faire remonter chaque destination dans sa section et dans les points du Gérant, du Superviseur et du Propriétaire.
 - [ ] Tester les commandes mixtes, la disponibilité des chambres, les paiements et l’isolation tenant.
+
+## Bug création zone et table
+
+- [ ] Reproduire séparément la création d’une zone et d’une table.
+- [ ] Vérifier les champs envoyés par les formulaires, notamment tenantId, zoneId et capacité.
+- [ ] Auditer les routes `/api/zones` et `/api/tables` ainsi que leurs erreurs masquées.
+- [ ] Corriger la cause exacte et retourner un message exploitable.
+- [ ] Valider une création dans BAR SANTE PLUS sans affecter les autres tenants.

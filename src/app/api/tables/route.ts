@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { getAuthorizationContext, can } from "@/lib/authorization";
 import { createPublicMenuToken } from "@/lib/public-menu-token";
+import { databaseErrorResponse, logDatabaseError } from "@/lib/database-error";
 
 const statuses = ["FREE", "OCCUPIED", "RESERVED"] as const;
 type TableStatus = (typeof statuses)[number];
@@ -49,10 +50,19 @@ export async function POST(request: Request) {
       if (!zoneRow) return NextResponse.json({ error: "Zone introuvable ou inactive." }, { status: 400 });
     }
     const { data, error } = await supabase.from("dining_tables").insert({ tenant_id: tenantId, label, zone: zone ?? null, zone_id: zoneId, capacity, status: "FREE" }).select("id,tenant_id,label,zone,zone_id,capacity,status,created_at,updated_at").single();
-    if (error) return NextResponse.json({ error: "Impossible de créer la table. Le libellé existe peut-être déjà." }, { status: 400 });
-    return NextResponse.json({ table: withPublicMenuLink(request, data) }, { status: 201 });
-  } catch {
-    return NextResponse.json({ error: "Requête invalide." }, { status: 400 });
+    if (error) {
+      logDatabaseError("tables.POST", error);
+      return NextResponse.json(databaseErrorResponse(error, "Impossible de créer la table. Vérifiez le libellé et la zone."), { status: error.code === "23505" ? 409 : 400 });
+    }
+    try {
+      return NextResponse.json({ table: withPublicMenuLink(request, data) }, { status: 201 });
+    } catch (error) {
+      console.error("[tables.POST] Public menu token unavailable", error instanceof Error ? error.message : "unknown");
+      return NextResponse.json({ error: "Table créée, mais le lien QR n’est pas configuré sur le serveur. Contactez l’administrateur." }, { status: 503 });
+    }
+  } catch (error) {
+    console.error("[tables.POST] Invalid request", error instanceof Error ? error.message : "unknown");
+    return NextResponse.json({ error: "La requête de création de table est invalide. Vérifiez les champs saisis." }, { status: 400 });
   }
 }
 
@@ -75,9 +85,18 @@ export async function PATCH(request: Request) {
     }
     const changes = { ...(statuses.includes(status as TableStatus) ? { status } : {}), ...(zoneId === undefined ? {} : { zone_id: zoneId }), updated_at: new Date().toISOString() };
     const { data, error } = await supabase.from("dining_tables").update(changes).eq("id", tableId).eq("tenant_id", tenantId).is("deleted_at", null).select("id,tenant_id,label,zone,zone_id,capacity,status,created_at,updated_at").single();
-    if (error || !data) return NextResponse.json({ error: "Impossible de modifier cette table." }, { status: 400 });
-    return NextResponse.json({ table: withPublicMenuLink(request, data) });
-  } catch {
-    return NextResponse.json({ error: "Requête invalide." }, { status: 400 });
+    if (error || !data) {
+      if (error) logDatabaseError("tables.PATCH", error);
+      return NextResponse.json(error ? databaseErrorResponse(error, "Impossible de modifier cette table.") : { error: "Impossible de modifier cette table." }, { status: 400 });
+    }
+    try {
+      return NextResponse.json({ table: withPublicMenuLink(request, data) });
+    } catch (error) {
+      console.error("[tables.PATCH] Public menu token unavailable", error instanceof Error ? error.message : "unknown");
+      return NextResponse.json({ error: "Table modifiée, mais le lien QR n’est pas configuré sur le serveur. Contactez l’administrateur." }, { status: 503 });
+    }
+  } catch (error) {
+    console.error("[tables.PATCH] Invalid request", error instanceof Error ? error.message : "unknown");
+    return NextResponse.json({ error: "La requête de modification de table est invalide. Vérifiez les champs saisis." }, { status: 400 });
   }
 }
