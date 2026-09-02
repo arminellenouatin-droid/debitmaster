@@ -10,7 +10,9 @@ type TableStatus = (typeof statuses)[number];
 function withPublicMenuLink(request: Request, table: { id: string; tenant_id: string; [key: string]: unknown }) {
   try {
     const token = createPublicMenuToken({ tenantId: table.tenant_id, tableId: table.id });
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? new URL(request.url).origin;
+    // Utiliser l’origine de la requête évite qu’un QR généré sur un preview
+    // redirige vers l’ancien déploiement de production.
+    const baseUrl = new URL(request.url).origin;
     return { ...table, public_menu_token: token, public_menu_url: `${baseUrl}/menu/${token}` };
   } catch (error) {
     console.error("[tables] Public menu token unavailable", error instanceof Error ? error.message : "unknown");
