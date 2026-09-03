@@ -1074,3 +1074,19 @@ Pour chaque formule, la réduction est calculée ainsi : `100 × (prix Base mens
 - [ ] Vérifier le payload de création et la contrainte `created_by`.
 - [ ] Retourner le diagnostic serveur sans exposer les détails SQL.
 - [ ] Valider la création d’une session réelle après correction.
+
+## Extension QR chambres et médias catalogue
+
+- [ ] Ajouter un QR signé et une affiche pour chaque chambre d’Auberge.
+- [ ] Exposer dans toute commande directe le type « Commande client », la table ou chambre et la zone.
+- [ ] Vérifier que le contexte table/chambre est conservé dans les files Gérant et cuisine.
+- [ ] Ajouter une photo par produit et par service dans l’interface Superviseur.
+- [ ] Stocker les médias de façon compatible avec les données du tenant et tester les affichages publics.
+
+## Corrections inventaire, chambres et photos produits
+
+- [ ] Diagnostiquer l’échec de création de session d’inventaire et vérifier migration, payload et permission.
+- [ ] Afficher les chambres actives dans le plan de salle du Superviseur avec état d’occupation et QR.
+- [ ] Ajouter un vrai chargement d’image à la création d’un produit.
+- [ ] Ajouter le chargement ou remplacement d’image dans la modification d’un produit existant.
+- [ ] Valider l’isolation tenant, les formats de fichiers et le build avant livraison.

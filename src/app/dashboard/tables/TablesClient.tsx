@@ -6,6 +6,16 @@ import Link from "next/link";
 import QRCode from "qrcode";
 
 type Company = { id: string; name: string; phone?: string | null; address?: string | null };
+type LodgingRoom = {
+  id: string;
+  tenant_id: string;
+  room_number: string;
+  is_active: boolean;
+  occupied_started_at: string | null;
+  occupied_until: string | null;
+  public_menu_url: string | null;
+};
+
 type DiningTable = {
   id: string;
   tenant_id: string;
@@ -29,6 +39,7 @@ export function TablesClient({ canManage }: { canManage: boolean }) {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [tenantId, setTenantId] = useState("");
   const [tables, setTables] = useState<DiningTable[]>([]);
+  const [rooms, setRooms] = useState<LodgingRoom[]>([]);
   const [label, setLabel] = useState("");
   const [zone, setZone] = useState("");
   const [capacity, setCapacity] = useState("2");
@@ -39,10 +50,14 @@ export function TablesClient({ canManage }: { canManage: boolean }) {
   const [poster, setPoster] = useState<{ table: DiningTable; qrDataUrl: string } | null>(null);
 
   async function load(id: string) {
-    const response = await fetch(`/api/tables?tenantId=${encodeURIComponent(id)}`, { cache: "no-store" });
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.error ?? "Impossible de charger le plan de salle.");
-    setTables(result.tables ?? []);
+    const [tableResponse, roomResponse] = await Promise.all([
+      fetch(`/api/tables?tenantId=${encodeURIComponent(id)}`, { cache: "no-store" }),
+      fetch(`/api/power/rooms?tenantId=${encodeURIComponent(id)}`, { cache: "no-store" }),
+    ]);
+    const [tableResult, roomResult] = await Promise.all([tableResponse.json(), roomResponse.json()]);
+    if (!tableResponse.ok) throw new Error(tableResult.error ?? "Impossible de charger le plan de salle.");
+    setTables(tableResult.tables ?? []);
+    setRooms(roomResponse.ok ? (roomResult.rooms ?? []) : []);
   }
 
   useEffect(() => {
@@ -270,6 +285,14 @@ export function TablesClient({ canManage }: { canManage: boolean }) {
               <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[var(--muted)]">Ajoutez la première table de cet établissement pour commencer à organiser le service.</p>
             </div>
           )}
+
+          <div className="mt-10 border-t border-[var(--line)] pt-7">
+            <div className="flex items-center justify-between gap-3">
+              <div><p className="text-xs font-black uppercase tracking-[0.16em] text-[var(--muted)]">Auberge</p><h2 className="mt-2 text-xl font-black text-[var(--primary)]">Chambres suivies</h2></div>
+              <span className="rounded-full bg-[var(--accent-soft)] px-3 py-1 text-xs font-black text-[var(--primary)]">{rooms.length} active(s)</span>
+            </div>
+            {rooms.length ? <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{rooms.map((room) => { const occupied = Boolean(room.occupied_until && new Date(room.occupied_until).getTime() > Date.now()); return <article key={room.id} className={`rounded-xl border-2 p-5 ${occupied ? "border-[var(--secondary-container)] bg-[#fff8e8]" : "border-[var(--primary-container)] bg-[var(--accent-soft)]"}`}><div className="flex items-center justify-between gap-3"><span className="text-lg font-black text-[var(--primary)]">Chambre {room.room_number}</span><span className="rounded-full bg-white/75 px-2.5 py-1 text-[10px] font-black uppercase text-[var(--primary)]">{occupied ? "Occupée" : "Libre"}</span></div><p className="mt-4 text-xs font-bold text-[var(--muted)]">{occupied && room.occupied_until ? `Libération : ${new Date(room.occupied_until).toLocaleString("fr-FR")}` : "Disponible pour une demande client"}</p><div className="mt-5 flex flex-wrap gap-3">{room.public_menu_url && <a href={room.public_menu_url} target="_blank" rel="noreferrer" className="text-xs font-black text-[var(--primary)] underline underline-offset-4">Ouvrir le menu</a>}{room.public_menu_url && <a href={room.public_menu_url} target="_blank" rel="noreferrer" className="text-xs font-bold text-[var(--muted)]">Voir le QR</a>}</div></article>; })}</div> : <p className="mt-5 text-sm text-[var(--muted)]">Aucune chambre active configurée pour cet établissement.</p>}
+          </div>
         </div>
 
         {canManage ? (
