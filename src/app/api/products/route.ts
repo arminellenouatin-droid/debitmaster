@@ -37,6 +37,7 @@ export async function POST(request: Request) {
     const categoryId = typeof body.categoryId === "string" && body.categoryId ? body.categoryId : null;
     const name = typeof body.name === "string" ? body.name.trim() : "";
     const packagingLabel = normalizeLabel(body.packagingLabel);
+    const imageUrl = typeof body.imageUrl === "string" && body.imageUrl.startsWith("https://") ? body.imageUrl.slice(0, 1000) : null;
     const productType = typeof body.productType === "string" ? body.productType : "";
     const stockFamily = typeof body.stockFamily === "string" ? body.stockFamily : "BEVERAGE";
     const unit = typeof body.unit === "string" && body.unit.trim() ? body.unit.trim().slice(0, 40) : null;
@@ -56,7 +57,7 @@ export async function POST(request: Request) {
       if (employee?.stock_scope !== "BOTH" && employee?.stock_scope !== stockFamily) return NextResponse.json({ error: "Cette famille de stock est hors de votre périmètre." }, { status: 403 });
     }
     if (categoryId) { const { data: category } = await supabase.from("categories").select("id").eq("id", categoryId).eq("tenant_id", tenantId).maybeSingle(); if (!category) return NextResponse.json({ error: "Catégorie non autorisée." }, { status: 403 }); }
-    const { data, error } = await supabase.from("products").insert({ tenant_id: tenantId, category_id: categoryId, name, product_type: productType, stock_family: stockFamily, unit, price, packaging_label: packagingLabel, current_stock: currentStock, alert_threshold: alertThreshold, safety_threshold: safetyThreshold }).select("id,tenant_id,category_id,name,product_type,stock_family,unit,price,packaging_label,current_stock,alert_threshold,safety_threshold,image_url,created_at").single();
+    const { data, error } = await supabase.from("products").insert({ tenant_id: tenantId, category_id: categoryId, name, product_type: productType, stock_family: stockFamily, unit, price, packaging_label: packagingLabel, current_stock: currentStock, alert_threshold: alertThreshold, safety_threshold: safetyThreshold, image_url: imageUrl }).select("id,tenant_id,category_id,name,product_type,stock_family,unit,price,packaging_label,current_stock,alert_threshold,safety_threshold,image_url,created_at").single();
     if (error) {
       logDatabaseError("products.POST", error);
       return NextResponse.json({ error: "Impossible de créer le produit.", diagnostic: databaseDiagnostic(error) }, { status: 400 });
@@ -107,6 +108,7 @@ export async function PATCH(request: Request) {
     const name = body.name === undefined ? undefined : (typeof body.name === "string" ? body.name.trim() : "");
     const price = body.price === undefined ? undefined : Number(body.price);
     const packagingLabel = body.packagingLabel === undefined ? undefined : normalizeLabel(body.packagingLabel);
+    const imageUrl = body.imageUrl === undefined ? undefined : (typeof body.imageUrl === "string" && body.imageUrl.startsWith("https://") ? body.imageUrl.slice(0, 1000) : null);
     const stockFamily = body.stockFamily === undefined ? undefined : (typeof body.stockFamily === "string" ? body.stockFamily : "");
     if (!tenantId || !productId || (alertThreshold !== undefined && (!Number.isInteger(alertThreshold) || alertThreshold < 0)) || (safetyThreshold !== undefined && (!Number.isInteger(safetyThreshold) || safetyThreshold < 0)) || (alertThreshold !== undefined && safetyThreshold !== undefined && safetyThreshold > alertThreshold) || (price !== undefined && (!Number.isInteger(price) || price < 0)) || (name !== undefined && name.length < 2) || (stockFamily !== undefined && !stockFamilies.includes(stockFamily as (typeof stockFamilies)[number]))) return NextResponse.json({ error: "Produit et seuils valides requis. Le seuil de sécurité doit être inférieur ou égal au seuil d’alerte." }, { status: 400 });
     const context = await getAuthorizationContext();
@@ -122,7 +124,7 @@ export async function PATCH(request: Request) {
       if (employee?.stock_scope !== "BOTH" && employee?.stock_scope !== existingProduct.stock_family) return NextResponse.json({ error: "Ce produit est hors de votre périmètre de stock." }, { status: 403 });
     }
     if (categoryId !== undefined) { const { data: category } = categoryId ? await supabase.from("categories").select("id").eq("id", categoryId).eq("tenant_id", tenantId).is("deleted_at", null).maybeSingle() : { data: null }; if (categoryId && !category) return NextResponse.json({ error: "Catégorie non autorisée." }, { status: 403 }); }
-    const patch = { ...(name !== undefined ? { name } : {}), ...(categoryId !== undefined ? { category_id: categoryId } : {}), ...(price !== undefined ? { price } : {}), ...(stockFamily !== undefined ? { stock_family: stockFamily } : {}), ...(packagingLabel !== undefined ? { packaging_label: packagingLabel } : {}), ...(alertThreshold !== undefined ? { alert_threshold: alertThreshold } : {}), ...(safetyThreshold !== undefined ? { safety_threshold: safetyThreshold } : {}), updated_at: new Date().toISOString() };
+    const patch = { ...(name !== undefined ? { name } : {}), ...(categoryId !== undefined ? { category_id: categoryId } : {}), ...(price !== undefined ? { price } : {}), ...(stockFamily !== undefined ? { stock_family: stockFamily } : {}), ...(packagingLabel !== undefined ? { packaging_label: packagingLabel } : {}), ...(imageUrl !== undefined ? { image_url: imageUrl } : {}), ...(alertThreshold !== undefined ? { alert_threshold: alertThreshold } : {}), ...(safetyThreshold !== undefined ? { safety_threshold: safetyThreshold } : {}), updated_at: new Date().toISOString() };
     const { error } = await supabase.from("products").update(patch).eq("id", productId).eq("tenant_id", tenantId).is("deleted_at", null);
     if (error) {
       logDatabaseError("products.PATCH", error);

@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { getAuthorizationContext, can } from "@/lib/authorization";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { createPublicMenuToken } from "@/lib/public-menu-token";
 
 const normalize = (value: unknown) => typeof value === "string" ? value.trim().slice(0, 40) : "";
 function allowed(context: Awaited<ReturnType<typeof getAuthorizationContext>>, tenantId: string, write = false) {
@@ -17,7 +18,16 @@ export async function GET(request: Request) {
     const admin = createSupabaseAdminClient();
     const { data, error } = await admin.from("power_lodging_rooms").select("id,tenant_id,room_number,pass_price_xof,pass_duration_minutes,night_price_xof,night_duration_nights,is_active,occupied_started_at,occupied_until,created_at,updated_at").eq("tenant_id", tenantId).eq("is_active", true).order("room_number").limit(100);
     if (error) return NextResponse.json({ error: "Impossible de charger les chambres." }, { status: 500 });
-    return NextResponse.json({ rooms: data ?? [] });
+    const origin = new URL(request.url).origin;
+    const rooms = (data ?? []).map((room) => {
+      try {
+        const publicMenuToken = createPublicMenuToken({ tenantId, roomId: room.id });
+        return { ...room, public_menu_token: publicMenuToken, public_menu_url: `${origin}/menu/${publicMenuToken}` };
+      } catch {
+        return { ...room, public_menu_token: null, public_menu_url: null };
+      }
+    });
+    return NextResponse.json({ rooms });
   } catch { return NextResponse.json({ error: "Service Auberge temporairement indisponible." }, { status: 500 }); }
 }
 

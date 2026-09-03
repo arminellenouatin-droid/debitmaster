@@ -3,7 +3,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 
 const TOKEN_VERSION = "v1";
 
-type MenuTokenPayload = { tenantId: string; tableId: string };
+export type MenuTokenPayload = { tenantId: string; tableId?: string; roomId?: string };
 
 function secret() {
   const value =
@@ -27,6 +27,7 @@ function signature(input: string) {
 }
 
 export function createPublicMenuToken(payload: MenuTokenPayload) {
+  if ((payload.tableId ? 1 : 0) + (payload.roomId ? 1 : 0) !== 1) throw new Error("MENU_TOKEN_TARGET_INVALID");
   const body = encode(JSON.stringify(payload));
   return `${TOKEN_VERSION}.${body}.${signature(`${TOKEN_VERSION}.${body}`)}`;
 }
@@ -40,8 +41,11 @@ export function verifyPublicMenuToken(token: string): MenuTokenPayload | null {
   if (left.length !== right.length || !timingSafeEqual(left, right)) return null;
   try {
     const payload = JSON.parse(decode(body)) as Partial<MenuTokenPayload>;
-    if (typeof payload.tenantId !== "string" || typeof payload.tableId !== "string") return null;
-    return { tenantId: payload.tenantId, tableId: payload.tableId };
+    if (typeof payload.tenantId !== "string") return null;
+    const hasTable = typeof payload.tableId === "string" && payload.tableId.length > 0;
+    const hasRoom = typeof payload.roomId === "string" && payload.roomId.length > 0;
+    if (Number(hasTable) + Number(hasRoom) !== 1) return null;
+    return hasTable ? { tenantId: payload.tenantId, tableId: payload.tableId } : { tenantId: payload.tenantId, roomId: payload.roomId };
   } catch {
     return null;
   }
