@@ -5,7 +5,15 @@ import { getAuthorizationContext, can } from "@/lib/authorization";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { emitTenantNotification } from "@/lib/notifications";
 
-type OrderLine = { productId: string; quantity: number; fulfillmentUnit?: "BEVERAGE" | "MEAL" };
+type OrderLine = {
+  productId: string;
+  quantity: number;
+  fulfillmentUnit?: "BEVERAGE" | "MEAL";
+  offeredAccompanimentProductId?: string | null;
+  offeredAccompanimentQuantity?: number;
+  purchasedAccompanimentProductId?: string | null;
+  purchasedAccompanimentQuantity?: number;
+};
 
 export async function GET(request: Request) {
   try {
@@ -24,7 +32,7 @@ export async function GET(request: Request) {
     const orderRows = data ?? [];
     const orderIds = orderRows.map((order) => order.id);
     if (!orderIds.length) return NextResponse.json({ orders: [] });
-    const [itemsResult, allocationsResult] = await Promise.all([readClient.from("order_items").select("id,order_id,product_id,product_name,quantity,unit_price,total_price,fulfillment_unit,preparation_status,prepared_at,received_by_user_id,received_at,delivered_at").in("order_id", orderIds).limit(1000), readClient.from("order_stock_allocations").select("id,order_id,server_user_id,product_id,quantity,status,allocated_at,settled_at").in("order_id", orderIds).limit(1000)]);
+    const [itemsResult, allocationsResult] = await Promise.all([readClient.from("order_items").select("id,order_id,product_id,product_name,quantity,unit_price,total_price,fulfillment_unit,preparation_status,prepared_at,received_by_user_id,received_at,delivered_at,offered_accompaniment_product_id,offered_accompaniment_quantity,purchased_accompaniment_product_id,purchased_accompaniment_quantity,purchased_accompaniment_unit_price").in("order_id", orderIds).limit(1000), readClient.from("order_stock_allocations").select("id,order_id,server_user_id,product_id,quantity,status,allocated_at,settled_at").in("order_id", orderIds).limit(1000)]);
     if (itemsResult.error || allocationsResult.error) { console.error("[orders.GET] detail query failed", { items: itemsResult.error?.message, allocations: allocationsResult.error?.message }); return NextResponse.json({ error: "Impossible de charger les commandes.", diagnostic: "ORDERS_DETAIL_QUERY_FAILED" }, { status: 500 }); }
     const itemsByOrder = new Map<string, typeof itemsResult.data>(); for (const item of itemsResult.data ?? []) { const rows = itemsByOrder.get(item.order_id) ?? []; rows.push(item); itemsByOrder.set(item.order_id, rows); }
     const allocationsByOrder = new Map<string, typeof allocationsResult.data>(); for (const allocation of allocationsResult.data ?? []) { const rows = allocationsByOrder.get(allocation.order_id) ?? []; rows.push(allocation); allocationsByOrder.set(allocation.order_id, rows); }
@@ -67,17 +75,40 @@ export async function POST(request: Request) {
       });
       if (!directTable && !assignedZone) return NextResponse.json({ error: "Cette table ne correspond pas à l’emplacement qui vous est attribué." }, { status: 403 });
     }
-    const normalizedLines = lines.map((line) => ({ productId: typeof line.productId === "string" ? line.productId : "", quantity: Number(line.quantity), fulfillmentUnit: line.fulfillmentUnit === "MEAL" || line.fulfillmentUnit === "BEVERAGE" ? line.fulfillmentUnit : undefined })).filter((line) => line.productId && Number.isInteger(line.quantity) && line.quantity > 0 && line.quantity <= 999);
+    const normalizedLines = lines.map((line) => ({
+      productId: typeof line.productId === "string" ? line.productId : "",
+      quantity: Number(line.quantity),
+      fulfillmentUnit: line.fulfillmentUnit === "MEAL" || line.fulfillmentUnit === "BEVERAGE" ? line.fulfillmentUnit : undefined,
+      offeredAccompanimentProductId: typeof line.offeredAccompanimentProductId === "string" && line.offeredAccompanimentProductId ? line.offeredAccompanimentProductId : null,
+      offeredAccompanimentQuantity: Number(line.offeredAccompanimentQuantity ?? 0),
+      purchasedAccompanimentProductId: typeof line.purchasedAccompanimentProductId === "string" && line.purchasedAccompanimentProductId ? line.purchasedAccompanimentProductId : null,
+      purchasedAccompanimentQuantity: Number(line.purchasedAccompanimentQuantity ?? 0),
+    })).filter((line) => line.productId && Number.isInteger(line.quantity) && line.quantity > 0 && line.quantity <= 999 && Number.isInteger(line.offeredAccompanimentQuantity) && line.offeredAccompanimentQuantity >= 0 && Number.isInteger(line.purchasedAccompanimentQuantity) && line.purchasedAccompanimentQuantity >= 0 && (line.offeredAccompanimentQuantity === 0 || line.offeredAccompanimentProductId) && (line.purchasedAccompanimentQuantity === 0 || line.purchasedAccompanimentProductId));
     if (normalizedLines.length !== lines.length) return NextResponse.json({ error: "Chaque ligne doit contenir un produit et une quantité valide." }, { status: 400 });
-    const ids = [...new Set(normalizedLines.map((line) => line.productId))];
-    const { data: products, error: productError } = await supabase.from("products").select("id,name,price,product_type,tenant_id,deleted_at").in("id", ids).eq("tenant_id", tenantId).is("deleted_at", null).limit(50);
+    const ids = [...new Set(normalizedLines.flatMap((line) => [line.productId, line.offeredAccompanimentProductId, line.purchasedAccompanimentProductId].filter((id): id is string => Boolean(id))))];
+    const { data: products, error: productError } = await supabase.from("products").select("id,name,price,product_type,stock_family,tenant_id,deleted_at").in("id", ids).eq("tenant_id", tenantId).is("deleted_at", null).limit(150);
     if (productError || !products || products.length !== ids.length) return NextResponse.json({ error: "Un ou plusieurs produits ne sont pas disponibles dans cet établissement." }, { status: 400 });
     if (customerId) {
       const { data: customer } = await supabase.from("customers").select("id").eq("id", customerId).eq("tenant_id", tenantId).maybeSingle();
       if (!customer) return NextResponse.json({ error: "Client non autorisé dans cet établissement." }, { status: 403 });
     }
     const productMap = new Map(products.map((product) => [product.id, product]));
-    const orderLines = normalizedLines.map((line) => { const product = productMap.get(line.productId)!; const inferredUnit = String(product.product_type ?? "").toUpperCase().includes("FOOD") || String(product.product_type ?? "").toUpperCase().includes("MEAL") ? "MEAL" : "BEVERAGE"; return { tenant_id: tenantId, product_id: product.id, product_name: product.name, quantity: line.quantity, unit_price: product.price, total_price: product.price * line.quantity, fulfillment_unit: line.fulfillmentUnit ?? inferredUnit, preparation_status: "PENDING" }; });
+    const invalidAccompaniment = normalizedLines.some((line) => {
+      const parent = productMap.get(line.productId);
+      const offered = line.offeredAccompanimentProductId ? productMap.get(line.offeredAccompanimentProductId) : null;
+      const purchased = line.purchasedAccompanimentProductId ? productMap.get(line.purchasedAccompanimentProductId) : null;
+      const isMeal = line.fulfillmentUnit === "MEAL" || parent?.stock_family === "KITCHEN";
+      return !parent || !isMeal || (line.offeredAccompanimentQuantity > 0 && (!offered || offered.stock_family !== "KITCHEN")) || (line.purchasedAccompanimentQuantity > 0 && (!purchased || purchased.stock_family !== "KITCHEN"));
+    });
+    if (invalidAccompaniment) return NextResponse.json({ error: "Les accompagnements doivent être des produits de cuisine appartenant à cet établissement." }, { status: 400 });
+    const orderLines = normalizedLines.map((line) => {
+      const product = productMap.get(line.productId)!;
+      const offered = line.offeredAccompanimentProductId ? productMap.get(line.offeredAccompanimentProductId) : null;
+      const purchased = line.purchasedAccompanimentProductId ? productMap.get(line.purchasedAccompanimentProductId) : null;
+      const inferredUnit = String(product.product_type ?? "").toUpperCase().includes("FOOD") || String(product.product_type ?? "").toUpperCase().includes("MEAL") || product.stock_family === "KITCHEN" ? "MEAL" : "BEVERAGE";
+      const purchasedTotal = (purchased?.price ?? 0) * line.purchasedAccompanimentQuantity * line.quantity;
+      return { tenant_id: tenantId, product_id: product.id, product_name: product.name, quantity: line.quantity, unit_price: product.price, total_price: product.price * line.quantity + purchasedTotal, fulfillment_unit: line.fulfillmentUnit ?? inferredUnit, preparation_status: "PENDING", offered_accompaniment_product_id: offered?.id ?? null, offered_accompaniment_quantity: line.offeredAccompanimentQuantity, purchased_accompaniment_product_id: purchased?.id ?? null, purchased_accompaniment_quantity: line.purchasedAccompanimentQuantity, purchased_accompaniment_unit_price: purchased?.price ?? 0 };
+    });
     const totalAmount = orderLines.reduce((total, line) => total + line.total_price, 0);
     const orderNumber = `DM-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}-${randomUUID().slice(0, 8).toUpperCase()}`;
     const { data: order, error: orderError } = await supabase.from("orders").insert({ tenant_id: tenantId, order_number: orderNumber, table_label: effectiveTableLabel, location_label: effectiveLocationLabel, customer_id: customerId, server_user_id: context.employeeId && context.role === "SERVEUR" ? user.id : null, server_name: user.user_metadata?.first_name ?? null, total_amount: totalAmount, currency: "XOF" }).select("id,tenant_id,order_number,table_label,location_label,customer_id,server_user_id,server_name,status,total_amount,currency,created_at").single();

@@ -1090,3 +1090,13 @@ Pour chaque formule, la réduction est calculée ainsi : `100 × (prix Base mens
 - [ ] Ajouter un vrai chargement d’image à la création d’un produit.
 - [ ] Ajouter le chargement ou remplacement d’image dans la modification d’un produit existant.
 - [ ] Valider l’isolation tenant, les formats de fichiers et le build avant livraison.
+
+## Stabilisation multi-flux — nouveaux points
+
+- [ ] Tester le menu public sur les quatre chambres et la table 01, y compris temps de réponse et erreurs API.
+- [ ] Faire ouvrir aux chambres la même affiche QR que les tables avec Télécharger, Imprimer et Régénérer.
+- [ ] Ajouter le vrai sélecteur de fichier image à la création et à la modification des produits Superviseur.
+- [ ] Automatiser l’échéance de l’abonnement Gym à partir de la durée du service.
+- [ ] Retirer les anciennes prestations Gym et conserver uniquement les quatre prestations et tarifs validés.
+- [ ] Ajouter accompagnement offert et accompagnement acheté sur chaque ligne de repas, avec calcul du supplément acheté.
+- [ ] Ajouter les filtres Boissons, Repas, Accompagnements, Wifi, Auberge, Lavage et GYM dans le catalogue Superviseur.
