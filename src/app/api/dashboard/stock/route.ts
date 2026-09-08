@@ -16,7 +16,7 @@ export async function GET(request: Request) {
     if (!(context.role === "ADMINISTRATEUR" || context.role === "SUPERVISEUR") || context.company.activity_type !== "POWER" || !can(context, "stock.view")) return NextResponse.json({ error: "Accès réservé au propriétaire ou au superviseur Power." }, { status: 403 });
     const url = new URL(request.url); const { start, end } = period(url); const tenantId = context.tenantId; const readClient = createSupabaseAdminClient();
     const [productsResult, categoriesResult, storesResult, positionsResult, movementsResult, purchasesResult, controlsResult] = await Promise.all([
-      readClient.from("products").select("id,name,product_type,unit,stock_family,category_id,price,current_stock,alert_threshold,safety_threshold,packaging_label").eq("tenant_id", tenantId).is("deleted_at", null).order("name").limit(1000),
+      readClient.from("products").select("id,name,product_type,unit,stock_family,category_id,price,current_stock,alert_threshold,safety_threshold,packaging_label,image_url").eq("tenant_id", tenantId).is("deleted_at", null).order("name").limit(1000),
       readClient.from("categories").select("id,parent_id,name").eq("tenant_id", tenantId).is("deleted_at", null).order("name").limit(500),
       readClient.from("inventory_stores").select("id,name,store_type,stock_family,is_active").eq("tenant_id", tenantId).eq("is_active", true).order("name").limit(100),
       readClient.from("store_inventory").select("id,store_id,product_id,quantity,reserved_quantity").eq("tenant_id", tenantId).limit(10000),
