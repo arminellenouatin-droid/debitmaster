@@ -7,3 +7,5 @@ out/
 *.log
 *.tsbuildinfo
 .DS_Store
+
+package-lock.json

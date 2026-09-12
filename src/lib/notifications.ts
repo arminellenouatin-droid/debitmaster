@@ -53,7 +53,10 @@ export async function emitTenantNotification(input: NotificationInput) {
     metadata: input.metadata ?? {},
   }));
 
-  const { error } = await admin.from("internal_messages").upsert(rows, { onConflict: "tenant_id,dedupe_key", ignoreDuplicates: true });
+  const { error } = input.dedupeKey
+    ? await admin.from("internal_messages").upsert(rows, { onConflict: "tenant_id,dedupe_key", ignoreDuplicates: true })
+    : await admin.from("internal_messages").insert(rows);
+
   if (error) console.error("[notifications] emission ignorée", { code: error.code, message: error.message });
   } catch (error) {
     console.error("[notifications] service indisponible, flux métier conservé", error instanceof Error ? error.message : error);

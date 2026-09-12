@@ -19,7 +19,11 @@ export async function GET(request: Request) {
     if (error) return NextResponse.json({ error: "Impossible de charger les notifications." }, { status: 500 });
     const notifications = (data ?? []).map((notification) => ({
       ...notification,
-      action_allowed: Boolean(notification.action_path && notification.operator_user_id === context.user?.id && (!notification.action_permission || (context.employeeId !== null && can(context, notification.action_permission)))),
+      action_allowed: Boolean(
+        notification.action_path &&
+        (!notification.operator_user_id || notification.operator_user_id === context.user?.id) &&
+        (!notification.action_permission || can(context, notification.action_permission))
+      ),
     }));
     return NextResponse.json({ count: notifications.length, notifications });
   } catch {
@@ -29,10 +33,23 @@ export async function GET(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
-    const body = await request.json() as { tenantId?: string; notificationId?: string };
+    const body = await request.json() as { tenantId?: string; notificationId?: string; markAllRead?: boolean };
     const context = await getAuthorizationContext();
     if (!context.user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
-    if (!body.tenantId || !context.tenantIds.includes(body.tenantId) || !body.notificationId) return NextResponse.json({ error: "Notification invalide." }, { status: 400 });
+    if (!body.tenantId || !context.tenantIds.includes(body.tenantId)) return NextResponse.json({ error: "Établissement non autorisé." }, { status: 400 });
+
+    if (body.markAllRead) {
+      const { error } = await context.supabase
+        .from("internal_messages")
+        .update({ read_at: new Date().toISOString() })
+        .eq("tenant_id", body.tenantId)
+        .eq("recipient_user_id", context.user.id)
+        .is("read_at", null);
+      if (error) return NextResponse.json({ error: "Impossible de marquer les notifications comme lues." }, { status: 500 });
+      return NextResponse.json({ ok: true });
+    }
+
+    if (!body.notificationId) return NextResponse.json({ error: "Notification requise." }, { status: 400 });
     const { error } = await context.supabase
       .from("internal_messages")
       .update({ read_at: new Date().toISOString() })
