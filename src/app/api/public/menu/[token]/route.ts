@@ -27,11 +27,11 @@ export async function GET(request: Request, { params }: Context) {
     if ("error" in resolved) return resolved.error;
     const { admin, company, table, payload } = resolved;
     const [{ data: products, error: productsError }, { data: categories, error: categoriesError }, { data: activities }, { data: services }, { data: rooms }] = await Promise.all([
-      admin.from("products").select("id,name,description,price,product_type,stock_family,unit,packaging_label,category_id").eq("tenant_id", payload.tenantId).is("deleted_at", null).in("stock_family", ["BEVERAGE", "KITCHEN"]).order("stock_family").order("name").limit(300),
+      admin.from("products").select("id,name,description,price,product_type,stock_family,unit,packaging_label,category_id,image_url").eq("tenant_id", payload.tenantId).is("deleted_at", null).in("stock_family", ["BEVERAGE", "KITCHEN"]).order("stock_family").order("name").limit(300),
       admin.from("categories").select("id,name,parent_id").eq("tenant_id", payload.tenantId).is("deleted_at", null).order("name").limit(100),
       admin.from("company_activities").select("id,activity_code,name").eq("tenant_id", payload.tenantId).eq("is_active", true).order("name").limit(20),
-      admin.from("company_services").select("id,activity_id,name,description,price_xof,billing_unit").eq("tenant_id", payload.tenantId).eq("is_active", true).order("name").limit(100),
-      admin.from("power_lodging_rooms").select("id,room_number,pass_price_xof,pass_duration_minutes,night_price_xof,night_duration_nights,occupied_until").eq("tenant_id", payload.tenantId).eq("is_active", true).order("room_number").limit(50),
+      admin.from("company_services").select("id,activity_id,name,description,price_xof,billing_unit,image_url").eq("tenant_id", payload.tenantId).eq("is_active", true).order("name").limit(100),
+      admin.from("power_lodging_rooms").select("id,room_number,pass_price_xof,pass_duration_minutes,night_price_xof,night_duration_nights,occupied_until,image_url").eq("tenant_id", payload.tenantId).eq("is_active", true).order("room_number").limit(50),
     ]);
     if (productsError || categoriesError) return NextResponse.json({ error: "Le menu est momentanément indisponible." }, { status: 500 });
     const wifiTickets = [{ ticket_code: "3_HOURS", label: "Wi-Fi 3 heures", duration_label: "3 heures", unit_price_xof: 100 }, { ticket_code: "72_HOURS", label: "Wi-Fi 72 heures", duration_label: "72 heures", unit_price_xof: 500 }, { ticket_code: "1_MONTH", label: "Wi-Fi 1 mois", duration_label: "1 mois", unit_price_xof: 2500 }];
