@@ -5,7 +5,9 @@ import { getAuthorizationContext, can } from "@/lib/authorization";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { emitTenantNotification } from "@/lib/notifications";
 
-type OrderLine = { productId: string; quantity: number; fulfillmentUnit?: "BEVERAGE" | "MEAL" };
+const accompaniments = ["Aucun", "Riz", "Pâte", "Frites", "Attiéké", "Salade composée", "Alloco"] as const;
+type Accompaniment = (typeof accompaniments)[number];
+type OrderLine = { productId: string; quantity: number; fulfillmentUnit?: "BEVERAGE" | "MEAL"; accompaniment?: Accompaniment };
 
 export async function GET(request: Request) {
   try {
@@ -24,7 +26,7 @@ export async function GET(request: Request) {
     const orderRows = data ?? [];
     const orderIds = orderRows.map((order) => order.id);
     if (!orderIds.length) return NextResponse.json({ orders: [] });
-    const [itemsResult, allocationsResult] = await Promise.all([readClient.from("order_items").select("id,order_id,product_id,product_name,quantity,unit_price,total_price,fulfillment_unit,preparation_status,prepared_at,received_by_user_id,received_at,delivered_at").in("order_id", orderIds).limit(1000), readClient.from("order_stock_allocations").select("id,order_id,server_user_id,product_id,quantity,status,allocated_at,settled_at").in("order_id", orderIds).limit(1000)]);
+    const [itemsResult, allocationsResult] = await Promise.all([readClient.from("order_items").select("id,order_id,product_id,product_name,quantity,unit_price,total_price,fulfillment_unit,accompaniment,preparation_status,prepared_at,received_by_user_id,received_at,delivered_at").in("order_id", orderIds).limit(1000), readClient.from("order_stock_allocations").select("id,order_id,server_user_id,product_id,quantity,status,allocated_at,settled_at").in("order_id", orderIds).limit(1000)]);
     if (itemsResult.error || allocationsResult.error) { console.error("[orders.GET] detail query failed", { items: itemsResult.error?.message, allocations: allocationsResult.error?.message }); return NextResponse.json({ error: "Impossible de charger les commandes.", diagnostic: "ORDERS_DETAIL_QUERY_FAILED" }, { status: 500 }); }
     const itemsByOrder = new Map<string, typeof itemsResult.data>(); for (const item of itemsResult.data ?? []) { const rows = itemsByOrder.get(item.order_id) ?? []; rows.push(item); itemsByOrder.set(item.order_id, rows); }
     const allocationsByOrder = new Map<string, typeof allocationsResult.data>(); for (const allocation of allocationsResult.data ?? []) { const rows = allocationsByOrder.get(allocation.order_id) ?? []; rows.push(allocation); allocationsByOrder.set(allocation.order_id, rows); }
@@ -67,7 +69,7 @@ export async function POST(request: Request) {
       });
       if (!directTable && !assignedZone) return NextResponse.json({ error: "Cette table ne correspond pas à l’emplacement qui vous est attribué." }, { status: 403 });
     }
-    const normalizedLines = lines.map((line) => ({ productId: typeof line.productId === "string" ? line.productId : "", quantity: Number(line.quantity), fulfillmentUnit: line.fulfillmentUnit === "MEAL" || line.fulfillmentUnit === "BEVERAGE" ? line.fulfillmentUnit : undefined })).filter((line) => line.productId && Number.isInteger(line.quantity) && line.quantity > 0 && line.quantity <= 999);
+    const normalizedLines = lines.map((line) => ({ productId: typeof line.productId === "string" ? line.productId : "", quantity: Number(line.quantity), fulfillmentUnit: line.fulfillmentUnit === "MEAL" || line.fulfillmentUnit === "BEVERAGE" ? line.fulfillmentUnit : undefined, accompaniment: typeof line.accompaniment === "string" && accompaniments.includes(line.accompaniment as Accompaniment) ? line.accompaniment as Accompaniment : "Aucun" })).filter((line) => line.productId && Number.isInteger(line.quantity) && line.quantity > 0 && line.quantity <= 999);
     if (normalizedLines.length !== lines.length) return NextResponse.json({ error: "Chaque ligne doit contenir un produit et une quantité valide." }, { status: 400 });
     const ids = [...new Set(normalizedLines.map((line) => line.productId))];
     const { data: products, error: productError } = await supabase.from("products").select("id,name,price,product_type,tenant_id,deleted_at").in("id", ids).eq("tenant_id", tenantId).is("deleted_at", null).limit(50);
@@ -77,12 +79,12 @@ export async function POST(request: Request) {
       if (!customer) return NextResponse.json({ error: "Client non autorisé dans cet établissement." }, { status: 403 });
     }
     const productMap = new Map(products.map((product) => [product.id, product]));
-    const orderLines = normalizedLines.map((line) => { const product = productMap.get(line.productId)!; const inferredUnit = String(product.product_type ?? "").toUpperCase().includes("FOOD") || String(product.product_type ?? "").toUpperCase().includes("MEAL") ? "MEAL" : "BEVERAGE"; return { tenant_id: tenantId, product_id: product.id, product_name: product.name, quantity: line.quantity, unit_price: product.price, total_price: product.price * line.quantity, fulfillment_unit: line.fulfillmentUnit ?? inferredUnit, preparation_status: "PENDING" }; });
+    const orderLines = normalizedLines.map((line) => { const product = productMap.get(line.productId)!; const inferredUnit = String(product.product_type ?? "").toUpperCase().includes("FOOD") || String(product.product_type ?? "").toUpperCase().includes("MEAL") ? "MEAL" : "BEVERAGE"; const fulfillmentUnit = line.fulfillmentUnit ?? inferredUnit; return { tenant_id: tenantId, product_id: product.id, product_name: product.name, quantity: line.quantity, unit_price: product.price, total_price: product.price * line.quantity, fulfillment_unit: fulfillmentUnit, accompaniment: fulfillmentUnit === "MEAL" ? line.accompaniment : "Aucun", preparation_status: "PENDING" }; });
     const totalAmount = orderLines.reduce((total, line) => total + line.total_price, 0);
     const orderNumber = `DM-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}-${randomUUID().slice(0, 8).toUpperCase()}`;
     const { data: order, error: orderError } = await supabase.from("orders").insert({ tenant_id: tenantId, order_number: orderNumber, table_label: effectiveTableLabel, location_label: effectiveLocationLabel, customer_id: customerId, server_user_id: context.employeeId && context.role === "SERVEUR" ? user.id : null, server_name: user.user_metadata?.first_name ?? null, total_amount: totalAmount, currency: "XOF" }).select("id,tenant_id,order_number,table_label,location_label,customer_id,server_user_id,server_name,status,total_amount,currency,created_at").single();
     if (orderError || !order) return NextResponse.json({ error: "Impossible de créer la commande." }, { status: 400 });
-    const { data: insertedLines, error: linesError } = await supabase.from("order_items").insert(orderLines.map((line) => ({ ...line, order_id: order.id }))).select("id,product_id,product_name,quantity,unit_price,total_price");
+    const { data: insertedLines, error: linesError } = await supabase.from("order_items").insert(orderLines.map((line) => ({ ...line, order_id: order.id }))).select("id,product_id,product_name,quantity,unit_price,total_price,fulfillment_unit,accompaniment");
     if (linesError) { await supabase.from("orders").delete().eq("id", order.id).eq("tenant_id", tenantId); return NextResponse.json({ error: "Impossible d’enregistrer les lignes de commande." }, { status: 400 }); }
     const units = new Set((orderLines.map((line) => line.fulfillment_unit)));
     const operatorPositions = [...units].flatMap((unit) => unit === "MEAL" ? ["CHEF_CUISINE", "CUISINIER"] : ["GERANT"]);
