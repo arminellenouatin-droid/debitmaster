@@ -17,7 +17,7 @@ export function InscriptionForm() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
-  function update(field: keyof typeof form, value: string) { setForm((current) => ({ ...current, [field]: value })); }
+  function update(field: keyof typeof form, value: string) { setForm((current) => ({ ...current, [field]: value })); setError(""); setMessage(""); }
   function selectMode(nextMode: Mode) { setMode(nextMode); setStep(1); setError(""); setMessage(""); }
 
   async function submit(event: FormEvent<HTMLFormElement>) {

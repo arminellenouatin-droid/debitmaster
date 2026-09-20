@@ -2,6 +2,7 @@
 import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export async function POST(request: Request) {
   try {
@@ -18,14 +19,26 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Renseignez un nom complet, un e-mail valide et un mot de passe d’au moins 8 caractères." }, { status: 400 });
     }
 
-    const supabase = await createSupabaseServerClient();
-    const { data, error } = await supabase.auth.signUp({
+    const admin = createSupabaseAdminClient();
+    const created = await admin.auth.admin.createUser({
       email,
       password,
-      options: { data: { first_name: firstName, last_name: lastName, phone } },
+      email_confirm: true,
+      user_metadata: { first_name: firstName, last_name: lastName, phone },
     });
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+    if (created.error || !created.data.user) {
+      const duplicate = created.error?.message?.toLowerCase().includes("already") || created.error?.message?.toLowerCase().includes("exists");
+      return NextResponse.json({ error: duplicate ? "Cet e-mail est déjà utilisé. Utilisez la connexion." : created.error?.message ?? "Impossible de créer le compte." }, { status: 400 });
+    }
+
+    const supabase = await createSupabaseServerClient();
+    const session = await supabase.auth.signInWithPassword({ email, password });
+    if (session.error || !session.data.user) {
+      return NextResponse.json({ error: "Compte créé, mais la session n’a pas pu être ouverte. Utilisez la connexion." }, { status: 201 });
+    }
+
+    const data = { user: session.data.user, session: session.data.session };
     const withReferralCookie = (response: NextResponse) => {
       if (affiliateCode) response.cookies.set("dm_affiliate_ref", affiliateCode, { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", maxAge: 60 * 60 * 24 * 30, path: "/" });
       return response;
@@ -35,7 +48,7 @@ export async function POST(request: Request) {
       if (invitationError) return withReferralCookie(NextResponse.json({ user: data.user, invitationPending: true, error: "Compte créé. Connectez-vous avec cette adresse puis revenez sur le lien d’invitation pour finaliser le rattachement." }, { status: 202 }));
       return withReferralCookie(NextResponse.json({ user: data.user, invitationAccepted: true, needsEmailConfirmation: false }));
     }
-    return withReferralCookie(NextResponse.json({ user: data.user, needsEmailConfirmation: !data.session, invitationPending: /^[a-f0-9]{64}$/i.test(invitationToken) }));
+    return withReferralCookie(NextResponse.json({ user: data.user, needsEmailConfirmation: false, invitationPending: false }));
   } catch (cause) {
     const detail = cause instanceof Error ? cause.message : "unknown_error";
     console.error("[DebitManager signup] server failure:", detail);
