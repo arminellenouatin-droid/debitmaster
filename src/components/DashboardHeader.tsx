@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLiveRefresh } from "@/hooks/useLiveRefresh";
+import { PushNotificationBanner } from "@/components/PushNotificationBanner";
 
 type Notification = {
   id: string;
@@ -279,6 +280,12 @@ export function DashboardHeader({
                   )}
                 </div>
               </div>
+
+              {tenantId && (
+                <div className="mt-2.5">
+                  <PushNotificationBanner tenantId={tenantId} />
+                </div>
+              )}
 
               {notificationError && (
                 <p role="alert" className="mt-3 rounded-xl bg-[#fff1ef] px-3 py-2 text-xs font-bold text-[var(--danger)]">

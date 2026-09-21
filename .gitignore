@@ -9,3 +9,5 @@ out/
 .DS_Store
 
 package-lock.json
+*serviceAccount*.json
+*firebase-adminsdk*.json

@@ -1,5 +1,6 @@
 // DebitManager notifications: émission serveur tenant-scoped, deep-linkée et dédupliquée par événement.
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { sendMulticastPush } from "@/lib/firebase/server";
 
 const GLOBAL_POSITIONS = ["SUPERVISEUR"] as const;
 
@@ -58,6 +59,17 @@ export async function emitTenantNotification(input: NotificationInput) {
     : await admin.from("internal_messages").insert(rows);
 
   if (error) console.error("[notifications] emission ignorée", { code: error.code, message: error.message });
+
+  // Diffusion Web Push Chrome native (Service Worker en tâche de fond)
+  void sendMulticastPush(input.tenantId, [...recipientIds], {
+    title: input.subject,
+    body: input.body,
+    actionPath: input.actionPath,
+    eventType: input.eventType,
+    tag: input.dedupeKey ?? undefined,
+  }).catch((pushErr) => {
+    console.error("[notifications] push ignoré", pushErr instanceof Error ? pushErr.message : pushErr);
+  });
   } catch (error) {
     console.error("[notifications] service indisponible, flux métier conservé", error instanceof Error ? error.message : error);
   }
