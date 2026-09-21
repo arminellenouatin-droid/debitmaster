@@ -35,6 +35,6 @@ set trial_ends_at = coalesce(trial_ends_at, coalesce(created_at, now()) + interv
 where status = 'TRIAL' and deleted_at is null;
 update public.companies
 set subscription_plan = 'PRESTIGE'
-where upper(trim(name)) = 'BAR SANTE PLUS' and deleted_at is null;
+where upper(trim(name)) = 'LE TEMPLE DU PLAISIR' and deleted_at is null;
 
 commit;

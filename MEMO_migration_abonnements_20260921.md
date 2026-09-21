@@ -33,3 +33,8 @@ Le catalogue a été implémenté côté serveur et dans l’interface d’abonn
 La base contient 32 combinaisons tarifaires, soit quatre formules × deux périodicités × quatre types historiques d’établissement. La vérification de la donnée de test confirme que BAR SANTE PLUS est conservé, toujours en statut TRIAL et désormais en formule PRESTIGE. Le typecheck et le build Next.js passent après les changements.
 
 Les fonctionnalités sont présentées par formule dans le catalogue : boissons pour Bar, boissons et repas pour Restaurant, boissons/repas/chambres pour Hôtels, et l’ensemble des fonctionnalités actuelles pour Prestige. Les paiements MTN MoMo continuent d’être initiés et confirmés côté serveur ; la périodicité est désormais persistée avec chaque paiement.
+
+
+## Renommage de la donnée test
+
+Le 21 septembre 2026, l’établissement test a été renommé de **BAR SANTE PLUS** en **LE TEMPLE DU PLAISIR**. Son identifiant reste inchangé, ainsi que son statut TRIAL et sa formule PRESTIGE.

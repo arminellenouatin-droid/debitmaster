@@ -1,6 +1,6 @@
 "use client";
 
-// DebitManager: Gestionnaire unifié des Produits et Services pour BAR SANTE PLUS et établissements Power
+// DebitManager: Gestionnaire unifié des Produits et Services pour LE TEMPLE DU PLAISIR et établissements Power
 import { useState, useEffect, useMemo, useRef, ChangeEvent, FormEvent } from "react";
 
 type Category = {
