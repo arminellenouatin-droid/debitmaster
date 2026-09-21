@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { getAuthorizationContext } from "@/lib/authorization";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { MtnMomoError, requestToPay } from "@/lib/mtn-momo";
-import { addSubscriptionPeriod, getSubscriptionActivityCatalog, getSubscriptionCatalog, getSubscriptionPlan, getSubscriptionPrice, normalizeActivityCode, type SubscriptionPriceOverride } from "@/lib/subscription-plans";
+import { addSubscriptionPeriod, billingPeriodCodes, getSubscriptionActivityCatalog, getSubscriptionCatalog, getSubscriptionPlan, getSubscriptionPrice, normalizeActivityCode, type BillingPeriod, type SubscriptionPriceOverride } from "@/lib/subscription-plans";
 
 function ownerTenantId(context: Awaited<ReturnType<typeof getAuthorizationContext>>, requestedTenantId: string) {
   if (context.employeeId) return null;
@@ -12,12 +12,13 @@ function ownerTenantId(context: Awaited<ReturnType<typeof getAuthorizationContex
 }
 
 async function loadPriceOverrides(supabase: Awaited<ReturnType<typeof getAuthorizationContext>>["supabase"]) {
-  const { data } = await supabase.from("saas_plan_prices").select("activity_code,plan_code,price_xof,description").eq("is_active", true).limit(100);
+  const { data } = await supabase.from("saas_plan_prices").select("activity_code,plan_code,billing_period,price_xof,description").eq("is_active", true).limit(100);
   return (data ?? []) as SubscriptionPriceOverride[];
 }
 
 export async function GET(request: Request) {
   try {
+    const billingPeriod = new URL(request.url).searchParams.get("billingPeriod")?.toUpperCase() === "ANNUAL" ? "ANNUAL" : "MONTHLY";
     const context = await getAuthorizationContext();
     if (!context.user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
     const tenantId = ownerTenantId(context, new URL(request.url).searchParams.get("tenantId") ?? "");
@@ -32,15 +33,16 @@ export async function GET(request: Request) {
     if (companyError || !company) return NextResponse.json({ error: "Établissement introuvable." }, { status: 404 });
 
     const [{ data: payments, error: paymentsError }, overrides] = await Promise.all([
-      context.supabase.from("saas_subscription_payments").select("id,plan,amount,currency,status,provider_reference,period_start,period_end,paid_at,created_at").eq("tenant_id", tenantId).order("created_at", { ascending: false }).limit(12),
+      context.supabase.from("saas_subscription_payments").select("id,plan,billing_period,amount,currency,status,provider_reference,period_start,period_end,paid_at,created_at").eq("tenant_id", tenantId).order("created_at", { ascending: false }).limit(12),
       loadPriceOverrides(context.supabase),
     ]);
     if (paymentsError) return NextResponse.json({ error: "Impossible de charger l’historique d’abonnement." }, { status: 500 });
 
     return NextResponse.json({
       activity: { type: company.activity_type, currency: company.currency },
-      plans: getSubscriptionCatalog(company.activity_type, overrides),
-      activities: getSubscriptionActivityCatalog(overrides),
+      billingPeriod,
+      plans: getSubscriptionCatalog(company.activity_type, overrides, billingPeriod),
+      activities: getSubscriptionActivityCatalog(overrides, billingPeriod),
       current: { plan: company.subscription_plan, status: company.status, trialEndsAt: company.trial_ends_at, expiresAt: company.subscription_expires_at },
       payments: payments ?? [],
     });
@@ -51,13 +53,14 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json() as { tenantId?: string; plan?: string; mobileNumber?: string };
+    const body = await request.json() as { tenantId?: string; plan?: string; billingPeriod?: string; mobileNumber?: string };
     const context = await getAuthorizationContext();
     if (!context.user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
     const tenantId = ownerTenantId(context, typeof body.tenantId === "string" ? body.tenantId : "");
     if (!tenantId) return NextResponse.json({ error: "Seul le propriétaire peut modifier l’abonnement." }, { status: 403 });
 
     const plan = typeof body.plan === "string" ? body.plan.toUpperCase() : "";
+    const billingPeriod = typeof body.billingPeriod === "string" && billingPeriodCodes.includes(body.billingPeriod.toUpperCase() as BillingPeriod) ? body.billingPeriod.toUpperCase() as BillingPeriod : "MONTHLY";
     const mobileNumber = typeof body.mobileNumber === "string" ? body.mobileNumber.trim() : "";
     const definition = getSubscriptionPlan(plan);
     if (!definition) return NextResponse.json({ error: "Formule d’abonnement invalide." }, { status: 400 });
@@ -72,18 +75,18 @@ export async function POST(request: Request) {
     if (companyError || !company) return NextResponse.json({ error: "Établissement introuvable." }, { status: 404 });
 
     const overrides = await loadPriceOverrides(context.supabase);
-    const amount = getSubscriptionPrice(company.activity_type, plan, overrides);
+    const amount = getSubscriptionPrice(company.activity_type, plan, billingPeriod, overrides);
     const now = new Date();
     const existingEnd = company.subscription_expires_at ? new Date(company.subscription_expires_at) : null;
     const periodStart = existingEnd && existingEnd.getTime() > now.getTime() ? existingEnd : now;
-    const periodEnd = addSubscriptionPeriod(periodStart, plan);
+    const periodEnd = addSubscriptionPeriod(periodStart, billingPeriod);
     if (!amount || !periodEnd) return NextResponse.json({ error: "Tarif d’abonnement indisponible." }, { status: 503 });
 
     const admin = createSupabaseAdminClient();
     const { data: payment, error: paymentError } = await admin
       .from("saas_subscription_payments")
-      .insert({ tenant_id: tenantId, provider: "MTN_MOMO", plan, amount, currency: company.currency || "XOF", status: "PENDING", period_start: periodStart.toISOString(), period_end: periodEnd.toISOString(), metadata: { activity_type: normalizeActivityCode(company.activity_type), duration_months: definition.durationMonths } })
-      .select("id,tenant_id,plan,amount,currency,status,period_start,period_end")
+      .insert({ tenant_id: tenantId, provider: "MTN_MOMO", plan, billing_period: billingPeriod, amount, currency: company.currency || "XOF", status: "PENDING", period_start: periodStart.toISOString(), period_end: periodEnd.toISOString(), metadata: { activity_type: normalizeActivityCode(company.activity_type), billing_period: billingPeriod } })
+      .select("id,tenant_id,plan,billing_period,amount,currency,status,period_start,period_end")
       .single();
     if (paymentError || !payment) return NextResponse.json({ error: "Impossible de préparer l’abonnement." }, { status: 400 });
 
@@ -94,7 +97,7 @@ export async function POST(request: Request) {
         .update({ provider_reference: initiated.referenceId, updated_at: new Date().toISOString() })
         .eq("id", payment.id)
         .eq("status", "PENDING")
-        .select("id,tenant_id,plan,amount,currency,status,period_start,period_end,provider_reference")
+        .select("id,tenant_id,plan,billing_period,amount,currency,status,period_start,period_end,provider_reference")
         .single();
       if (referenceError || !updated) return NextResponse.json({ error: "Paiement initié mais référence locale d’abonnement incomplète. Vérifiez le statut avant une nouvelle tentative." }, { status: 500 });
       return NextResponse.json({ payment: updated, status: "PENDING", referenceId: initiated.referenceId });

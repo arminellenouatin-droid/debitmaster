@@ -14,7 +14,7 @@ export async function GET(request: Request) {
     if (!context.user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
     const paymentId = new URL(request.url).searchParams.get("paymentId") ?? "";
     if (!paymentId) return NextResponse.json({ error: "Identifiant de paiement requis." }, { status: 400 });
-    const { data: payment, error } = await context.supabase.from("saas_subscription_payments").select("id,tenant_id,plan,amount,currency,status,provider,provider_reference,period_start,period_end,paid_at").eq("id", paymentId).maybeSingle();
+    const { data: payment, error } = await context.supabase.from("saas_subscription_payments").select("id,tenant_id,plan,billing_period,amount,currency,status,provider,provider_reference,period_start,period_end,paid_at").eq("id", paymentId).maybeSingle();
     if (error || !payment || payment.provider !== "MTN_MOMO") return NextResponse.json({ error: "Paiement d’abonnement MTN MoMo introuvable." }, { status: 404 });
     if (!context.tenantIds.includes(payment.tenant_id)) return NextResponse.json({ error: "Paiement non autorisé." }, { status: 403 });
     if (["SUCCEEDED", "FAILED", "REFUNDED"].includes(payment.status) || !payment.provider_reference) return NextResponse.json({ payment, providerStatus: payment.status });
@@ -26,7 +26,7 @@ export async function GET(request: Request) {
 
     const admin = createSupabaseAdminClient();
     const paidAt = new Date().toISOString();
-    const { data: updated, error: updateError } = await admin.from("saas_subscription_payments").update({ status: nextStatus, paid_at: nextStatus === "SUCCEEDED" ? paidAt : null, updated_at: paidAt }).eq("id", payment.id).eq("status", payment.status).select("id,tenant_id,plan,amount,period_end,status").maybeSingle();
+    const { data: updated, error: updateError } = await admin.from("saas_subscription_payments").update({ status: nextStatus, paid_at: nextStatus === "SUCCEEDED" ? paidAt : null, updated_at: paidAt }).eq("id", payment.id).eq("status", payment.status).select("id,tenant_id,plan,billing_period,amount,period_end,status").maybeSingle();
     if (updateError) return NextResponse.json({ error: "Mise à jour de l’abonnement impossible." }, { status: 500 });
     if (updated?.status === "SUCCEEDED") {
       const { error: companyError } = await admin.from("companies").update({ subscription_plan: updated.plan, subscription_expires_at: updated.period_end, subscription_updated_at: paidAt, status: "ACTIVE", updated_at: paidAt }).eq("id", updated.tenant_id).is("deleted_at", null);
