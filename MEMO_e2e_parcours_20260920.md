@@ -23,3 +23,12 @@ Inclus : pages publiques, inscription propriétaire, inscription membre avec cod
 - Correctif local appliqué dans `src/app/inscription/InscriptionForm.tsx`.
 - Typecheck, build et `git diff --check` réussis.
 - Reprise E2E complète à effectuer après confirmation du compte de test.
+
+
+## Reprise du 21 septembre 2026
+
+Le commit `cea2a08` a été publié et déployé en production avec état Vercel `READY`. Le propriétaire de test peut maintenant créer son compte sans confirmation e-mail et est redirigé vers le choix de profil. Le parcours de création d’établissement a été exécuté avec succès jusqu’au tableau de bord en statut Essai : activité Bar & restaurant, Côte d’Ivoire, FCFA, établissement `Etablissement E2E NoConfirm`.
+
+Le module Personnel est accessible et expose l’ajout direct, les rôles et les informations de connexion temporaires. Le navigateur connecté réinjecte toutefois ses anciennes valeurs autofillées pendant les re-rendus ; la création directe d’un employé et sa connexion doivent être rejouées dans un profil vierge. Les erreurs runtime Vercel des sept derniers jours sont absentes.
+
+La recette propriétaire est donc validée jusqu’au dashboard. Restent à valider dans un environnement propre : code établissement réel, demande d’accès employé, approbation, connexion employé, droits détaillés et génération/utilisation du lien affilié.

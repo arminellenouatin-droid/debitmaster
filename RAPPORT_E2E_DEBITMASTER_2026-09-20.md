@@ -40,3 +40,33 @@ Le navigateur connecté disposait d’un remplissage automatique d’identifiant
 ## Reprise nécessaire
 
 Pour terminer la recette de bout en bout, il faut confirmer le compte propriétaire `debitmaster.e2e.20260920@gmail.com` depuis l’e-mail reçu, ou fournir un environnement de staging avec confirmation automatique désactivée et un profil navigateur vierge. La reprise couvrira ensuite la création de l’établissement, son paramétrage, le code établissement, l’ajout direct d’un collaborateur, les droits par rôle, la demande d’accès par code, l’approbation propriétaire, la connexion employé, l’inscription affilié, la génération et l’utilisation du lien, puis la vérification des erreurs console et des états responsive.
+
+
+## Reprise de recette — 21 septembre 2026
+
+Le correctif a été publié sur GitHub et déployé en production par Vercel sur le commit `cea2a08f9fa8273558cc8ed312db080f10b5c562` ; le déploiement est `READY`. Avec un compte propriétaire de test dédié, l’inscription a ouvert directement la session sans confirmation e-mail et a redirigé vers `/choixprofil`.
+
+Le parcours propriétaire a ensuite été exécuté jusqu’à son terme non payant : choix « Créer ma boutique », activité « Bar & restaurant », établissement `Etablissement E2E NoConfirm`, pays Côte d’Ivoire, devise FCFA, enregistrement réussi, puis accès au tableau de bord en statut `Essai`. Les données de test sont visibles dans l’espace et le module Personnel est accessible.
+
+Le module Personnel expose la création directe d’un collaborateur, le téléphone, le mot de passe temporaire et le rôle. La création n’a pas pu être validée de manière fiable dans ce profil de navigateur, car le remplissage automatique réinjecte des valeurs existantes dans les champs téléphone et mot de passe au moment des re-rendus. Cette limitation est propre à l’environnement de test ; elle ne constitue pas une preuve de défaut serveur. La génération et l’utilisation d’un code établissement, la demande d’accès par code, l’approbation par le propriétaire, la connexion de l’employé et l’affectation détaillée de droits restent donc à valider avec un profil navigateur vierge ou un environnement de staging dédié.
+
+Le bouton d’accès au tableau de bord depuis l’étape abonnement fonctionne sans paiement et conserve l’établissement en statut `Essai`. Aucun paiement ni action irréversible n’a été déclenché. Les erreurs runtime Vercel agrégées sur les sept derniers jours sont absentes (`No runtime errors found`).
+
+## État corrigé
+
+La confirmation e-mail est désormais contournée côté serveur pour les propriétaires uniquement, avec création d’une session immédiate. Les parcours employé et affilié n’ont pas été élargis par ce changement. Le correctif UX antérieur sur les messages d’erreur obsolètes reste inclus.
+
+## Conclusion actualisée
+
+Le parcours propriétaire — création du compte, choix du profil, création et paramétrage initial de l’établissement, accès au tableau de bord — est validé en production. Les parcours affilié et membre avec code invalide sont validés sur leurs écrans et garde-fous. La recette n’est pas encore totalement exhaustive pour les opérations dépendantes d’un profil navigateur vierge : création directe d’un employé, connexion employé, approbation d’une demande par code, attribution de droits par rôle et génération effective du lien affilié.
+
+## Déploiement
+
+- Commit publié : `cea2a08` — `fix: confirm owner accounts without email verification`
+- Déploiement production : `READY`
+- URL : `https://debitmaster.vercel.app`
+- Erreurs runtime Vercel sur 7 jours : aucune
+
+## Données de test créées
+
+Un compte propriétaire de test et l’établissement `Etablissement E2E NoConfirm` ont été créés en production pour cette recette. Ils doivent être conservés ou supprimés selon la politique de nettoyage des données de test de l’environnement de production.
