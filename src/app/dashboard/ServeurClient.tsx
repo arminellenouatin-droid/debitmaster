@@ -260,7 +260,12 @@ export function ServeurClient({
   }, [locations]);
 
   useEffect(() => {
-    setTableLabel((current) => (locationTables.some((table) => table?.label === current) ? current : ""));
+    setTableLabel((current) => {
+      if (current && locationTables.some((table) => table?.label === current)) {
+        return current;
+      }
+      return locationTables[0]?.label ?? "";
+    });
   }, [locationTables]);
 
   const filteredProducts = useMemo(() => {
@@ -333,35 +338,41 @@ export function ServeurClient({
 
   const placeOrder = async () => {
     if (!cart.length) return setNotice("Ajoutez au moins un article à la commande.");
-    if (zonesTablesEnabled && !tableLabel.trim()) return setNotice("Veuillez sélectionner ou indiquer un numéro de table avant d’envoyer la commande.");
+    const effectiveTable = tableLabel.trim() || (locationTables[0]?.label ?? "");
+    if (zonesTablesEnabled && !effectiveTable) return setNotice("Veuillez sélectionner ou indiquer un numéro de table avant d’envoyer la commande.");
     const effectiveLoc = selectedLocation || "Salle";
     setBusy(true);
-    setNotice("");
-    const response = await fetch("/api/orders", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        tenantId,
-        locationLabel: zonesTablesEnabled ? effectiveLoc : null,
-        zoneId: zonesTablesEnabled ? selectedZoneId : null,
-        tableLabel: zonesTablesEnabled ? tableLabel.trim() : null,
-        customerId: customerId || null,
-        lines: cart.map((line) => ({
-          productId: line.product.id,
-          quantity: line.quantity,
-          fulfillmentUnit: line.fulfillmentUnit,
-          accompaniment: line.accompaniment ?? "Aucun",
-        })),
-      }),
-    });
-    const result = await response.json();
-    setBusy(false);
-    if (!response.ok) return setNotice(result.error ?? "Impossible de lancer la commande.");
-    setNotice(`✓ Commande ${result.order.order_number} envoyée avec succès !`);
-    setCart([]);
-    setTableLabel("");
-    setTab("encaissement");
-    await refresh();
+    setNotice("Envoi de la commande en cours…");
+    try {
+      const response = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tenantId,
+          locationLabel: zonesTablesEnabled ? effectiveLoc : null,
+          zoneId: zonesTablesEnabled ? selectedZoneId : null,
+          tableLabel: zonesTablesEnabled ? effectiveTable : null,
+          customerId: customerId || null,
+          lines: cart.map((line) => ({
+            productId: line.product.id,
+            quantity: line.quantity,
+            fulfillmentUnit: line.fulfillmentUnit,
+            accompaniment: line.accompaniment ?? "Aucun",
+          })),
+        }),
+      });
+      const result = await response.json();
+      setBusy(false);
+      if (!response.ok) return setNotice(result.error ?? "Impossible de lancer la commande.");
+      setNotice(`✓ Commande ${result.order.order_number} envoyée avec succès !`);
+      setCart([]);
+      setTab("encaissement");
+      if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+      await refresh();
+    } catch (err) {
+      setBusy(false);
+      setNotice(err instanceof Error ? err.message : "Erreur de communication réseau.");
+    }
   };
 
   const createCustomer = async () => {
@@ -700,7 +711,8 @@ export function ServeurClient({
                             type="button"
                             onClick={() => {
                               setSelectedLocation(loc);
-                              setTableLabel("");
+                              const matching = assignedTables.filter((t) => (t?.zone ?? "Salle") === loc);
+                              setTableLabel(matching[0]?.label ?? "");
                             }}
                             className={`rounded-xl px-4 py-2.5 text-xs font-black transition ${
                               selectedLocation === loc
@@ -721,6 +733,9 @@ export function ServeurClient({
                         <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4 md:grid-cols-6">
                           {locationTables.map((table) => {
                             const isSelected = tableLabel === table?.label;
+                            const displayLabel = table?.label?.toLowerCase().startsWith("table")
+                              ? table.label
+                              : `Table ${table?.label}`;
                             return (
                               <button
                                 key={table?.id}
@@ -732,8 +747,8 @@ export function ServeurClient({
                                     : "border border-slate-200 bg-slate-50 text-slate-800 hover:border-emerald-400 hover:bg-emerald-50"
                                 }`}
                               >
-                                <span className="text-base font-black">Table</span>
-                                <span className="text-lg font-black text-amber-500">{table?.label}</span>
+                                <span className="text-[11px] font-bold uppercase tracking-wider opacity-80">Emplacement</span>
+                                <span className="text-base font-black text-amber-400">{displayLabel}</span>
                               </button>
                             );
                           })}
@@ -946,6 +961,14 @@ export function ServeurClient({
                   <span className="text-2xl font-black text-emerald-700">{money(cartTotal)}</span>
                 </div>
               </div>
+
+              {/* Notice display right above button on mobile so user never misses it */}
+              {notice && (
+                <div className="mt-4 flex items-center justify-between gap-2 rounded-xl border border-amber-500/40 bg-amber-50 p-3 text-xs font-bold text-amber-950 shadow-sm">
+                  <span>{notice}</span>
+                  <button type="button" onClick={() => setNotice("")} className="text-amber-800 font-black text-sm">✕</button>
+                </div>
+              )}
 
               {/* Big Send Order Button */}
               <button
