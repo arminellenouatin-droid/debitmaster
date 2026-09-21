@@ -35,6 +35,7 @@ type OrderItem = {
   unit_price: number;
   total_price: number;
   fulfillment_unit?: "BEVERAGE" | "MEAL";
+  accompaniment?: string;
   preparation_status?: string;
   prepared_at?: string | null;
   received_at?: string | null;
@@ -93,7 +94,7 @@ type Product = {
   category_id?: string | null;
 };
 type Customer = { id: string; full_name: string; phone: string | null; customer_type: string };
-type CartLine = { product: Product; quantity: number; fulfillmentUnit: "BEVERAGE" | "MEAL" };
+type CartLine = { product: Product; quantity: number; fulfillmentUnit: "BEVERAGE" | "MEAL"; accompaniment?: string };
 type RemittanceSnapshot = {
   sales: number;
   cash: number;
@@ -141,6 +142,7 @@ const itemStatusLabel: Record<string, string> = {
   DELIVERED: "Livrée",
 };
 const days = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
+const accompaniments = ["Aucun", "Riz", "Pâte", "Frites", "Attiéké", "Salade composée", "Alloco"] as const;
 
 export function ServeurClient({
   tenantId,
@@ -169,6 +171,7 @@ export function ServeurClient({
   const [productSearch, setProductSearch] = useState("");
   const [selectedProduct, setSelectedProduct] = useState("");
   const [quantity, setQuantity] = useState(1);
+  const [accompaniment, setAccompaniment] = useState<(typeof accompaniments)[number]>("Aucun");
   const [cart, setCart] = useState<CartLine[]>([]);
   const [selectedLocation, setSelectedLocation] = useState("");
   const [tableLabel, setTableLabel] = useState("");
@@ -303,7 +306,7 @@ export function ServeurClient({
       if (existing) {
         return current.map((line) => (line.product.id === product.id ? { ...line, quantity: line.quantity + 1 } : line));
       }
-      return [...current, { product, quantity: 1, fulfillmentUnit: selectedType }];
+      return [...current, { product, quantity: 1, fulfillmentUnit: selectedType, accompaniment: selectedType === "MEAL" ? accompaniment : "Aucun" }];
     });
   };
 
@@ -339,7 +342,12 @@ export function ServeurClient({
         zoneId: zonesTablesEnabled ? selectedZoneId : null,
         tableLabel: zonesTablesEnabled ? tableLabel : null,
         customerId: customerId || null,
-        lines: cart.map((line) => ({ productId: line.product.id, quantity: line.quantity, fulfillmentUnit: line.fulfillmentUnit })),
+        lines: cart.map((line) => ({
+          productId: line.product.id,
+          quantity: line.quantity,
+          fulfillmentUnit: line.fulfillmentUnit,
+          accompaniment: line.accompaniment ?? "Aucun",
+        })),
       }),
     });
     const result = await response.json();
@@ -1320,6 +1328,7 @@ export function ServeurTicket({ order }: { order: Order }) {
         <div key={item.id} className="flex justify-between gap-2 text-xs">
           <span>
             {item.quantity} × {item.product_name}
+            {item.fulfillment_unit === "MEAL" ? ` · ${item.accompaniment ?? "Aucun"}` : ""}
           </span>
           <span>{money(item.total_price)}</span>
         </div>
