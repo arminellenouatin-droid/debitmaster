@@ -22,7 +22,7 @@ import {
   Building2,
   HelpCircle,
   Play,
-} from "lucide-react";
+} from "@/components/Icons";
 
 type RolePreview = "server" | "kitchen" | "manager" | "qrmenu";
 

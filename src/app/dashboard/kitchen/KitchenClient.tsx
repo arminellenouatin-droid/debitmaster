@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { UtensilsCrossed, Clock, CheckCircle2, RotateCcw, Check, Sparkles, AlertCircle } from "lucide-react";
+import { UtensilsCrossed, Clock, CheckCircle2, RotateCcw, Check, Sparkles, AlertCircle } from "@/components/Icons";
 
 type Company = { id: string; name: string };
 type OrderItem = { id: string; product_name: string; quantity: number };
