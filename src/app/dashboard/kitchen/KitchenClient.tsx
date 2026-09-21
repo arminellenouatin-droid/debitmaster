@@ -1,26 +1,56 @@
-/* DebitManager / maquette fildattentecuisine: KDS dense et lisible, actions visibles seulement si le rôle peut faire avancer la commande. */
+/* DebitManager / maquette fildattentecuisine: KDS dense, tactile et lisible pour le personnel en cuisine. */
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { UtensilsCrossed, Clock, CheckCircle2, RotateCcw, Check, Sparkles, AlertCircle } from "lucide-react";
 
 type Company = { id: string; name: string };
 type OrderItem = { id: string; product_name: string; quantity: number };
-type Order = { id: string; order_number: string; table_label: string | null; status: string; created_at: string; order_items?: OrderItem[] };
+type Order = {
+  id: string;
+  order_number: string;
+  table_label: string | null;
+  status: string;
+  created_at: string;
+  order_items?: OrderItem[];
+};
 
 type StatusKey = "PENDING" | "IN_PREPARATION" | "READY" | "HANDED_OFF";
 
-const columns: { key: StatusKey; label: string; tone: string }[] = [
-  { key: "PENDING", label: "À prendre en charge", tone: "border-[var(--line)]" },
-  { key: "IN_PREPARATION", label: "En préparation", tone: "border-[var(--secondary-container)]" },
-  { key: "READY", label: "Prêtes à remettre", tone: "border-[var(--primary-container)]" },
-  { key: "HANDED_OFF", label: "Remises au service", tone: "border-[var(--accent)]" },
+const columns: { key: StatusKey; label: string; badgeColor: string }[] = [
+  { key: "PENDING", label: "À préparer", badgeColor: "bg-amber-100 text-amber-900 border-amber-300" },
+  { key: "IN_PREPARATION", label: "En cuisson / Au bar", badgeColor: "bg-blue-100 text-blue-900 border-blue-300" },
+  { key: "READY", label: "Prêtes à servir", badgeColor: "bg-emerald-100 text-emerald-900 border-emerald-300" },
+  { key: "HANDED_OFF", label: "Remises au service", badgeColor: "bg-slate-100 text-slate-800 border-slate-300" },
 ];
 
 const normalizeStatus = (status: string) => status.toUpperCase().replaceAll("-", "_");
-const nextStatus = (status: string) => (status === "PENDING" ? "IN_PREPARATION" : status === "IN_PREPARATION" ? "READY" : status === "READY" ? "HANDED_OFF" : "DELIVERED");
-const nextLabel = (status: string) => (status === "PENDING" ? "Prendre en charge" : status === "IN_PREPARATION" ? "Marquer prête" : status === "READY" ? "Remettre au service" : "Confirmer la livraison");
+const nextStatus = (status: string) =>
+  status === "PENDING"
+    ? "IN_PREPARATION"
+    : status === "IN_PREPARATION"
+    ? "READY"
+    : status === "READY"
+    ? "HANDED_OFF"
+    : "DELIVERED";
+const nextLabel = (status: string) =>
+  status === "PENDING"
+    ? "Prendre en charge →"
+    : status === "IN_PREPARATION"
+    ? "MARQUER PRÊT ✓"
+    : status === "READY"
+    ? "Remettre au service ✓"
+    : "Confirmer la livraison";
 
-export function KitchenClient({ canPrepare, canHandoff, canDeliver }: { canPrepare: boolean; canHandoff: boolean; canDeliver: boolean }) {
+export function KitchenClient({
+  canPrepare,
+  canHandoff,
+  canDeliver,
+}: {
+  canPrepare: boolean;
+  canHandoff: boolean;
+  canDeliver: boolean;
+}) {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [tenantId, setTenantId] = useState("");
   const [orders, setOrders] = useState<Order[]>([]);
@@ -29,6 +59,7 @@ export function KitchenClient({ canPrepare, canHandoff, canDeliver }: { canPrepa
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [lastRefresh, setLastRefresh] = useState("");
+  const [mobileFilter, setMobileFilter] = useState<StatusKey | "ALL">("ALL");
 
   async function load(id: string) {
     const response = await fetch(`/api/orders?tenantId=${encodeURIComponent(id)}`, { cache: "no-store" });
@@ -98,7 +129,17 @@ export function KitchenClient({ canPrepare, canHandoff, canDeliver }: { canPrepa
       const result = await response.json();
       if (!response.ok) throw new Error(result.error ?? "Impossible de modifier le statut.");
       setOrders((current) => current.map((item) => (item.id === order.id ? { ...item, status: result.order.status } : item)));
-      setMessage(`${order.order_number} est maintenant « ${status === "IN_PREPARATION" ? "en préparation" : status === "READY" ? "prête" : status === "HANDED_OFF" ? "remise au service" : "livrée"} ».`);
+      setMessage(
+        `${order.order_number} est maintenant « ${
+          status === "IN_PREPARATION"
+            ? "en préparation"
+            : status === "READY"
+            ? "prête"
+            : status === "HANDED_OFF"
+            ? "remise au service"
+            : "livrée"
+        } ».`
+      );
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Impossible de modifier le statut.");
     } finally {
@@ -106,50 +147,191 @@ export function KitchenClient({ canPrepare, canHandoff, canDeliver }: { canPrepa
     }
   }
 
+  // Calculate elapsed minutes for visual alert
+  const getElapsed = (dateStr: string) => {
+    const diffMs = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.max(0, Math.floor(diffMs / 60000));
+    return mins;
+  };
+
+  const displayedColumns = mobileFilter === "ALL" ? columns : columns.filter((c) => c.key === mobileFilter);
+
   return (
-    <section>
-      <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
-        <div>
-          <p className="text-xs font-black uppercase tracking-[0.18em] text-[var(--secondary)]">Cuisine & bar</p>
-          <h1 className="mt-3 text-4xl font-black tracking-[-0.04em] text-[var(--primary)]">File d’attente</h1>
-          <p className="mt-3 text-sm leading-6 text-[var(--muted)]">Le gérant et la cuisine préparent, puis remettent la commande au service. Le serveur est le seul rôle qui confirme la livraison au client.</p>
+    <section className="space-y-6 pb-20">
+      {/* Header */}
+      <div className="flex flex-col justify-between gap-4 rounded-2xl bg-gradient-to-r from-emerald-950 via-emerald-900 to-[#0c1e18] p-5 text-white shadow-md sm:flex-row sm:items-center">
+        <div className="flex items-center gap-3.5">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-400 text-xl font-black text-slate-950 shadow-md">
+            <UtensilsCrossed className="h-6 w-6 text-slate-950" />
+          </div>
+          <div>
+            <span className="text-[11px] font-black uppercase tracking-wider text-amber-300">Écran Cuisine KDS & Bar</span>
+            <h1 className="text-xl font-black tracking-tight sm:text-2xl">Bons de Préparation en Direct</h1>
+          </div>
         </div>
-        <div className="flex items-center gap-3">
+
+        <div className="flex items-center gap-2">
           {companies.length > 1 && (
-            <select value={tenantId} onChange={(event) => setTenantId(event.target.value)} className="h-11 rounded-lg border border-[var(--line)] bg-[var(--surface)] px-3 text-sm font-bold text-[var(--primary)]">
-              {companies.map((company) => <option key={company.id} value={company.id}>{company.name}</option>)}
+            <select
+              value={tenantId}
+              onChange={(e) => setTenantId(e.target.value)}
+              className="h-10 rounded-xl border border-slate-700 bg-slate-900 px-3 text-xs font-bold text-white"
+            >
+              {companies.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
             </select>
           )}
-          <button onClick={() => tenantId && load(tenantId).catch((cause) => setError(cause instanceof Error ? cause.message : "Actualisation impossible."))} className="h-11 rounded-lg bg-[var(--primary)] px-4 text-sm font-black text-white">
-            Actualiser
+          <button
+            onClick={() => tenantId && load(tenantId).catch(() => setError("Actualisation impossible."))}
+            className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-black text-white hover:bg-emerald-500 shadow-sm"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            <span>Actualiser</span>
           </button>
         </div>
       </div>
 
-      {(error || message) && <p role={error ? "alert" : "status"} className={`mt-6 rounded-lg px-4 py-3 text-sm font-bold ${error ? "bg-[#ffdad6] text-[var(--danger)]" : "bg-[var(--accent-soft)] text-[var(--primary)]"}`}>{error || message}</p>}
-      <div className="mt-6 flex items-center justify-between text-xs font-bold text-[var(--muted)]"><span>{orders.length} commande(s) chargée(s)</span><span>{lastRefresh ? `Dernière actualisation ${lastRefresh}` : "En attente"}</span></div>
+      {/* Alert notice */}
+      {(error || message) && (
+        <div
+          role={error ? "alert" : "status"}
+          className={`flex items-center justify-between rounded-xl px-4 py-3 text-xs font-bold shadow-sm ${
+            error ? "bg-red-50 text-red-900 border border-red-200" : "bg-emerald-50 text-emerald-900 border border-emerald-200"
+          }`}
+        >
+          <span>{error || message}</span>
+          <button onClick={() => { setError(""); setMessage(""); }}>
+            ✕
+          </button>
+        </div>
+      )}
 
+      {/* Mobile Column Quick Filter Tabs */}
+      <div className="flex gap-2 overflow-x-auto rounded-xl bg-white p-1.5 shadow-sm ring-1 ring-slate-200 lg:hidden">
+        <button
+          onClick={() => setMobileFilter("ALL")}
+          className={`flex-1 min-w-[90px] rounded-lg py-2 text-center text-xs font-black transition ${
+            mobileFilter === "ALL" ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-100"
+          }`}
+        >
+          Tous ({orders.length})
+        </button>
+        {columns.map((c) => (
+          <button
+            key={c.key}
+            onClick={() => setMobileFilter(c.key)}
+            className={`flex-1 min-w-[110px] rounded-lg py-2 text-center text-xs font-black transition ${
+              mobileFilter === c.key ? "bg-emerald-700 text-white shadow" : "text-slate-600 hover:bg-slate-100"
+            }`}
+          >
+            {c.label} ({grouped[c.key].length})
+          </button>
+        ))}
+      </div>
+
+      {/* KDS Grid Columns */}
       {loading ? (
-        <div className="mt-4 rounded-xl border border-[var(--line)] bg-[var(--surface)] p-12 text-center text-sm font-bold text-[var(--muted)]">Chargement de la file…</div>
+        <div className="flex min-h-[350px] items-center justify-center rounded-2xl bg-white p-12 text-slate-500 shadow-sm">
+          <div className="text-center">
+            <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-emerald-600 border-t-transparent" />
+            <p className="mt-3 text-xs font-bold">Chargement des commandes en cuisine…</p>
+          </div>
+        </div>
       ) : (
-        <div className="mt-4 grid gap-4 lg:grid-cols-4">
-          {columns.map((column) => (
-            <section key={column.key} className={`min-h-80 rounded-xl border-2 ${column.tone} bg-[var(--surface)] p-4`}>
-              <div className="flex items-center justify-between border-b border-[var(--line)] pb-4"><h2 className="font-black text-[var(--primary)]">{column.label}</h2><span className="flex h-7 min-w-7 items-center justify-center rounded-full bg-[var(--surface-muted)] px-2 text-xs font-black text-[var(--primary)]">{grouped[column.key].length}</span></div>
-              <div className="mt-4 space-y-3">
-                {grouped[column.key].length ? grouped[column.key].map((order) => {
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {displayedColumns.map((col) => (
+            <div key={col.key} className="flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <span className="text-xs font-black uppercase text-slate-800">{col.label}</span>
+                <span className={`rounded-full px-2.5 py-0.5 text-xs font-black border ${col.badgeColor}`}>
+                  {grouped[col.key].length}
+                </span>
+              </div>
+
+              <div className="mt-3 space-y-3 flex-1 overflow-y-auto max-h-[600px]">
+                {grouped[col.key].map((order) => {
                   const currentStatus = normalizeStatus(order.status);
-                  const canChange = currentStatus === "READY" ? canHandoff : currentStatus === "HANDED_OFF" ? canDeliver : canPrepare;
+                  const canChange =
+                    currentStatus === "READY" ? canHandoff : currentStatus === "HANDED_OFF" ? canDeliver : canPrepare;
+                  const elapsed = getElapsed(order.created_at);
+                  const isLate = elapsed >= 15;
+
                   return (
-                    <article key={order.id} className="rounded-lg border border-[var(--line)] bg-[var(--background)] p-4">
-                      <div className="flex items-start justify-between gap-3"><div><p className="text-sm font-black text-[var(--primary)]">{order.order_number}</p><p className="mt-1 text-xs font-bold text-[var(--muted)]">{order.table_label ?? "Sans table"}</p></div><span className="text-xs font-black text-[var(--secondary)]">{new Date(order.created_at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}</span></div>
-                      <div className="mt-4 space-y-2 border-t border-[var(--line)] pt-3">{order.order_items?.length ? order.order_items.map((item) => <div key={item.id} className="flex justify-between gap-3 text-sm"><span className="font-bold text-[var(--ink)]">{item.product_name}</span><span className="font-black text-[var(--primary)]">×{item.quantity}</span></div>) : <p className="text-xs text-[var(--muted)]">Détail non disponible.</p>}</div>
-                      {canChange ? <button disabled={pendingId === order.id} onClick={() => changeStatus(order)} className="mt-4 h-10 w-full rounded-lg bg-[var(--primary)] text-xs font-black text-white disabled:cursor-not-allowed disabled:opacity-45">{pendingId === order.id ? "Mise à jour…" : nextLabel(currentStatus)}</button> : <p className="mt-4 rounded-lg bg-[var(--surface-muted)] px-3 py-2 text-center text-xs font-bold text-[var(--muted)]">Action réservée à un rôle habilité</p>}
+                    <article
+                      key={order.id}
+                      className={`flex flex-col justify-between rounded-xl border p-4 transition shadow-sm ${
+                        isLate && currentStatus !== "HANDED_OFF"
+                          ? "border-amber-400 bg-amber-50/40"
+                          : "border-slate-200 bg-slate-50/70"
+                      }`}
+                    >
+                      <div>
+                        {/* Table badge and timer */}
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-1.5">
+                            <span className="rounded-lg bg-slate-900 px-2.5 py-1 text-xs font-black text-amber-400">
+                              Table {order.table_label ?? "Libre"}
+                            </span>
+                            <span className="text-[11px] font-bold text-slate-500">{order.order_number}</span>
+                          </div>
+                          <span
+                            className={`flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-black ${
+                              isLate ? "bg-red-100 text-red-800" : "bg-slate-200 text-slate-700"
+                            }`}
+                          >
+                            <Clock className="h-3 w-3" />
+                            {elapsed} min
+                          </span>
+                        </div>
+
+                        {/* Dish items */}
+                        <div className="mt-3 space-y-2 border-t border-slate-200/80 pt-2.5">
+                          {order.order_items?.map((item) => (
+                            <div key={item.id} className="flex items-center justify-between text-sm">
+                              <span className="font-bold text-slate-900 leading-snug">{item.product_name}</span>
+                              <span className="ml-2 rounded-md bg-emerald-100 px-2 py-0.5 text-xs font-black text-emerald-900">
+                                × {item.quantity}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Action Button */}
+                      <div className="mt-4 pt-2 border-t border-slate-200/80">
+                        {canChange ? (
+                          <button
+                            type="button"
+                            disabled={pendingId === order.id}
+                            onClick={() => changeStatus(order)}
+                            className={`w-full rounded-xl py-3 text-xs font-black text-white shadow transition active:scale-95 ${
+                              currentStatus === "IN_PREPARATION"
+                                ? "bg-emerald-600 hover:bg-emerald-500 ring-2 ring-emerald-400/50 text-sm"
+                                : "bg-slate-900 hover:bg-slate-800"
+                            }`}
+                          >
+                            {pendingId === order.id ? "Mise à jour…" : nextLabel(currentStatus)}
+                          </button>
+                        ) : (
+                          <span className="block text-center text-[10px] text-slate-400 py-1">
+                            Action réservée
+                          </span>
+                        )}
+                      </div>
                     </article>
                   );
-                }) : <div className="rounded-lg border border-dashed border-[var(--line)] p-6 text-center text-sm leading-6 text-[var(--muted)]">Aucune commande dans cette étape.</div>}
+                })}
+
+                {!grouped[col.key].length && (
+                  <div className="py-12 text-center text-xs text-slate-400 border border-dashed border-slate-200 rounded-xl">
+                    Aucune commande
+                  </div>
+                )}
               </div>
-            </section>
+            </div>
           ))}
         </div>
       )}
