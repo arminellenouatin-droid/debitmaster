@@ -18,10 +18,33 @@ export async function GET() {
       context.supabase.from("employee_sales_commissions").select("id,order_id,base_amount,commission_rate,commission_amount,status,created_at").eq("tenant_id", tenantId).eq("employee_id", context.employeeId).order("created_at", { ascending: false }).limit(50),
     ]);
     if (assignmentError || zoneAssignmentError || orderError || commissionError) return NextResponse.json({ error: "Impossible de charger votre activité." }, { status: 500 });
+    let effectiveAssignments: unknown[] = assignments ?? [];
+    let effectiveZoneAssignments: unknown[] = zoneAssignments ?? [];
+    if (effectiveAssignments.length === 0 && effectiveZoneAssignments.length === 0) {
+      const [{ data: allTables }, { data: allZones }] = await Promise.all([
+        context.supabase.from("dining_tables").select("id,label,zone,zone_id,capacity,status").eq("tenant_id", tenantId).is("deleted_at", null).order("zone").order("label").limit(100),
+        context.supabase.from("work_zones").select("id,name,is_active").eq("tenant_id", tenantId).eq("is_active", true).order("name").limit(50),
+      ]);
+      if (allTables && allTables.length > 0) {
+        effectiveAssignments = allTables.map((table) => ({ id: table.id, table_id: table.id, dining_tables: table }));
+      }
+      if (allZones && allZones.length > 0) {
+        effectiveZoneAssignments = allZones.map((zone) => ({
+          id: zone.id,
+          zone_id: zone.id,
+          work_zones: {
+            id: zone.id,
+            name: zone.name,
+            is_active: zone.is_active,
+            dining_tables: (allTables ?? []).filter((table) => table.zone_id === zone.id),
+          },
+        }));
+      }
+    }
     const visibleOrders = orders ?? [];
     const sales = visibleOrders.reduce((sum, order) => sum + (order.total_amount ?? 0), 0);
     const paidSales = visibleOrders.reduce((sum, order) => sum + (order.payments ?? []).filter((payment) => ["PAID", "SUCCESS"].includes(payment.status)).reduce((paymentSum, payment) => paymentSum + Number(payment.amount ?? 0), 0), 0);
     const commissionTotal = (commissions ?? []).reduce((sum, commission) => sum + (commission.commission_amount ?? 0), 0);
-    return NextResponse.json({ zonesTablesEnabled: company?.activity_type === "POWER" ? company.zones_tables_enabled !== false : true, employee, assignments: assignments ?? [], zoneAssignments: zoneAssignments ?? [], orders: visibleOrders, metrics: { sales, paidSales, orderCount: visibleOrders.length, commissionTotal }, commissions: commissions ?? [] });
+    return NextResponse.json({ zonesTablesEnabled: company?.activity_type === "POWER" ? company.zones_tables_enabled !== false : true, employee, assignments: effectiveAssignments, zoneAssignments: effectiveZoneAssignments, orders: visibleOrders, metrics: { sales, paidSales, orderCount: visibleOrders.length, commissionTotal }, commissions: commissions ?? [] });
   } catch { return NextResponse.json({ error: "Service temporairement indisponible." }, { status: 500 }); }
 }

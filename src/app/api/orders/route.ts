@@ -52,9 +52,9 @@ export async function POST(request: Request) {
     const { data: company, error: companyError } = await supabase.from("companies").select("activity_type,zones_tables_enabled").eq("id", tenantId).maybeSingle();
     if (companyError || !company) return NextResponse.json({ error: "Configuration de l’établissement introuvable." }, { status: 500 });
     const zonesTablesEnabled = company.activity_type === "POWER" ? company.zones_tables_enabled !== false : true;
-    if (zonesTablesEnabled && (!tableLabel || !locationLabel)) return NextResponse.json({ error: "Emplacement et numéro de table requis lorsque les zones et tables sont activées." }, { status: 400 });
+    if (zonesTablesEnabled && !tableLabel) return NextResponse.json({ error: "Numéro de table requis pour créer une commande." }, { status: 400 });
     const effectiveTableLabel = zonesTablesEnabled ? tableLabel : null;
-    const effectiveLocationLabel = zonesTablesEnabled ? locationLabel : null;
+    const effectiveLocationLabel = zonesTablesEnabled ? (locationLabel || "Salle") : null;
     const effectiveZoneId = zonesTablesEnabled ? zoneId : null;
     if (context.role === "SERVEUR" && zonesTablesEnabled) {
       const [{ data: assignments }, { data: zoneAssignments }] = await Promise.all([
@@ -62,12 +62,15 @@ export async function POST(request: Request) {
         effectiveZoneId ? supabase.from("employee_zone_assignments").select("zone_id,work_zones(name,is_active)").eq("tenant_id", tenantId).eq("employee_id", context.employeeId).eq("zone_id", effectiveZoneId).limit(1) : Promise.resolve({ data: [] }),
       ]);
       const assignedDiningTables = (assignments ?? []).flatMap((assignment) => Array.isArray(assignment.dining_tables) ? assignment.dining_tables : assignment.dining_tables ? [assignment.dining_tables] : []);
-      const directTable = assignedDiningTables.some((table) => table.label === effectiveTableLabel && (table.zone ?? "Emplacement général") === effectiveLocationLabel && (!effectiveZoneId || table.zone_id === effectiveZoneId));
-      const assignedZone = (zoneAssignments ?? []).some((assignment) => {
-        const zone = Array.isArray(assignment.work_zones) ? assignment.work_zones[0] : assignment.work_zones;
-        return zone?.name === effectiveLocationLabel && zone.is_active;
-      });
-      if (!directTable && !assignedZone) return NextResponse.json({ error: "Cette table ne correspond pas à l’emplacement qui vous est attribué." }, { status: 403 });
+      const hasSpecificRestrictions = assignedDiningTables.length > 0 || (zoneAssignments && zoneAssignments.length > 0);
+      if (hasSpecificRestrictions) {
+        const directTable = assignedDiningTables.some((table) => table.label === effectiveTableLabel && (!table.zone || table.zone === effectiveLocationLabel || table.zone === "Salle") && (!effectiveZoneId || table.zone_id === effectiveZoneId));
+        const assignedZone = (zoneAssignments ?? []).some((assignment) => {
+          const zone = Array.isArray(assignment.work_zones) ? assignment.work_zones[0] : assignment.work_zones;
+          return zone?.name === effectiveLocationLabel && zone.is_active;
+        });
+        if (!directTable && !assignedZone) return NextResponse.json({ error: "Cette table ne correspond pas à l’emplacement qui vous est attribué." }, { status: 403 });
+      }
     }
     const normalizedLines = lines.map((line) => ({ productId: typeof line.productId === "string" ? line.productId : "", quantity: Number(line.quantity), fulfillmentUnit: line.fulfillmentUnit === "MEAL" || line.fulfillmentUnit === "BEVERAGE" ? line.fulfillmentUnit : undefined, accompaniment: typeof line.accompaniment === "string" && accompaniments.includes(line.accompaniment as Accompaniment) ? line.accompaniment as Accompaniment : "Aucun" })).filter((line) => line.productId && Number.isInteger(line.quantity) && line.quantity > 0 && line.quantity <= 999);
     if (normalizedLines.length !== lines.length) return NextResponse.json({ error: "Chaque ligne doit contenir un produit et une quantité valide." }, { status: 400 });

@@ -225,7 +225,7 @@ export function ServeurClient({
       Array.from(
         new Set([
           ...(data?.zoneAssignments?.map((assignment) => assignment.work_zones?.name).filter(Boolean) ?? []),
-          ...assignedTables.map((table) => table?.zone ?? "Emplacement général"),
+          ...assignedTables.map((table) => table?.zone ?? "Salle"),
         ].filter((value): value is string => Boolean(value)))
       ).sort((a, b) => a.localeCompare(b, "fr")),
     [assignedTables, data]
@@ -235,7 +235,7 @@ export function ServeurClient({
     () =>
       assignedTables.filter(
         (table) =>
-          (table?.zone ?? "Emplacement général") === selectedLocation ||
+          (table?.zone ?? "Salle") === selectedLocation ||
           data?.zoneAssignments?.some(
             (assignment) => assignment.work_zones?.id === table?.zone_id && assignment.work_zones?.name === selectedLocation
           )
@@ -252,7 +252,11 @@ export function ServeurClient({
   );
 
   useEffect(() => {
-    setSelectedLocation((current) => (locations.length === 1 ? locations[0] ?? "" : locations.includes(current) ? current : ""));
+    if (locations.length > 0) {
+      setSelectedLocation((current) => (current && locations.includes(current) ? current : locations[0] ?? "Salle"));
+    } else {
+      setSelectedLocation("Salle");
+    }
   }, [locations]);
 
   useEffect(() => {
@@ -328,9 +332,9 @@ export function ServeurClient({
   const removeLine = (productId: string) => setCart((current) => current.filter((line) => line.product.id !== productId));
 
   const placeOrder = async () => {
-    if (zonesTablesEnabled && !selectedLocation) return setNotice("Sélectionnez l’emplacement avant de choisir la table.");
-    if (zonesTablesEnabled && !tableLabel.trim()) return setNotice("Le numéro de table est obligatoire pour retrouver la commande.");
     if (!cart.length) return setNotice("Ajoutez au moins un article à la commande.");
+    if (zonesTablesEnabled && !tableLabel.trim()) return setNotice("Veuillez sélectionner ou indiquer un numéro de table avant d’envoyer la commande.");
+    const effectiveLoc = selectedLocation || "Salle";
     setBusy(true);
     setNotice("");
     const response = await fetch("/api/orders", {
@@ -338,9 +342,9 @@ export function ServeurClient({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         tenantId,
-        locationLabel: zonesTablesEnabled ? selectedLocation : null,
+        locationLabel: zonesTablesEnabled ? effectiveLoc : null,
         zoneId: zonesTablesEnabled ? selectedZoneId : null,
-        tableLabel: zonesTablesEnabled ? tableLabel : null,
+        tableLabel: zonesTablesEnabled ? tableLabel.trim() : null,
         customerId: customerId || null,
         lines: cart.map((line) => ({
           productId: line.product.id,
@@ -355,6 +359,7 @@ export function ServeurClient({
     if (!response.ok) return setNotice(result.error ?? "Impossible de lancer la commande.");
     setNotice(`✓ Commande ${result.order.order_number} envoyée avec succès !`);
     setCart([]);
+    setTableLabel("");
     setTab("encaissement");
     await refresh();
   };
@@ -712,26 +717,58 @@ export function ServeurClient({
                     {/* Table Pills (Large touch targets for phones) */}
                     <div className="mt-2">
                       <p className="text-xs font-bold text-slate-500 mb-2">Touchez la table du client :</p>
-                      <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4 md:grid-cols-6">
-                        {locationTables.map((table) => {
-                          const isSelected = tableLabel === table?.label;
-                          return (
-                            <button
-                              key={table?.id}
-                              type="button"
-                              onClick={() => setTableLabel(table?.label ?? "")}
-                              className={`flex flex-col items-center justify-center rounded-xl p-3 font-black transition-all active:scale-95 ${
-                                isSelected
-                                  ? "bg-emerald-600 text-white shadow-lg shadow-emerald-900/20 ring-2 ring-emerald-500"
-                                  : "border border-slate-200 bg-slate-50 text-slate-800 hover:border-emerald-400 hover:bg-emerald-50"
-                              }`}
-                            >
-                              <span className="text-base font-black">Table</span>
-                              <span className="text-lg font-black text-amber-500">{table?.label}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
+                      {locationTables.length > 0 ? (
+                        <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4 md:grid-cols-6">
+                          {locationTables.map((table) => {
+                            const isSelected = tableLabel === table?.label;
+                            return (
+                              <button
+                                key={table?.id}
+                                type="button"
+                                onClick={() => setTableLabel(table?.label ?? "")}
+                                className={`flex flex-col items-center justify-center rounded-xl p-3 font-black transition-all active:scale-95 ${
+                                  isSelected
+                                    ? "bg-emerald-600 text-white shadow-lg shadow-emerald-900/20 ring-2 ring-emerald-500"
+                                    : "border border-slate-200 bg-slate-50 text-slate-800 hover:border-emerald-400 hover:bg-emerald-50"
+                                }`}
+                              >
+                                <span className="text-base font-black">Table</span>
+                                <span className="text-lg font-black text-amber-500">{table?.label}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          <p className="text-xs text-slate-500">Sélectionnez une table rapide ou saisissez-la :</p>
+                          <div className="flex flex-wrap gap-2">
+                            {["Table 1", "Table 2", "Table 3", "Table 4", "Table 5", "Comptoir", "Terrasse"].map((preset) => {
+                              const isSelected = tableLabel === preset;
+                              return (
+                                <button
+                                  key={preset}
+                                  type="button"
+                                  onClick={() => setTableLabel(preset)}
+                                  className={`rounded-xl px-3.5 py-2 text-xs font-black transition ${
+                                    isSelected
+                                      ? "bg-emerald-600 text-white shadow"
+                                      : "border border-slate-200 bg-slate-50 text-slate-700 hover:border-emerald-400 hover:bg-emerald-50"
+                                  }`}
+                                >
+                                  {preset}
+                                </button>
+                              );
+                            })}
+                          </div>
+                          <input
+                            type="text"
+                            value={tableLabel}
+                            onChange={(e) => setTableLabel(e.target.value)}
+                            placeholder="Ou saisissez manuellement (ex: Table VIP)..."
+                            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs font-bold text-slate-800 focus:border-emerald-600 focus:outline-none"
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
                 ) : (
@@ -913,7 +950,7 @@ export function ServeurClient({
               {/* Big Send Order Button */}
               <button
                 type="button"
-                disabled={busy || !cart.length || (zonesTablesEnabled && !tableLabel)}
+                disabled={busy || !cart.length}
                 onClick={() => void placeOrder()}
                 className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 py-4 text-base font-black text-white shadow-lg shadow-emerald-900/30 hover:from-emerald-500 hover:to-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
               >
