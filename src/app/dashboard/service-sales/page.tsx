@@ -17,6 +17,6 @@ export default async function ServiceSalesPage() {
       if (activity?.activity_code === "GYM" || activity?.activity_code === "LAUNDRY" || activity?.activity_code === "LODGING") activityCode = activity.activity_code === "LAUNDRY" ? "LAVAGE" : activity.activity_code;
     }
   }
-  if (!context.tenantId || context.company?.activity_type !== "POWER" || !activityCode) redirect("/dashboard");
+  if (!context.tenantId || (context.company?.activity_type !== "HOTEL_AUBERGE" && context.company?.activity_type !== "POWER") || !activityCode) redirect("/dashboard");
   return <DashboardShell firstName={context.user.user_metadata?.first_name ?? context.company?.name ?? "équipe"}><ServiceSalesClient tenantId={context.tenantId} activityCode={activityCode} /></DashboardShell>;
 }

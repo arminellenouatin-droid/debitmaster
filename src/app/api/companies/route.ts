@@ -6,7 +6,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getAuthorizationContext } from "@/lib/authorization";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
-const activityTypes = ["BUVETTE", "BAR_RESTAURANT", "NIGHTCLUB_LOUNGE", "POWER"] as const;
+const activityTypes = ["BUVETTE", "BAR_RESTAURANT", "NIGHTCLUB_LOUNGE", "HOTEL_AUBERGE"] as const;
 
 export async function GET() {
   try {
@@ -15,7 +15,7 @@ export async function GET() {
     if (!context.tenantIds.length) return NextResponse.json({ companies: [] });
     const { data, error } = await context.supabase
       .from("companies")
-      .select("id,name,activity_type,country,currency,language,status,created_at")
+      .select("id,name,activity_type,country,currency,language,address,city,ifu_number,trade_register,promoter_photo_path,identity_card_path,status,created_at")
       .in("id", context.tenantIds)
       .is("deleted_at", null)
       .order("created_at", { ascending: false })
@@ -32,7 +32,13 @@ export async function POST(request: Request) {
     const body = await request.json();
     const name = typeof body.name === "string" ? body.name.trim() : "";
     const activityType = typeof body.activityType === "string" ? body.activityType : "";
-    if (name.length < 2 || !activityTypes.includes(activityType as (typeof activityTypes)[number])) return NextResponse.json({ error: "Nom et type d’établissement valides requis." }, { status: 400 });
+    const country = typeof body.country === "string" ? body.country.trim().slice(0, 120) : "";
+    const currency = typeof body.currency === "string" ? body.currency.trim().slice(0, 12) : "";
+    const address = typeof body.address === "string" ? body.address.trim().slice(0, 240) : "";
+    const city = typeof body.city === "string" ? body.city.trim().slice(0, 120) : "";
+    const ifuNumber = typeof body.ifuNumber === "string" ? body.ifuNumber.trim().slice(0, 80) : "";
+    const tradeRegister = typeof body.tradeRegister === "string" ? body.tradeRegister.trim().slice(0, 120) : "";
+    if (name.length < 2 || !activityTypes.includes(activityType as (typeof activityTypes)[number]) || !country || !currency || !address || !city || !ifuNumber || !tradeRegister) return NextResponse.json({ error: "Nom, activité et informations légales complètes requis." }, { status: 400 });
 
     const context = await getAuthorizationContext();
     if (!context.user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
@@ -45,7 +51,7 @@ export async function POST(request: Request) {
     const referralCode = cookieStore.get("dm_affiliate_ref")?.value?.trim().toUpperCase() || "";
     const admin = referralCode ? createSupabaseAdminClient() : null;
     const { data: affiliate } = admin ? await admin.from("platform_affiliates").select("id,code").eq("code", referralCode).eq("status", "ACTIVE").maybeSingle() : { data: null };
-    const { data, error } = await supabase.from("companies").insert({ name, activity_type: activityType, unique_code: uniqueCode, owner_user_id: auth.user.id, affiliate_id: affiliate?.id ?? null }).select("id,name,activity_type,country,currency,language,status,created_at,affiliate_id").single();
+    const { data, error } = await supabase.from("companies").insert({ name, activity_type: activityType, country, currency, address, city, ifu_number: ifuNumber, trade_register: tradeRegister, unique_code: uniqueCode, owner_user_id: auth.user.id, affiliate_id: affiliate?.id ?? null }).select("id,name,activity_type,country,currency,language,address,city,ifu_number,trade_register,promoter_photo_path,identity_card_path,status,created_at,affiliate_id").single();
     if (error) {
       console.error("[companies.POST] Supabase insert failed", { code: error.code, hint: error.hint, message: error.message });
       const diagnostic = error.code === "42501" ? "TENANT_PERMISSION_DENIED" : error.code === "23505" ? "COMPANY_CODE_ALREADY_EXISTS" : error.code === "23502" ? "COMPANY_REQUIRED_FIELD_MISSING" : error.code === "23514" ? "COMPANY_INVALID_VALUE" : error.code === "23503" ? "COMPANY_REFERENCE_INVALID" : "COMPANY_CREATE_FAILED";

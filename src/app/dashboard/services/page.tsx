@@ -11,6 +11,6 @@ export default async function ServicesPage({ searchParams }: { searchParams: Pro
   if (!context.user) redirect("/connexion");
   const activity = (await searchParams).activity === "LAVAGE" ? "LAVAGE" : "GYM";
   const assigned = context.role === "GYM" || context.role === "LAVAGE" || context.role === "ADMINISTRATEUR" || context.role === "SUPERVISEUR";
-  if (!context.tenantId || context.company?.activity_type !== "POWER" || !assigned) redirect("/dashboard");
+  if (!context.tenantId || (context.company?.activity_type !== "HOTEL_AUBERGE" && context.company?.activity_type !== "POWER") || !assigned) redirect("/dashboard");
   return <DashboardShell firstName={context.user.user_metadata?.first_name ?? "équipe"}><ServiceCatalogClient tenantId={context.tenantId} activityCode={activity} /></DashboardShell>;
 }

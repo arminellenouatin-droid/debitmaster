@@ -71,7 +71,7 @@ export async function DashboardShell({ children, firstName }: { children: React.
   const isOwner = activeContext.role === "ADMINISTRATEUR" && activeContext.employeeId === null;
   const isPowerSupervisor =
     activeContext.role === "SUPERVISEUR" &&
-    activeContext.company?.activity_type === "POWER" &&
+    (activeContext.company?.activity_type === "HOTEL_AUBERGE" || activeContext.company?.activity_type === "POWER") &&
     activeContext.permissions.has("power.view");
   let assignedServiceRole: keyof typeof serviceNavigation | null = null;
   if (activeContext.employeeId && activeContext.tenantId) {
@@ -130,7 +130,7 @@ export async function DashboardShell({ children, firstName }: { children: React.
     : navigation.filter(([, label]) => label !== "Ventes" && label !== "Approvisionnement");
 
   const visibleNavigation: ReadonlyArray<NavItem> =
-    activeContext.company?.activity_type === "POWER" &&
+    (activeContext.company?.activity_type === "HOTEL_AUBERGE" || activeContext.company?.activity_type === "POWER") &&
     activeContext.permissions.has("power.view") &&
     !serviceRole &&
     !baseNavigation.some(([, label]) => label === "Gestion Power")

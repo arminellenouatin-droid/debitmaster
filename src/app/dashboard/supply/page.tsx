@@ -14,6 +14,6 @@ export default async function SupplyPage() {
   if (!auth.user) redirect("/connexion");
   const authorization = await getAuthorizationContext();
   const active = await getActiveTenantContext();
-  if (!(authorization.role === "ADMINISTRATEUR" || authorization.role === "SUPERVISEUR") || active.company?.activity_type !== "POWER") redirect("/dashboard");
+  if (!(authorization.role === "ADMINISTRATEUR" || authorization.role === "SUPERVISEUR") || (active.company?.activity_type !== "HOTEL_AUBERGE" && active.company?.activity_type !== "POWER")) redirect("/dashboard");
   return <DashboardShell firstName={auth.user.user_metadata?.first_name ?? "superviseur"}><SupplyClient tenantId={active.tenantId ?? ""} companyName={active.company?.name ?? "Établissement actif"} /></DashboardShell>;
 }

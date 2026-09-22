@@ -7,6 +7,6 @@ import { WifiClient } from "./WifiClient";
 export default async function WifiPage() {
   const context = await getActiveTenantContext();
   if (!context.user) redirect("/connexion");
-  if (!context.tenantId || context.company?.activity_type !== "POWER" || !["GERANT", "SUPERVISEUR", "ADMINISTRATEUR"].includes(context.role ?? "") || !context.permissions.has("services.view")) redirect("/dashboard");
+  if (!context.tenantId || (context.company?.activity_type !== "HOTEL_AUBERGE" && context.company?.activity_type !== "POWER") || !["GERANT", "SUPERVISEUR", "ADMINISTRATEUR"].includes(context.role ?? "") || !context.permissions.has("services.view")) redirect("/dashboard");
   return <DashboardShell firstName={context.user.user_metadata?.first_name ?? context.company?.name ?? "équipe"}><WifiClient tenantId={context.tenantId} /></DashboardShell>;
 }

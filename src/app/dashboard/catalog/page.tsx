@@ -26,7 +26,7 @@ export default async function CatalogPage() {
     redirect("/dashboard");
   }
 
-  const isPower = context.company?.activity_type === "POWER";
+  const isPower = context.company?.activity_type === "HOTEL_AUBERGE" || context.company?.activity_type === "POWER";
   const canManage =
     context.role === "ADMINISTRATEUR" ||
     context.role === "SUPERVISEUR" ||

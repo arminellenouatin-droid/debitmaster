@@ -13,7 +13,7 @@ export async function GET(request: Request) {
     const context = await getActiveTenantContext();
     if (!context.user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
     if (!context.tenantId || !context.company) return NextResponse.json({ error: "Aucun établissement actif." }, { status: 404 });
-    if (!(context.role === "ADMINISTRATEUR" || context.role === "SUPERVISEUR") || context.company.activity_type !== "POWER" || !can(context, "stock.view")) return NextResponse.json({ error: "Accès réservé au propriétaire ou au superviseur Power." }, { status: 403 });
+    if (!(context.role === "ADMINISTRATEUR" || context.role === "SUPERVISEUR") || (context.company.activity_type !== "HOTEL_AUBERGE" && context.company.activity_type !== "POWER") || !can(context, "stock.view")) return NextResponse.json({ error: "Accès réservé au propriétaire ou au superviseur Hôtel et auberge." }, { status: 403 });
     const url = new URL(request.url); const { start, end } = period(url); const tenantId = context.tenantId; const readClient = createSupabaseAdminClient();
     const [productsResult, categoriesResult, storesResult, positionsResult, movementsResult, purchasesResult, controlsResult] = await Promise.all([
       readClient.from("products").select("id,name,product_type,unit,stock_family,category_id,price,current_stock,alert_threshold,safety_threshold,packaging_label").eq("tenant_id", tenantId).is("deleted_at", null).order("name").limit(1000),
