@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { getAuthorizationContext } from "@/lib/authorization";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { MtnMomoError, requestToPay } from "@/lib/mtn-momo";
-import { addSubscriptionPeriod, billingPeriodCodes, getSubscriptionActivityCatalog, getSubscriptionCatalog, getSubscriptionPlan, getSubscriptionPrice, normalizeActivityCode, type BillingPeriod, type SubscriptionPriceOverride } from "@/lib/subscription-plans";
+import { addSubscriptionPeriod, billingPeriodCodes, getSubscriptionActivityCatalog, getSubscriptionCatalog, getSubscriptionPlan, getSubscriptionPrice, isQuoteRequired, normalizeActivityCode, type BillingPeriod, type SubscriptionPriceOverride } from "@/lib/subscription-plans";
 
 function ownerTenantId(context: Awaited<ReturnType<typeof getAuthorizationContext>>, requestedTenantId: string) {
   if (context.employeeId) return null;
@@ -32,8 +32,9 @@ export async function GET(request: Request) {
       .maybeSingle();
     if (companyError || !company) return NextResponse.json({ error: "Établissement introuvable." }, { status: 404 });
 
-    const [{ data: payments, error: paymentsError }, overrides] = await Promise.all([
+    const [{ data: payments, error: paymentsError }, { data: quoteRequests }, overrides] = await Promise.all([
       context.supabase.from("saas_subscription_payments").select("id,plan,billing_period,amount,currency,status,provider_reference,period_start,period_end,paid_at,created_at").eq("tenant_id", tenantId).order("created_at", { ascending: false }).limit(12),
+      context.supabase.from("subscription_quote_requests").select("id,requested_activities,notes,status,quoted_amount,currency,admin_notes,created_at,updated_at").eq("tenant_id", tenantId).order("created_at", { ascending: false }).limit(10),
       loadPriceOverrides(context.supabase),
     ]);
     if (paymentsError) return NextResponse.json({ error: "Impossible de charger l’historique d’abonnement." }, { status: 500 });
@@ -45,6 +46,7 @@ export async function GET(request: Request) {
       activities: getSubscriptionActivityCatalog(overrides, billingPeriod),
       current: { plan: company.subscription_plan, status: company.status, trialEndsAt: company.trial_ends_at, expiresAt: company.subscription_expires_at },
       payments: payments ?? [],
+      quoteRequests: quoteRequests ?? [],
     });
   } catch {
     return NextResponse.json({ error: "Impossible de charger les plans d’abonnement." }, { status: 500 });
@@ -64,6 +66,7 @@ export async function POST(request: Request) {
     const mobileNumber = typeof body.mobileNumber === "string" ? body.mobileNumber.trim() : "";
     const definition = getSubscriptionPlan(plan);
     if (!definition) return NextResponse.json({ error: "Formule d’abonnement invalide." }, { status: 400 });
+    if (isQuoteRequired(plan)) return NextResponse.json({ error: "Le plan spécial est accessible uniquement après une demande de cotation." }, { status: 400 });
     if (!mobileNumber) return NextResponse.json({ error: "Le numéro MTN MoMo utilisé pour l’abonnement est obligatoire." }, { status: 400 });
 
     const { data: company, error: companyError } = await context.supabase

@@ -31,8 +31,8 @@ function isOwner(context: Awaited<ReturnType<typeof getAuthorizationContext>>, t
   return Boolean(context.user && !context.employeeId && context.tenantIds.includes(tenantId));
 }
 
-async function isPowerTenant(context: Awaited<ReturnType<typeof getAuthorizationContext>>, tenantId: string) {
-  const { data } = await context.supabase.from("companies").select("id").eq("id", tenantId).eq("activity_type", "POWER").is("deleted_at", null).maybeSingle();
+async function isSpecialTenant(context: Awaited<ReturnType<typeof getAuthorizationContext>>, tenantId: string) {
+  const { data } = await context.supabase.from("companies").select("id").eq("id", tenantId).eq("subscription_plan", "SPECIAL").is("deleted_at", null).maybeSingle();
   return Boolean(data);
 }
 
@@ -71,9 +71,9 @@ export async function POST(request: Request) {
     if (!tenantId || firstName.length < 2 || lastName.length < 2 || !phone || password.length < 8 || !positions.includes(position as (typeof positions)[number])) return NextResponse.json({ error: "Prénom, nom, téléphone international, rôle et mot de passe initial valides requis." }, { status: 400 });
     const context = await getAuthorizationContext();
     if (!context.user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
-    const allowedManager = isOwner(context, tenantId) || (context.role === "SUPERVISEUR" && await isPowerTenant(context, tenantId) && can(context, "team.manage"));
-    if (!allowedManager) return NextResponse.json({ error: "Seul le propriétaire ou le superviseur Power autorisé peut créer directement un compte équipe." }, { status: 403 });
-    if (!mustChangePassword && !await isPowerTenant(context, tenantId)) return NextResponse.json({ error: "Le mot de passe initial sans changement obligatoire est réservé aux essais Power." }, { status: 403 });
+    const allowedManager = isOwner(context, tenantId) || (context.role === "SUPERVISEUR" && await isSpecialTenant(context, tenantId) && can(context, "team.manage"));
+    if (!allowedManager) return NextResponse.json({ error: "Seul le propriétaire ou le superviseur plan spécial autorisé peut créer directement un compte équipe." }, { status: 403 });
+    if (!mustChangePassword && !await isSpecialTenant(context, tenantId)) return NextResponse.json({ error: "Le mot de passe initial sans changement obligatoire est réservé aux essais plan spécial." }, { status: 403 });
 
     const admin = createSupabaseAdminClient();
     const { data: authData, error: authError } = await admin.auth.admin.createUser({ email: syntheticEmailForPhone(phone), phone, password, email_confirm: true, phone_confirm: true, user_metadata: { first_name: firstName, last_name: lastName, account_type: "STAFF" } });
@@ -99,7 +99,7 @@ export async function PATCH(request: Request) {
     if (salaryEmployeeId && salaryTenantId && (body.salaryAmount !== undefined || body.salaryFrequency !== undefined)) {
       const context = await getAuthorizationContext();
       if (!context.user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
-      const allowedManager = isOwner(context, salaryTenantId) || (context.role === "SUPERVISEUR" && await isPowerTenant(context, salaryTenantId) && can(context, "team.salary.manage"));
+      const allowedManager = isOwner(context, salaryTenantId) || (context.role === "SUPERVISEUR" && await isSpecialTenant(context, salaryTenantId) && can(context, "team.salary.manage"));
       if (!allowedManager) return NextResponse.json({ error: "Permission insuffisante pour gérer les salaires." }, { status: 403 });
       const salaryAmount = Number(body.salaryAmount);
       const salaryFrequency = typeof body.salaryFrequency === "string" ? body.salaryFrequency : "MONTHLY";

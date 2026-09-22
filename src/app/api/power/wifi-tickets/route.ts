@@ -1,4 +1,4 @@
-// DebitManager Power: Gérant WIFI ticket ledger, always tenant-scoped.
+// DebitManager activité complémentaire Wi-Fi : accès réservé au plan SPECIAL.
 import { NextResponse } from "next/server";
 import { getAuthorizationContext, can } from "@/lib/authorization";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -10,8 +10,8 @@ const CATALOG = [
 ] as const;
 async function allowed(context: Awaited<ReturnType<typeof getAuthorizationContext>>, tenantId: string) {
   if (!context.user || !tenantId || !context.tenantIds.includes(tenantId) || (!can(context, "services.view") && !can(context, "finance.view"))) return false;
-  const { data: company } = await context.supabase.from("companies").select("activity_type").eq("id", tenantId).maybeSingle();
-  return (company?.activity_type === "HOTEL_AUBERGE" || company?.activity_type === "POWER");
+  const { data: company } = await context.supabase.from("companies").select("subscription_plan").eq("id", tenantId).eq("subscription_plan", "SPECIAL").maybeSingle();
+  return Boolean(company);
 }
 
 export async function GET(request: Request) {

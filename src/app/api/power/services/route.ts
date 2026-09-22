@@ -1,12 +1,12 @@
-// DebitManager Power: prestations non-stockées, avec prix gérés par le superviseur ou le propriétaire.
+// DebitManager plan spécial: prestations non-stockées, avec prix gérés par le superviseur ou le propriétaire.
 import { NextResponse } from "next/server";
 import { getAuthorizationContext, can } from "@/lib/authorization";
 
 const normalize = (value: unknown) => typeof value === "string" ? value.trim() : "";
 
-async function powerTenant(context: Awaited<ReturnType<typeof getAuthorizationContext>>, tenantId: string) {
+async function specialTenant(context: Awaited<ReturnType<typeof getAuthorizationContext>>, tenantId: string) {
   if (!tenantId || !(context.tenantIds as string[]).includes(tenantId)) return false;
-  const { data } = await context.supabase.from("companies").select("id").eq("id", tenantId).eq("activity_type", "POWER").is("deleted_at", null).maybeSingle();
+  const { data } = await context.supabase.from("companies").select("id").eq("id", tenantId).eq("subscription_plan", "SPECIAL").is("deleted_at", null).maybeSingle();
   return Boolean(data);
 }
 
@@ -14,7 +14,7 @@ export async function GET(request: Request) {
   const context = await getAuthorizationContext();
   const tenantId = new URL(request.url).searchParams.get("tenantId") ?? context.tenantIds[0] ?? "";
   if (!context.user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
-  if (!await powerTenant(context, tenantId) || !can(context, "services.view")) return NextResponse.json({ error: "Accès aux services Power refusé." }, { status: 403 });
+  if (!await specialTenant(context, tenantId) || !can(context, "services.view")) return NextResponse.json({ error: "Accès aux services plan spécial refusé." }, { status: 403 });
   const activityCode = new URL(request.url).searchParams.get("activityCode")?.trim().toUpperCase() ?? "";
   let activityId = "";
   if (activityCode) {
@@ -25,7 +25,7 @@ export async function GET(request: Request) {
   let query = context.supabase.from("company_services").select("id,tenant_id,activity_id,name,description,price_xof,billing_unit,image_url,is_active,created_at,updated_at").eq("tenant_id", tenantId).eq("is_active", true).order("name").limit(300);
   if (activityId) query = query.eq("activity_id", activityId);
   const { data, error } = await query;
-  if (error) return NextResponse.json({ error: "Impossible de charger les services Power." }, { status: 500 });
+  if (error) return NextResponse.json({ error: "Impossible de charger les services plan spécial." }, { status: 500 });
   return NextResponse.json({ services: data ?? [] });
 }
 
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
     const imageUrl = normalize(body.imageUrl) || null;
     const context = await getAuthorizationContext();
     if (!context.user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
-    if (!await powerTenant(context, tenantId) || !can(context, "services.manage")) return NextResponse.json({ error: "Permission insuffisante pour gérer les services Power." }, { status: 403 });
+    if (!await specialTenant(context, tenantId) || !can(context, "services.manage")) return NextResponse.json({ error: "Permission insuffisante pour gérer les services plan spécial." }, { status: 403 });
 
     if (!activityId && activityCode) {
       const { data: act } = await context.supabase.from("company_activities").select("id").eq("tenant_id", tenantId).eq("activity_code", activityCode).maybeSingle();
@@ -51,9 +51,9 @@ export async function POST(request: Request) {
 
     if (!activityId || name.length < 2 || !Number.isSafeInteger(priceXof) || priceXof < 0) return NextResponse.json({ error: "Activité, nom et prix valides requis." }, { status: 400 });
     const { data: activity } = await context.supabase.from("company_activities").select("id").eq("id", activityId).eq("tenant_id", tenantId).maybeSingle();
-    if (!activity) return NextResponse.json({ error: "Activité Power introuvable." }, { status: 404 });
+    if (!activity) return NextResponse.json({ error: "Activité plan spécial introuvable." }, { status: 404 });
     const { data, error } = await context.supabase.from("company_services").insert({ tenant_id: tenantId, activity_id: activityId, name: name.slice(0, 160), description: description || null, price_xof: priceXof, billing_unit: billingUnit.slice(0, 40), image_url: imageUrl, created_by: context.user.id }).select("id,tenant_id,activity_id,name,description,price_xof,billing_unit,image_url,is_active,created_at,updated_at").single();
-    if (error) return NextResponse.json({ error: "Impossible de créer le service Power." }, { status: 400 });
+    if (error) return NextResponse.json({ error: "Impossible de créer le service plan spécial." }, { status: 400 });
     return NextResponse.json({ service: data }, { status: 201 });
   } catch {
     return NextResponse.json({ error: "Requête invalide." }, { status: 400 });
@@ -67,7 +67,7 @@ export async function PATCH(request: Request) {
     const serviceId = normalize(body.serviceId);
     const context = await getAuthorizationContext();
     if (!context.user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
-    if (!await powerTenant(context, tenantId) || !can(context, "services.manage")) return NextResponse.json({ error: "Permission insuffisante pour gérer les services Power." }, { status: 403 });
+    if (!await specialTenant(context, tenantId) || !can(context, "services.manage")) return NextResponse.json({ error: "Permission insuffisante pour gérer les services plan spécial." }, { status: 403 });
     const patch = {
       ...(body.name !== undefined ? { name: normalize(body.name).slice(0, 160) } : {}),
       ...(body.description !== undefined ? { description: normalize(body.description).slice(0, 500) || null } : {}),
@@ -79,7 +79,7 @@ export async function PATCH(request: Request) {
     };
     if (!serviceId || (patch.name !== undefined && patch.name.length < 2) || (patch.price_xof !== undefined && (!Number.isSafeInteger(patch.price_xof) || patch.price_xof < 0)) || (body.isActive !== undefined && typeof body.isActive !== "boolean")) return NextResponse.json({ error: "Service et valeurs valides requis." }, { status: 400 });
     const { data, error } = await context.supabase.from("company_services").update(patch).eq("id", serviceId).eq("tenant_id", tenantId).select("id,tenant_id,activity_id,name,description,price_xof,billing_unit,image_url,is_active,created_at,updated_at").single();
-    if (error || !data) return NextResponse.json({ error: "Impossible de mettre à jour le service Power." }, { status: 400 });
+    if (error || !data) return NextResponse.json({ error: "Impossible de mettre à jour le service plan spécial." }, { status: 400 });
     return NextResponse.json({ service: data });
   } catch {
     return NextResponse.json({ error: "Requête invalide." }, { status: 400 });
