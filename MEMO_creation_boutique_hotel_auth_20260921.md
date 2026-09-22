@@ -18,3 +18,8 @@ Les documents sont des données sensibles : types MIME et tailles contrôlés, n
 - Corriger le catalogue d’activités et le formulaire de création.
 - Corriger la résolution du compte propriétaire et documenter le cas d’identifiants techniques.
 - Exécuter typecheck, build, tests SQL et parcours navigateur.
+
+## État final
+La migration Supabase a été appliquée le 22 septembre 2026. Le compte test LE TEMPLE DU PLAISIR est désormais classé `HOTEL_AUBERGE`; les champs historiques non renseignés restent null afin de ne pas inventer de données légales. Le bucket `company-documents` est privé.
+
+Le typecheck et le build local sont passés. La production a répondu HTTP 200 après le premier déploiement. L’interface de production affiche bien les quatre activités, dont « Hôtel et auberge », sans afficher Power dans les nouvelles créations. La connexion accepte l’e-mail, le téléphone et le nom exact de l’établissement; le libellé utilisateur a été aligné. Le dernier commit de libellé est publié et attend son déploiement Vercel.
