@@ -169,6 +169,9 @@ export function ServeurClient({
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [selectedType, setSelectedType] = useState<"BEVERAGE" | "MEAL">("BEVERAGE");
   const [productSearch, setProductSearch] = useState("");
+  const [productPickerOpen, setProductPickerOpen] = useState(false);
+  const [pendingMeal, setPendingMeal] = useState<Product | null>(null);
+  const [pendingAccompaniment, setPendingAccompaniment] = useState<(typeof accompaniments)[number]>("Aucun");
   const [selectedProduct, setSelectedProduct] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [accompaniment, setAccompaniment] = useState<(typeof accompaniments)[number]>("Aucun");
@@ -309,14 +312,26 @@ export function ServeurClient({
   }, [data, orderSearch]);
 
   // Fast direct quantity increment / decrement helper for staff on touch screens
-  const incProduct = (product: Product) => {
+  const addProduct = (product: Product, mealAccompaniment = "Aucun") => {
     setCart((current) => {
-      const existing = current.find((line) => line.product.id === product.id);
+      const existing = current.find((line) => line.product.id === product.id && line.accompaniment === mealAccompaniment);
       if (existing) {
-        return current.map((line) => (line.product.id === product.id ? { ...line, quantity: line.quantity + 1 } : line));
+        return current.map((line) => line === existing ? { ...line, quantity: line.quantity + 1 } : line);
       }
-      return [...current, { product, quantity: 1, fulfillmentUnit: selectedType, accompaniment: selectedType === "MEAL" ? accompaniment : "Aucun" }];
+      return [...current, { product, quantity: 1, fulfillmentUnit: selectedType, accompaniment: selectedType === "MEAL" ? mealAccompaniment : "Aucun" }];
     });
+    setPendingMeal(null);
+    setPendingAccompaniment("Aucun");
+    setProductPickerOpen(false);
+  };
+
+  const selectProduct = (product: Product) => {
+    if (selectedType === "MEAL") {
+      setPendingMeal(product);
+      setPendingAccompaniment("Aucun");
+      return;
+    }
+    addProduct(product);
   };
 
   const decProduct = (productId: string) => {
@@ -331,10 +346,10 @@ export function ServeurClient({
   };
 
   const getProductQty = (productId: string) => {
-    return cart.find((line) => line.product.id === productId)?.quantity ?? 0;
+    return cart.filter((line) => line.product.id === productId).reduce((sum, line) => sum + line.quantity, 0);
   };
 
-  const removeLine = (productId: string) => setCart((current) => current.filter((line) => line.product.id !== productId));
+  const removeLine = (productId: string, mealAccompaniment = "Aucun") => setCart((current) => current.filter((line) => line.product.id !== productId || line.accompaniment !== mealAccompaniment));
 
   const placeOrder = async () => {
     if (!cart.length) return setNotice("Ajoutez au moins un article à la commande.");
@@ -805,7 +820,7 @@ export function ServeurClient({
                   <div className="inline-flex rounded-xl bg-slate-100 p-1 ring-1 ring-slate-200">
                     <button
                       type="button"
-                      onClick={() => setSelectedType("BEVERAGE")}
+                      onClick={() => { setSelectedType("BEVERAGE"); setProductSearch(""); setProductPickerOpen(false); setPendingMeal(null); }}
                       className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-xs font-black transition ${
                         selectedType === "BEVERAGE"
                           ? "bg-emerald-700 text-white shadow"
@@ -817,7 +832,7 @@ export function ServeurClient({
                     </button>
                     <button
                       type="button"
-                      onClick={() => setSelectedType("MEAL")}
+                      onClick={() => { setSelectedType("MEAL"); setProductSearch(""); setProductPickerOpen(false); setPendingMeal(null); }}
                       className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-xs font-black transition ${
                         selectedType === "MEAL"
                           ? "bg-emerald-700 text-white shadow"
@@ -830,80 +845,50 @@ export function ServeurClient({
                   </div>
                 </div>
 
-                {/* Instant Search Filter */}
+                {/* Product picker: the catalog stays hidden until the serveuse searches or opens it. */}
                 <div className="relative mt-4">
                   <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-400" />
                   <input
                     value={productSearch}
-                    onChange={(e) => setProductSearch(e.target.value)}
-                    placeholder={selectedType === "BEVERAGE" ? "Rechercher une boisson (ex: Béninoise, Guinness, Eau)..." : "Rechercher un plat (ex: Poulet braisé, Mérou)..."}
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-sm font-medium text-slate-800 placeholder-slate-400 focus:border-emerald-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600/20"
+                    onFocus={() => setProductPickerOpen(true)}
+                    onChange={(e) => { setProductSearch(e.target.value); setProductPickerOpen(true); }}
+                    placeholder={selectedType === "BEVERAGE" ? "Rechercher ou choisir une boisson..." : "Rechercher ou choisir un repas..."}
+                    aria-label={selectedType === "BEVERAGE" ? "Rechercher une boisson" : "Rechercher un repas"}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-16 text-sm font-medium text-slate-800 placeholder-slate-400 focus:border-emerald-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600/20"
                   />
-                  {productSearch && (
-                    <button
-                      onClick={() => setProductSearch("")}
-                      className="absolute right-3.5 top-3.5 text-xs font-bold text-slate-400 hover:text-slate-600"
-                    >
-                      Effacer
+                  {(productSearch || productPickerOpen) && (
+                    <button type="button" onClick={() => { setProductSearch(""); setProductPickerOpen(false); }} className="absolute right-3.5 top-3.5 text-xs font-bold text-slate-400 hover:text-slate-600">
+                      Fermer
                     </button>
                   )}
                 </div>
 
-                {/* Products Grid with +/- Touch Buttons */}
-                <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
-                  {filteredProducts.map((p) => {
-                    const qty = getProductQty(p.id);
-                    return (
-                      <div
-                        key={p.id}
-                        className={`flex flex-col justify-between rounded-xl border p-3.5 transition-all ${
-                          qty > 0
-                            ? "border-emerald-500 bg-emerald-50/50 shadow-sm ring-1 ring-emerald-500/50"
-                            : "border-slate-200 bg-white hover:border-slate-300"
-                        }`}
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <p className="font-bold text-slate-900 text-sm leading-snug">{p.name}</p>
-                            <p className="mt-1 text-xs font-black text-amber-600">{money(p.price)}</p>
-                          </div>
-                          {selectedType === "BEVERAGE" ? (
-                            <Wine className="h-5 w-5 text-amber-500 shrink-0" />
-                          ) : (
-                            <UtensilsCrossed className="h-5 w-5 text-emerald-600 shrink-0" />
-                          )}
-                        </div>
+                {pendingMeal && (
+                  <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4" role="dialog" aria-label={`Accompagnement pour ${pendingMeal.name}`}>
+                    <p className="text-sm font-black text-slate-900">{pendingMeal.name}</p>
+                    <label className="mt-3 block text-xs font-black text-slate-700">Sélectionner un accompagnement ou aucun
+                      <select value={pendingAccompaniment} onChange={(event) => setPendingAccompaniment(event.target.value as (typeof accompaniments)[number])} className="mt-2 h-11 w-full rounded-lg border border-emerald-200 bg-white px-3 text-sm font-bold text-slate-800">
+                        {accompaniments.map((item) => <option key={item} value={item}>{item}</option>)}
+                      </select>
+                    </label>
+                    <button type="button" onClick={() => addProduct(pendingMeal, pendingAccompaniment)} className="mt-3 min-h-11 w-full rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-black text-white hover:bg-emerald-600">
+                      Ajouter le repas
+                    </button>
+                  </div>
+                )}
 
-                        {/* Direct +/- Stepper with large touch targets */}
-                        <div className="mt-3.5 flex items-center justify-between rounded-xl bg-slate-100 p-1">
-                          <button
-                            type="button"
-                            onClick={() => decProduct(p.id)}
-                            disabled={qty === 0}
-                            className="flex h-9 w-9 items-center justify-center rounded-lg bg-white font-bold text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-40"
-                          >
-                            <Minus className="h-4 w-4" />
-                          </button>
-                          <span className={`text-base font-black ${qty > 0 ? "text-emerald-700" : "text-slate-400"}`}>
-                            {qty}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => incProduct(p)}
-                            className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-600 font-bold text-white shadow-sm hover:bg-emerald-500 active:scale-95"
-                          >
-                            <Plus className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                  {!filteredProducts.length && (
-                    <div className="col-span-full py-8 text-center text-sm text-slate-400">
-                      Aucun article trouvé dans cette catégorie.
-                    </div>
-                  )}
-                </div>
+                {productPickerOpen && !pendingMeal && (
+                  <div className="mt-3 max-h-72 overflow-y-auto rounded-xl border border-slate-200 bg-white p-2 shadow-lg" role="listbox" aria-label={selectedType === "BEVERAGE" ? "Boissons disponibles" : "Repas disponibles"}>
+                    {filteredProducts.map((product) => {
+                      const qty = getProductQty(product.id);
+                      return <button key={product.id} type="button" onClick={() => selectProduct(product)} className="flex min-h-14 w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left hover:bg-emerald-50 focus:bg-emerald-50 focus:outline-none">
+                        <span className="min-w-0"><span className="block truncate text-sm font-bold text-slate-900">{product.name}</span><span className="block text-xs font-black text-amber-600">{money(product.price)}{qty ? ` · ${qty} au panier` : ""}</span></span>
+                        {selectedType === "BEVERAGE" ? <Wine className="h-5 w-5 shrink-0 text-amber-500" /> : <UtensilsCrossed className="h-5 w-5 shrink-0 text-emerald-600" />}
+                      </button>;
+                    })}
+                    {!filteredProducts.length && <p className="px-3 py-6 text-center text-sm text-slate-400">Aucun article trouvé.</p>}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -925,13 +910,13 @@ export function ServeurClient({
                 {/* Items in Cart */}
                 <div className="mt-4 max-h-[300px] overflow-y-auto divide-y divide-slate-100">
                   {cart.map((line) => (
-                    <div key={line.product.id} className="flex items-center justify-between py-3 text-sm">
+                    <div key={`${line.product.id}-${line.accompaniment ?? "Aucun"}`} className="flex items-center justify-between py-3 text-sm">
                       <div className="pr-2">
                         <p className="font-bold text-slate-900">{line.product.name}</p>
                         <p className="text-xs text-slate-500">
                           {line.quantity} × {money(line.product.price)} ·{" "}
                           <span className="text-amber-700 font-semibold">
-                            {line.fulfillmentUnit === "MEAL" ? "Cuisine" : "Bar/Comptoir"}
+                            {line.fulfillmentUnit === "MEAL" ? `Cuisine · ${line.accompaniment ?? "Aucun"}` : "Bar/Comptoir"}
                           </span>
                         </p>
                       </div>
@@ -939,7 +924,7 @@ export function ServeurClient({
                         <span className="font-black text-slate-900">{money(line.product.price * line.quantity)}</span>
                         <button
                           type="button"
-                          onClick={() => removeLine(line.product.id)}
+                          onClick={() => removeLine(line.product.id, line.accompaniment)}
                           className="rounded-lg p-1 text-red-500 hover:bg-red-50"
                         >
                           <X className="h-4 w-4" />
