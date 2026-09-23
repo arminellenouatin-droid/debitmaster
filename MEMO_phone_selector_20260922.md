@@ -11,3 +11,7 @@ Le client envoie le numéro composé avec le préfixe choisi. Les API existantes
 
 ## Vérification
 La production conserve les numéros internationaux existants et ne contient plus d’espaces dans les colonnes publiques contrôlées. Le typecheck et le build doivent être validés avant publication.
+
+
+## Ajustement du 23 septembre 2026
+La connexion ne propose désormais que deux options : **E-mail** et **Téléphone**. La tentative de connexion par nom d’établissement a été retirée de l’interface et de l’API, car le nom d’établissement n’est pas un identifiant lié de façon fiable à l’agent utilisateur.

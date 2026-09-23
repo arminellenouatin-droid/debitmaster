@@ -14,8 +14,7 @@ export async function POST(request: Request) {
     const isEmail = identifier.includes("@");
     const email = isEmail ? identifier.toLowerCase() : "";
     const phone = isEmail ? "" : normalizePhone(identifier);
-    const isPotentialEstablishmentName = !isEmail && !phone && identifier.length >= 2;
-    if ((!email || !email.includes("@")) && !phone && !isPotentialEstablishmentName) return NextResponse.json({ error: "Renseignez un e-mail, un téléphone international ou le nom exact de votre établissement." }, { status: 400 });
+    if ((!email || !email.includes("@")) && !phone) return NextResponse.json({ error: "Renseignez un e-mail ou un téléphone international." }, { status: 400 });
     if (!password) return NextResponse.json({ error: "Renseignez votre mot de passe." }, { status: 400 });
 
     const supabase = await createSupabaseServerClient();
@@ -37,22 +36,9 @@ export async function POST(request: Request) {
         // Le fallback ne révèle pas si un compte existe ; les nouveaux comptes utilisent l’alias interne.
       }
     }
-    if (!phone && !email && isPotentialEstablishmentName) {
-      try {
-        const admin = createSupabaseAdminClient();
-        const { data: companies } = await admin.from("companies").select("owner_user_id").ilike("name", identifier).is("deleted_at", null).limit(2);
-        const ownerIds = Array.from(new Set((companies ?? []).map((company) => company.owner_user_id).filter(Boolean)));
-        if (ownerIds.length === 1) {
-          const { data: authUser } = await admin.auth.admin.getUserById(ownerIds[0]);
-          resolvedEmail = authUser.user?.email ?? "";
-        }
-      } catch {
-        // L’identifiant établissement reste volontairement générique si la résolution échoue.
-      }
-    }
     const authInputs: Array<{ email: string; password: string } | { phone: string; password: string }> = email
       ? [{ email, password }]
-      : [{ email: resolvedEmail || (phone ? syntheticEmailForPhone(phone) : "unknown@invalid.debitmanager.local"), password }];
+      : [{ email: resolvedEmail || syntheticEmailForPhone(phone), password }];
     let data: Awaited<ReturnType<typeof supabase.auth.signInWithPassword>>["data"] = { user: null, session: null };
     let error: Awaited<ReturnType<typeof supabase.auth.signInWithPassword>>["error"] = null;
     for (const authInput of authInputs) {
