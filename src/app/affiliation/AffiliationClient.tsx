@@ -109,7 +109,7 @@ export function AffiliationClient({ firstName = "" }: { firstName?: string }) {
           </div>
           <div className="flex gap-4 py-5">
             <span className="text-sm font-black text-[var(--secondary)]">03</span>
-            <div><h2 className="font-black text-[var(--primary)]">Suivez 10 %</h2><p className="mt-1 text-sm leading-6 text-[var(--muted)]">Chaque abonnement confirmé de vos établissements attribués alimente vos commissions, renouvellements compris.</p></div>
+            <div><h2 className="font-black text-[var(--primary)]">Suivez 20 %</h2><p className="mt-1 text-sm leading-6 text-[var(--muted)]">Chaque abonnement confirmé de vos établissements attribués alimente vos commissions, renouvellements compris.</p></div>
           </div>
         </div>
       </div>
@@ -117,7 +117,7 @@ export function AffiliationClient({ firstName = "" }: { firstName?: string }) {
       <section className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-6 shadow-[0_18px_42px_-30px_var(--primary)] sm:p-8" aria-labelledby="affiliate-form-title">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div><p className="text-xs font-black uppercase tracking-[0.16em] text-[var(--secondary)]">Accès affilié</p><h2 id="affiliate-form-title" className="mt-2 text-2xl font-black tracking-[-0.03em] text-[var(--primary)]">{mode === "signup" ? "Créer mon compte affilié" : "Ouvrir mon compte"}</h2></div>
-          <span className="rounded-full bg-[var(--accent-soft)] px-3 py-1.5 text-xs font-black text-[var(--primary)]">Commission : 10 %</span>
+          <span className="rounded-full bg-[var(--accent-soft)] px-3 py-1.5 text-xs font-black text-[var(--primary)]">Commission : 20 %</span>
         </div>
 
         <div className="mt-7 grid grid-cols-2 gap-2 rounded-lg bg-[var(--surface-muted)] p-1" role="tablist" aria-label="Choix du parcours">
