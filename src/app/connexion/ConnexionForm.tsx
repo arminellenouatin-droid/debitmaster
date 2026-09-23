@@ -1,33 +1,34 @@
-// DebitManager / maquette connexion: identifiant unique email ou téléphone, feedback lisible et premier accès guidé.
+// DebitManager connexion: l’identifiant choisi détermine les champs affichés.
 "use client";
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import { PhoneField } from "@/components/PhoneField";
+import { composePhone } from "@/lib/phone-countries";
+
+type LoginMode = "EMAIL" | "PHONE" | "ESTABLISHMENT";
 
 export function ConnexionForm() {
   const router = useRouter();
-  const [identifier, setIdentifier] = useState("");
+  const [mode, setMode] = useState<LoginMode>("EMAIL");
+  const [email, setEmail] = useState("");
+  const [countryCode, setCountryCode] = useState("BJ");
+  const [nationalNumber, setNationalNumber] = useState("");
+  const [establishment, setEstablishment] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
 
+  function selectMode(nextMode: LoginMode) { setMode(nextMode); setError(""); }
   async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setError("");
-    setPending(true);
+    event.preventDefault(); setError(""); setPending(true);
+    const identifier = mode === "EMAIL" ? email : mode === "PHONE" ? composePhone(countryCode, nationalNumber) : establishment.trim();
     try {
       const response = await fetch("/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ identifier, password }) });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error ?? "Connexion impossible.");
+      const result = await response.json(); if (!response.ok) throw new Error(result.error ?? "Connexion impossible.");
       const destination = result.mustChangePassword ? "/dashboard/settings?firstLogin=1" : result.space === "MASTER_ADMIN" ? "/admin" : result.space === "AFFILIATE" ? "/affilie" : "/dashboard";
-      router.push(destination);
-      router.refresh();
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Connexion impossible.");
-    } finally {
-      setPending(false);
-    }
+      router.push(destination); router.refresh();
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Connexion impossible."); } finally { setPending(false); }
   }
-
-  return <form onSubmit={submit} className="mt-10 space-y-5">{error && <p role="alert" className="rounded-xl bg-[var(--accent-soft)] px-4 py-3 font-sans text-sm text-[var(--accent)]">{error}</p>}<label className="block font-sans text-sm font-semibold">E-mail, téléphone ou établissement<input value={identifier} onChange={(event) => setIdentifier(event.target.value)} type="text" required autoComplete="username" placeholder="vous@exemple.com, +229… ou nom exact" className="mt-2 h-12 w-full rounded-xl border border-[var(--line)] bg-[var(--surface)] px-4" /></label><label className="block font-sans text-sm font-semibold">Mot de passe<input value={password} onChange={(event) => setPassword(event.target.value)} type="password" required autoComplete="current-password" className="mt-2 h-12 w-full rounded-xl border border-[var(--line)] bg-[var(--surface)] px-4" /></label><button disabled={pending} className="w-full rounded-full bg-[var(--ink)] px-5 py-3.5 font-sans text-sm font-bold text-white disabled:cursor-wait disabled:opacity-60">{pending ? "Connexion en cours…" : "Se connecter"}</button></form>;
+  return <form onSubmit={submit} className="mt-10 space-y-5">{error && <p role="alert" className="rounded-xl bg-[var(--accent-soft)] px-4 py-3 font-sans text-sm text-[var(--accent)]">{error}</p>}<div className="grid grid-cols-3 gap-1 rounded-lg bg-[var(--surface-muted)] p-1" role="tablist" aria-label="Mode de connexion">{([["EMAIL", "E-mail"], ["PHONE", "Téléphone"], ["ESTABLISHMENT", "Établissement"]] as const).map(([value, label]) => <button type="button" role="tab" aria-selected={mode === value} key={value} onClick={() => selectMode(value)} className={`rounded-md px-2 py-3 text-xs font-black ${mode === value ? "bg-[var(--surface)] text-[var(--primary)] shadow-sm" : "text-[var(--muted)]"}`}>{label}</button>)}</div>{mode === "EMAIL" && <label className="block font-sans text-sm font-semibold">Adresse e-mail<input value={email} onChange={(event) => setEmail(event.target.value)} type="email" required autoComplete="username" placeholder="vous@exemple.com" className="mt-2 h-12 w-full rounded-xl border border-[var(--line)] bg-[var(--surface)] px-4" /></label>}{mode === "PHONE" && <PhoneField label="Numéro de téléphone" countryCode={countryCode} nationalNumber={nationalNumber} onCountryChange={setCountryCode} onNumberChange={setNationalNumber} hint="Choisissez le pays puis saisissez uniquement le numéro national." />}{mode === "ESTABLISHMENT" && <label className="block font-sans text-sm font-semibold">Nom exact de l’établissement<input value={establishment} onChange={(event) => setEstablishment(event.target.value)} type="text" required autoComplete="username" placeholder="LE TEMPLE DU PLAISIR" className="mt-2 h-12 w-full rounded-xl border border-[var(--line)] bg-[var(--surface)] px-4" /></label>}<label className="block font-sans text-sm font-semibold">Mot de passe<input value={password} onChange={(event) => setPassword(event.target.value)} type="password" required autoComplete="current-password" className="mt-2 h-12 w-full rounded-xl border border-[var(--line)] bg-[var(--surface)] px-4" /></label><button disabled={pending} className="w-full rounded-full bg-[var(--ink)] px-5 py-3.5 font-sans text-sm font-bold text-white disabled:cursor-wait disabled:opacity-60">{pending ? "Connexion en cours…" : "Se connecter"}</button></form>;
 }
