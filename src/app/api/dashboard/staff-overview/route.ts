@@ -45,6 +45,6 @@ export async function GET() {
     const sales = visibleOrders.reduce((sum, order) => sum + (order.total_amount ?? 0), 0);
     const paidSales = visibleOrders.reduce((sum, order) => sum + (order.payments ?? []).filter((payment) => ["PAID", "SUCCESS"].includes(payment.status)).reduce((paymentSum, payment) => paymentSum + Number(payment.amount ?? 0), 0), 0);
     const commissionTotal = (commissions ?? []).reduce((sum, commission) => sum + (commission.commission_amount ?? 0), 0);
-    return NextResponse.json({ zonesTablesEnabled: company?.activity_type === "POWER" ? company.zones_tables_enabled !== false : true, employee, assignments: effectiveAssignments, zoneAssignments: effectiveZoneAssignments, orders: visibleOrders, metrics: { sales, paidSales, orderCount: visibleOrders.length, commissionTotal }, commissions: commissions ?? [] });
+    return NextResponse.json({ zonesTablesEnabled: company?.zones_tables_enabled !== false, employee, assignments: effectiveAssignments, zoneAssignments: effectiveZoneAssignments, orders: visibleOrders, metrics: { sales, paidSales, orderCount: visibleOrders.length, commissionTotal }, commissions: commissions ?? [] });
   } catch { return NextResponse.json({ error: "Service temporairement indisponible." }, { status: 500 }); }
 }

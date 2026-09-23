@@ -340,7 +340,7 @@ export function ServeurClient({
     if (!cart.length) return setNotice("Ajoutez au moins un article à la commande.");
     const effectiveTable = tableLabel.trim() || (locationTables[0]?.label ?? "");
     if (zonesTablesEnabled && !effectiveTable) return setNotice("Veuillez sélectionner ou indiquer un numéro de table avant d’envoyer la commande.");
-    const effectiveLoc = selectedLocation || "Salle";
+    const effectiveLoc = selectedLocation || locations[0] || "Salle";
     setBusy(true);
     setNotice("Envoi de la commande en cours…");
     try {

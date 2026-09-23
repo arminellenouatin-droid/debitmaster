@@ -51,8 +51,8 @@ export async function POST(request: Request) {
     if (!tenantIds.includes(tenantId)) return NextResponse.json({ error: "Établissement non autorisé." }, { status: 403 });
     const { data: company, error: companyError } = await supabase.from("companies").select("activity_type,zones_tables_enabled").eq("id", tenantId).maybeSingle();
     if (companyError || !company) return NextResponse.json({ error: "Configuration de l’établissement introuvable." }, { status: 500 });
-    const zonesTablesEnabled = (company.activity_type === "HOTEL_AUBERGE" || company.activity_type === "POWER") ? company.zones_tables_enabled !== false : true;
-    if (zonesTablesEnabled && !tableLabel) return NextResponse.json({ error: "Numéro de table requis pour créer une commande." }, { status: 400 });
+    const zonesTablesEnabled = company.zones_tables_enabled !== false;
+    if (zonesTablesEnabled && (!tableLabel || (!locationLabel && !zoneId))) return NextResponse.json({ error: !tableLabel ? "Numéro de table requis pour créer une commande." : "Zone requise pour créer une commande." }, { status: 400 });
     const effectiveTableLabel = zonesTablesEnabled ? tableLabel : null;
     const effectiveLocationLabel = zonesTablesEnabled ? (locationLabel || "Salle") : null;
     const effectiveZoneId = zonesTablesEnabled ? zoneId : null;
