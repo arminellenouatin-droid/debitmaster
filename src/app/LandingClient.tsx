@@ -114,6 +114,13 @@ export function LandingClient() {
               Gérez mieux. <span className="bg-gradient-to-r from-amber-400 via-amber-300 to-emerald-400 bg-clip-text text-transparent">Éliminez le coulage.</span> Servez avec rapidité.
             </h1>
 
+            <Link
+              href="/connexion"
+              className="mt-6 inline-flex min-h-11 items-center justify-center rounded-xl border border-amber-400/60 bg-amber-400/10 px-6 py-3 text-sm font-black text-amber-300 transition hover:border-amber-300 hover:bg-amber-400/20 sm:hidden"
+            >
+              Se connecter
+            </Link>
+
             <p className="mt-6 text-lg leading-relaxed text-slate-300 sm:text-xl">
               DebitMaster transforme n’importe quel smartphone en caisse enregistreuse tactile ultra-simple. Vos serveuses commandent au doigt, la cuisine reçoit les bons instantanément, et vos encaissements MTN MoMo sont sécurisés au centime près.
             </p>
