@@ -21,3 +21,6 @@ Les fichiers sont limités par type et taille, stockés sous un chemin lié à l
 
 ## État réel
 La migration `internal_messaging_multimedia_20260924` a été appliquée au projet Supabase DebitMaster. Les colonnes média, les horodatages de présence et le bucket privé ont été vérifiés en base. Le typecheck et le build Next.js passent. La branche de travail reste séparée de `main` pour permettre une validation et un retour arrière sans risque.
+
+## Mise à jour — push et restriction vidéo
+L’icône de messagerie est ajoutée à côté de la cloche dans le header, y compris sur mobile. L’envoi de vidéos est réservé au plan supérieur `SPECIAL` et contrôlé à la fois par l’interface et l’API. L’envoi d’un message interne déclenche désormais un push Firebase vers le destinataire. Les notifications métier utilisent déjà le même service Firebase via `emitTenantNotification`.

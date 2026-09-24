@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getAuthorizationContext, can } from "@/lib/authorization";
+import { sendMulticastPush } from "@/lib/firebase/server";
 
 const allowedMime = /^(audio\/(mpeg|mp4|ogg|webm|wav)|image\/(jpeg|png|webp|gif)|video\/(mp4|webm|quicktime)|application\/pdf|text\/plain|application\/(msword|vnd\.openxmlformats-officedocument\.wordprocessingml\.document|vnd\.ms-excel|vnd\.openxmlformats-officedocument\.spreadsheetml\.sheet|zip))$/i;
 const maxMediaSize = 25 * 1024 * 1024;
@@ -59,8 +60,9 @@ export async function POST(request: Request) {
     if (!can(context, "messages.send")) return errorResponse("Permission insuffisante pour envoyer un message.", 403);
     if (recipientUserId === context.user!.id) return errorResponse("Vous ne pouvez pas vous envoyer un message.");
     const { data: recipient } = await context.supabase.from("employees").select("user_id").eq("tenant_id", tenantId).eq("user_id", recipientUserId).eq("status", "ACTIVE").is("deleted_at", null).maybeSingle();
-    const { data: company } = await context.supabase.from("companies").select("owner_user_id").eq("id", tenantId).is("deleted_at", null).maybeSingle();
+    const { data: company } = await context.supabase.from("companies").select("owner_user_id,subscription_plan").eq("id", tenantId).is("deleted_at", null).maybeSingle();
     if (!recipient && company?.owner_user_id !== recipientUserId) return errorResponse("Destinataire inactif ou extérieur à l’établissement.", 403);
+    if (file && file.type.startsWith("video/") && company?.subscription_plan !== "SPECIAL") return errorResponse("L’envoi de vidéos est disponible uniquement avec la formule supérieure.", 403);
     const admin = createSupabaseAdminClient();
     if (file) {
       if (file.size <= 0 || file.size > maxMediaSize) return errorResponse("Le fichier doit faire au maximum 25 Mo.");
@@ -73,6 +75,13 @@ export async function POST(request: Request) {
     }
     const { data, error } = await context.supabase.from("internal_messages").insert({ tenant_id: tenantId, sender_user_id: context.user!.id, recipient_user_id: recipientUserId, subject: subject || null, body: messageBody || null, message_type: messageType, media_path: uploadedPath, media_name: file?.name ?? null, media_mime_type: file?.type ?? null, media_size: file?.size ?? null }).select("id,tenant_id,sender_user_id,recipient_user_id,subject,body,message_type,media_path,media_name,media_mime_type,media_size,delivered_at,read_at,created_at").single();
     if (error) { if (uploadedPath) await admin.storage.from("internal-message-media").remove([uploadedPath]); return errorResponse("Impossible d’envoyer le message.", 400); }
+    void sendMulticastPush(tenantId, [recipientUserId], {
+      title: "Nouveau message",
+      body: messageBody || (messageType === "VIDEO" ? "Vous avez reçu une vidéo." : messageType === "AUDIO" ? "Vous avez reçu un audio." : file ? "Vous avez reçu une pièce jointe." : "Vous avez reçu un message."),
+      actionPath: "/dashboard/messages",
+      eventType: "INTERNAL_MESSAGE",
+      tag: `internal-message:${data.id}`,
+    }).catch(() => undefined);
     return NextResponse.json({ message: (await attachMediaUrls([data]))[0] }, { status: 201 });
   } catch {
     if (uploadedPath) await createSupabaseAdminClient().storage.from("internal-message-media").remove([uploadedPath]);

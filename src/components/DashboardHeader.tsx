@@ -196,6 +196,17 @@ export function DashboardHeader({
             </div>
           )}
 
+          <Link
+            href="/dashboard/messages"
+            aria-label="Messagerie interne"
+            className="relative flex min-h-10 min-w-10 items-center justify-center rounded-xl border border-[var(--line)] bg-[var(--surface)] text-[var(--primary)] shadow-sm transition hover:bg-[var(--surface-muted)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--secondary)]"
+          >
+            <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H8l-4 2v-5.1A7.5 7.5 0 1 1 20 11.5Z" />
+              <path d="M8 11h.01M12 11h.01M16 11h.01" strokeLinecap="round" />
+            </svg>
+          </Link>
+
           {/* User Profile dropdown */}
           <details className="relative">
             <summary className="flex min-h-10 cursor-pointer list-none items-center gap-2 rounded-lg px-2 py-1.5 text-left transition hover:bg-[var(--surface-muted)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--secondary)]">
