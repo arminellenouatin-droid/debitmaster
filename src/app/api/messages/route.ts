@@ -5,7 +5,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getAuthorizationContext, can } from "@/lib/authorization";
 import { sendMulticastPush } from "@/lib/firebase/server";
 
-const allowedMime = /^(audio\/(mpeg|mp4|ogg|webm|wav)|image\/(jpeg|png|webp|gif)|video\/(mp4|webm|quicktime)|application\/pdf|text\/plain|application\/(msword|vnd\.openxmlformats-officedocument\.wordprocessingml\.document|vnd\.ms-excel|vnd\.openxmlformats-officedocument\.spreadsheetml\.sheet|zip))$/i;
+const allowedMime = /^(audio\/(mpeg|mp4|ogg|webm|wav)|image\/(jpeg|png|webp|gif|heic|heif)|video\/(mp4|webm|quicktime)|application\/pdf|text\/plain|application\/(msword|vnd\.openxmlformats-officedocument\.wordprocessingml\.document|vnd\.ms-excel|vnd\.openxmlformats-officedocument\.spreadsheetml\.sheet|zip))$/i;
 const maxMediaSize = 25 * 1024 * 1024;
 function errorResponse(message: string, status = 400) { return NextResponse.json({ error: message }, { status }); }
 async function authorizedTenant(tenantId: string) {

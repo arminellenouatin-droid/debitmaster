@@ -34,7 +34,7 @@ values (
   26214400,
   array[
     'audio/mpeg', 'audio/mp4', 'audio/ogg', 'audio/webm', 'audio/wav',
-    'image/jpeg', 'image/png', 'image/webp', 'image/gif',
+    'image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif',
     'video/mp4', 'video/webm', 'video/quicktime',
     'application/pdf', 'text/plain', 'application/msword',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
