@@ -51,8 +51,27 @@ export function MessagesClient() {
 
   async function toggleRecording() {
     if (recording && recorderRef.current) { recorderRef.current.stop(); setRecording(false); return; }
-    if (!navigator.mediaDevices?.getUserMedia) return setError("Votre navigateur ne permet pas l’enregistrement audio.");
-    try { const stream = await navigator.mediaDevices.getUserMedia({ audio: true }); const recorder = new MediaRecorder(stream); chunksRef.current = []; recorder.ondataavailable = (event) => event.data.size && chunksRef.current.push(event.data); recorder.onstop = () => { stream.getTracks().forEach((track) => track.stop()); setFile(new File(chunksRef.current, `message-audio-${Date.now()}.webm`, { type: recorder.mimeType || "audio/webm" })); }; recorder.start(); recorderRef.current = recorder; setRecording(true); setError(""); } catch { setError("L’accès au microphone a été refusé."); }
+    if (!window.isSecureContext) return setError("L’enregistrement audio nécessite une connexion HTTPS sécurisée.");
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") return setError("Votre navigateur mobile ne prend pas en charge l’enregistrement audio. Essayez Chrome ou Safari à jour.");
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      chunksRef.current = [];
+      recorder.ondataavailable = (event) => event.data.size && chunksRef.current.push(event.data);
+      recorder.onstop = () => { stream.getTracks().forEach((track) => track.stop()); setFile(new File(chunksRef.current, `message-audio-${Date.now()}.webm`, { type: recorder.mimeType || "audio/webm" })); };
+      recorder.start(); recorderRef.current = recorder; setRecording(true); setError("");
+    } catch (cause) {
+      const errorName = cause instanceof DOMException ? cause.name : "";
+      if (errorName === "NotAllowedError" || errorName === "SecurityError") {
+        setError("Le microphone est bloqué pour ce site. Sur mobile, ouvrez les réglages du navigateur, autorisez le microphone pour DebitMaster, puis rechargez la page.");
+      } else if (errorName === "NotFoundError") {
+        setError("Aucun microphone n’est disponible sur cet appareil.");
+      } else if (errorName === "NotReadableError") {
+        setError("Le microphone est déjà utilisé par une autre application. Fermez-la puis réessayez.");
+      } else {
+        setError("Impossible d’activer le microphone. Vérifiez l’autorisation du navigateur puis réessayez.");
+      }
+    }
   }
   async function submit(event: FormEvent) { event.preventDefault(); if (!tenantId || !selectedRecipientId || (!body.trim() && !file)) return; if (file?.type.startsWith("video/") && !canSendVideo) { setError("L’envoi de vidéos est disponible uniquement avec la formule supérieure."); return; } setPending(true); setError(""); setNotice(""); const form = new FormData(); form.set("tenantId", tenantId); form.set("recipientUserId", selectedRecipientId); form.set("message", body.trim()); if (file) form.set("file", file); try { const response = await fetch("/api/messages", { method: "POST", body: form }); const result = await response.json(); if (!response.ok) throw new Error(result.error ?? "Impossible d’envoyer le message."); setMessages((current) => [...current, result.message]); setBody(""); setFile(null); setNotice("Message envoyé."); } catch (cause) { setError(cause instanceof Error ? cause.message : "Impossible d’envoyer le message."); } finally { setPending(false); } }
 
