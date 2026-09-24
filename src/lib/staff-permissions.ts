@@ -55,6 +55,10 @@ export const defaultRolePermissions: Record<string, string[]> = {
   ADMINISTRATEUR: permissionCatalog.map((permission) => permission.key),
 };
 
+for (const role of Object.keys(defaultRolePermissions)) {
+  defaultRolePermissions[role] = Array.from(new Set([...defaultRolePermissions[role], "messages.view", "messages.send"]));
+}
+
 export const roleLabels: Record<string, string> = {
   SERVEUR: "Serveur", SUPERVISEUR: "Superviseur", MAGASINIER: "Magasinier", GERANT: "Gérant", BARMAN: "Barman", SECRETAIRE: "Secrétaire", COMPTABLE: "Comptable", APPROVISIONNEMENT: "Approvisionnement", CUISINIER: "Cuisinier", CHEF_CUISINE: "Chef cuisine", SECURITE: "Sécurité", INVENTAIRE: "Chargé d’inventaire", GYM: "Équipe gym", AUBERGE: "Équipe auberge", LAVAGE: "Équipe lavage", WIFI: "Équipe Wi-Fi", GERANT_ADJOINT: "Gérant adjoint", CAISSIER: "Caissier", ADMINISTRATEUR: "Administrateur",
 };
