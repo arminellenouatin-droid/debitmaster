@@ -26,8 +26,26 @@ create index if not exists internal_messages_media_idx
 alter table public.profiles add column if not exists last_seen_at timestamptz;
 alter table public.employees add column if not exists last_seen_at timestamptz;
 
-insert into storage.buckets (id, name, public)
-values ('internal-message-media', 'internal-message-media', false)
-on conflict (id) do update set public = excluded.public;
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'internal-message-media',
+  'internal-message-media',
+  false,
+  26214400,
+  array[
+    'audio/mpeg', 'audio/mp4', 'audio/ogg', 'audio/webm', 'audio/wav',
+    'image/jpeg', 'image/png', 'image/webp', 'image/gif',
+    'video/mp4', 'video/webm', 'video/quicktime',
+    'application/pdf', 'text/plain', 'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/zip'
+  ]::text[]
+)
+on conflict (id) do update set
+  public = false,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
 
 commit;
