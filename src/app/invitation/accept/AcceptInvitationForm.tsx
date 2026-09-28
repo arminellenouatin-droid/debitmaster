@@ -1,5 +1,6 @@
 // DebitManager invitation UX: client interaction is isolated from server-rendered route params and supports signup before acceptance.
 "use client";
+import { PasswordInput } from "@/components/PasswordInput";
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -69,7 +70,7 @@ export function AcceptInvitationForm({ token }: { token: string }) {
             <input required value={signup.lastName} onChange={(event) => updateSignup("lastName", event.target.value)} placeholder="Nom" autoComplete="family-name" className="h-12 rounded-xl border border-white/10 bg-white/[0.06] px-4 text-sm text-white placeholder:text-slate-500" />
           </div>
           <input required type="email" value={signup.email} onChange={(event) => updateSignup("email", event.target.value)} placeholder="E-mail invité" autoComplete="email" className="h-12 w-full rounded-xl border border-white/10 bg-white/[0.06] px-4 text-sm text-white placeholder:text-slate-500" />
-          <input required minLength={8} type="password" value={signup.password} onChange={(event) => updateSignup("password", event.target.value)} placeholder="Mot de passe · 8 caractères minimum" autoComplete="new-password" className="h-12 w-full rounded-xl border border-white/10 bg-white/[0.06] px-4 text-sm text-white placeholder:text-slate-500" />
+          <PasswordInput required minLength={8} value={signup.password} onChange={(event) => updateSignup("password", event.target.value)} placeholder="Mot de passe · 8 caractères minimum" autoComplete="new-password" className="h-12 w-full rounded-xl border border-white/10 bg-white/[0.06] px-4 text-sm text-white placeholder:text-slate-500" />
           <button disabled={!token || status === "loading"} className="w-full rounded-2xl border border-amber-300/60 px-4 py-3 text-sm font-semibold text-amber-200 transition hover:bg-amber-300/10 disabled:cursor-not-allowed disabled:opacity-50" type="submit">Créer le compte et rejoindre l’équipe</button>
         </form>
       </div>
