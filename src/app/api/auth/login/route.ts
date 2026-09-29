@@ -56,6 +56,16 @@ export async function POST(request: Request) {
     }
     const { data: pendingRequest } = await supabase.from("employee_access_requests").select("status").eq("user_id", data.user.id).order("requested_at", { ascending: false }).limit(1).maybeSingle();
     const { data: profile } = await supabase.from("profiles").select("user_type,role,must_change_password,status").eq("id", data.user.id).maybeSingle();
+    let commerceMustChangePassword = false;
+    if (profile?.role === "COMMERCE_STAFF") {
+      const admin = createSupabaseAdminClient();
+      const { data: commerceEmployee } = await admin.from("commerce_employees").select("status,must_change_password").eq("user_id", data.user.id).eq("status", "ACTIVE").limit(1).maybeSingle();
+      if (!commerceEmployee) {
+        await supabase.auth.signOut();
+        return NextResponse.json({ error: "Votre accès Commerce n’est pas actif. Contactez le promoteur de l’établissement." }, { status: 403 });
+      }
+      commerceMustChangePassword = Boolean(commerceEmployee.must_change_password);
+    }
     if (profile?.user_type === "AFFILIATE") {
       const { data: affiliate } = await supabase.from("platform_affiliates").select("status").eq("user_id", data.user.id).maybeSingle();
       if (affiliate?.status !== "ACTIVE") {
@@ -67,8 +77,8 @@ export async function POST(request: Request) {
       await supabase.auth.signOut();
       return NextResponse.json({ error: pendingRequest.status === "PENDING" ? "Votre demande est en attente de validation par le propriétaire de l’établissement." : "Votre demande d’accès a été refusée." }, { status: 403 });
     }
-    const mustChangePassword = Boolean(employee?.must_change_password || profile?.must_change_password);
-    const space = profile?.user_type === "SUPER_ADMIN" && profile.role === "MASTER_ADMIN" ? "MASTER_ADMIN" : profile?.user_type === "AFFILIATE" ? "AFFILIATE" : "TENANT";
+    const mustChangePassword = Boolean(employee?.must_change_password || commerceMustChangePassword || profile?.must_change_password);
+    const space = profile?.user_type === "SUPER_ADMIN" && profile.role === "MASTER_ADMIN" ? "MASTER_ADMIN" : profile?.user_type === "AFFILIATE" ? "AFFILIATE" : profile?.role === "COMMERCE_STAFF" ? "COMMERCE" : "TENANT";
     return NextResponse.json({ user: data.user, mustChangePassword, space });
   } catch {
     return NextResponse.json({ error: "Impossible de vous connecter pour le moment." }, { status: 500 });

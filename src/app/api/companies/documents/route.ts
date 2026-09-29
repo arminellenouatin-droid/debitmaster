@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { requestHasSameOrigin } from "@/lib/request-security";
 
 const photoTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
 const identityTypes = new Set(["image/jpeg", "image/png", "image/webp", "application/pdf"]);
@@ -17,6 +18,7 @@ function extensionFor(file: File) {
 
 export async function POST(request: Request) {
   try {
+    if (!requestHasSameOrigin(request)) return NextResponse.json({ error: "Origine de requête non autorisée." }, { status: 403 });
     const supabase = await createSupabaseServerClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });

@@ -28,7 +28,7 @@ export async function proxy(request: NextRequest) {
   });
 
   const { data: { user } } = await supabase.auth.getUser();
-  const { data: profile } = user ? await supabase.from("profiles").select("tenant_id,user_type,role,status").eq("id", user.id).maybeSingle() : { data: null };
+  const { data: profile } = user ? await supabase.from("profiles").select("tenant_id,user_type,role,status,must_change_password").eq("id", user.id).maybeSingle() : { data: null };
   const isPlatformAdmin = (candidate: { user_type?: string | null; role?: string | null; status?: string | null } | null) => candidate?.user_type === "SUPER_ADMIN" && candidate.role === "MASTER_ADMIN" && candidate.status === "ACTIVE";
   const isPrivateArea = request.nextUrl.pathname.startsWith("/dashboard") || request.nextUrl.pathname.startsWith("/admin") || request.nextUrl.pathname.startsWith("/affilie");
   if (!isPrivateArea) return response;
@@ -67,20 +67,49 @@ export async function proxy(request: NextRequest) {
 
   if (request.nextUrl.pathname.startsWith("/dashboard")) {
     const requestedTenantId = request.cookies.get("debitmanager_active_tenant")?.value ?? "";
-    let company: { id: string; owner_user_id: string | null; status: string | null; trial_ends_at: string | null; subscription_expires_at: string | null } | null = null;
+    let company: { id: string; owner_user_id: string | null; status: string | null; trial_ends_at: string | null; subscription_expires_at: string | null; activity_type: string | null } | null = null;
     if (uuidPattern.test(requestedTenantId)) {
-      const { data } = await supabase.from("companies").select("id,owner_user_id,status,trial_ends_at,subscription_expires_at").eq("id", requestedTenantId).is("deleted_at", null).maybeSingle();
+      const { data } = await supabase.from("companies").select("id,owner_user_id,status,trial_ends_at,subscription_expires_at,activity_type").eq("id", requestedTenantId).is("deleted_at", null).maybeSingle();
       company = data;
     }
     if (!company && profile?.tenant_id) {
-      const { data } = await supabase.from("companies").select("id,owner_user_id,status,trial_ends_at,subscription_expires_at").eq("id", profile.tenant_id).is("deleted_at", null).maybeSingle();
+      const { data } = await supabase.from("companies").select("id,owner_user_id,status,trial_ends_at,subscription_expires_at,activity_type").eq("id", profile.tenant_id).is("deleted_at", null).maybeSingle();
       company = data;
     }
     if (!company) {
-      const { data } = await supabase.from("companies").select("id,owner_user_id,status,trial_ends_at,subscription_expires_at").eq("owner_user_id", user.id).is("deleted_at", null).order("created_at", { ascending: false }).limit(1).maybeSingle();
+      const { data } = await supabase.from("companies").select("id,owner_user_id,status,trial_ends_at,subscription_expires_at,activity_type").eq("owner_user_id", user.id).is("deleted_at", null).order("created_at", { ascending: false }).limit(1).maybeSingle();
       company = data;
     }
-    if (company && subscriptionIsExpired(company)) {
+    const isOwner = company?.owner_user_id === user.id;
+    const commerceAccount = profile?.role === "COMMERCE_STAFF";
+    const commerceTenant = company?.activity_type === "BOUTIQUE_COMMERCE";
+    if (commerceAccount && profile?.must_change_password) {
+      const redirectUrl = request.nextUrl.clone();
+      redirectUrl.pathname = "/commerce/mot-de-passe";
+      redirectUrl.searchParams.delete("error");
+      return NextResponse.redirect(redirectUrl);
+    }
+    if (commerceAccount || commerceTenant) {
+      const allowedCommercePage = request.nextUrl.pathname === "/dashboard" || (isOwner && request.nextUrl.pathname.startsWith("/dashboard/subscription"));
+      if (!allowedCommercePage) {
+        const redirectUrl = request.nextUrl.clone();
+        redirectUrl.pathname = "/dashboard";
+        redirectUrl.searchParams.set("error", "espace_commerce");
+        return NextResponse.redirect(redirectUrl);
+      }
+    }
+    if (company?.activity_type === "BOUTIQUE_COMMERCE") {
+      const status = String(company.status ?? "").toUpperCase();
+      if (["SUSPENDED", "CANCELLED"].includes(status)) {
+        const billingPage = request.nextUrl.pathname.startsWith("/dashboard/subscription");
+        if (!isOwner || !billingPage) {
+          const redirectUrl = request.nextUrl.clone();
+          redirectUrl.pathname = isOwner ? "/dashboard/subscription" : "/connexion";
+          redirectUrl.searchParams.set("error", "abonnement_suspendu");
+          return NextResponse.redirect(redirectUrl);
+        }
+      }
+    } else if (company && subscriptionIsExpired(company)) {
       const isOwner = company.owner_user_id === user.id;
       if (!isOwner || !request.nextUrl.pathname.startsWith("/dashboard/settings")) {
         const redirectUrl = request.nextUrl.clone();

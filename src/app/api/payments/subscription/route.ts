@@ -4,11 +4,12 @@ import { getAuthorizationContext } from "@/lib/authorization";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { MtnMomoError, requestToPay } from "@/lib/mtn-momo";
 import { addSubscriptionPeriod, billingPeriodCodes, getSubscriptionActivityCatalog, getSubscriptionCatalog, getSubscriptionPlan, getSubscriptionPrice, isQuoteRequired, normalizeActivityCode, type BillingPeriod, type SubscriptionPriceOverride } from "@/lib/subscription-plans";
+import { requestHasSameOrigin } from "@/lib/request-security";
 
 function ownerTenantId(context: Awaited<ReturnType<typeof getAuthorizationContext>>, requestedTenantId: string) {
   if (context.employeeId) return null;
-  const tenantId = requestedTenantId || context.tenantIds[0] || "";
-  return (context.tenantIds as string[]).includes(tenantId) ? tenantId : null;
+  const tenantId = requestedTenantId || context.allTenantIds[0] || "";
+  return (context.allTenantIds as string[]).includes(tenantId) ? tenantId : null;
 }
 
 async function loadPriceOverrides(supabase: Awaited<ReturnType<typeof getAuthorizationContext>>["supabase"]) {
@@ -38,12 +39,16 @@ export async function GET(request: Request) {
       loadPriceOverrides(context.supabase),
     ]);
     if (paymentsError) return NextResponse.json({ error: "Impossible de charger l’historique d’abonnement." }, { status: 500 });
+    const activityCatalog = getSubscriptionActivityCatalog(overrides, billingPeriod);
+    const visibleActivities = normalizeActivityCode(company.activity_type) === "BOUTIQUE_COMMERCE"
+      ? activityCatalog.filter((activity) => activity.code === "BOUTIQUE_COMMERCE")
+      : activityCatalog;
 
     return NextResponse.json({
       activity: { type: company.activity_type, currency: company.currency },
       billingPeriod,
       plans: getSubscriptionCatalog(company.activity_type, overrides, billingPeriod),
-      activities: getSubscriptionActivityCatalog(overrides, billingPeriod),
+      activities: visibleActivities,
       current: { plan: company.subscription_plan, status: company.status, trialEndsAt: company.trial_ends_at, expiresAt: company.subscription_expires_at },
       payments: payments ?? [],
       quoteRequests: quoteRequests ?? [],
@@ -55,6 +60,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    if (!requestHasSameOrigin(request)) return NextResponse.json({ error: "Origine de requête non autorisée." }, { status: 403 });
     const body = await request.json() as { tenantId?: string; plan?: string; billingPeriod?: string; mobileNumber?: string };
     const context = await getAuthorizationContext();
     if (!context.user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
@@ -88,7 +94,7 @@ export async function POST(request: Request) {
     const admin = createSupabaseAdminClient();
     const { data: payment, error: paymentError } = await admin
       .from("saas_subscription_payments")
-      .insert({ tenant_id: tenantId, provider: "MTN_MOMO", plan, billing_period: billingPeriod, amount, currency: company.currency || "XOF", status: "PENDING", period_start: periodStart.toISOString(), period_end: periodEnd.toISOString(), metadata: { activity_type: normalizeActivityCode(company.activity_type), billing_period: billingPeriod } })
+      .insert({ tenant_id: tenantId, provider: "MTN_MOMO", plan, billing_period: billingPeriod, amount, currency: company.currency || "XOF", status: "PENDING", period_start: periodStart.toISOString(), period_end: periodEnd.toISOString(), metadata: { activity_type: normalizeActivityCode(company.activity_type), billing_period: billingPeriod, requested_by_user_id: context.user.id } })
       .select("id,tenant_id,plan,billing_period,amount,currency,status,period_start,period_end")
       .single();
     if (paymentError || !payment) return NextResponse.json({ error: "Impossible de préparer l’abonnement." }, { status: 400 });

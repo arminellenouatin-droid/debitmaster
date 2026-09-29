@@ -4,21 +4,22 @@ import { cookies } from "next/headers";
 import { randomBytes } from "node:crypto";
 import { getAuthorizationContext } from "@/lib/authorization";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { requestHasSameOrigin } from "@/lib/request-security";
 
-const activityTypes = ["BUVETTE", "BAR_RESTAURANT", "NIGHTCLUB_LOUNGE", "HOTEL_AUBERGE", "POWER"] as const;
+const activityTypes = ["BUVETTE", "BAR_RESTAURANT", "NIGHTCLUB_LOUNGE", "HOTEL_AUBERGE", "BOUTIQUE_COMMERCE"] as const;
 
 export async function GET() {
   try {
     const context = await getAuthorizationContext();
     if (!context.user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
-    if (!context.tenantIds.length) return NextResponse.json({ companies: [] });
+    if (!context.allTenantIds.length) return NextResponse.json({ companies: [] });
     const { data, error } = await context.supabase
       .from("companies")
-      .select("id,name,activity_type,country,currency,language,address,city,ifu_number,trade_register,promoter_photo_path,identity_card_path,status,created_at")
-      .in("id", context.tenantIds)
+      .select("id,name,activity_type,country,currency,status,trial_ends_at,subscription_plan,subscription_expires_at,created_at")
+      .in("id", context.allTenantIds)
       .is("deleted_at", null)
       .order("created_at", { ascending: false })
-      .limit(20);
+      .limit(1000);
     if (error) return NextResponse.json({ error: "Impossible de charger vos établissements." }, { status: 500 });
     return NextResponse.json({ companies: data ?? [] });
   } catch {
@@ -28,6 +29,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    if (!requestHasSameOrigin(request)) return NextResponse.json({ error: "Origine de requête non autorisée." }, { status: 403 });
     const body = await request.json();
     const name = typeof body.name === "string" ? body.name.trim() : "";
     const activityType = typeof body.activityType === "string" ? body.activityType : "";
@@ -45,7 +47,7 @@ export async function POST(request: Request) {
     if (context.affiliateId || context.userType === "AFFILIATE") {
       return NextResponse.json({ error: "Un compte affilié ne peut pas créer un établissement. Utilisez un compte propriétaire séparé." }, { status: 403 });
     }
-    if (context.employeeId) {
+    if (context.employeeId || context.isCommerceStaff) {
       return NextResponse.json({ error: "Vous êtes actuellement connecté avec un compte employé. Seul un compte propriétaire peut créer un établissement." }, { status: 403 });
     }
 
