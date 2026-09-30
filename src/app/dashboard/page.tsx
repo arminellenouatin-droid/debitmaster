@@ -26,7 +26,7 @@ export default async function DashboardPage() {
     const commerce = await getCommerceContext(authorization.role === "COMMERCE_STAFF" ? undefined : active.tenantId ?? undefined);
     if (commerce.company && commerce.tenantId) {
       const role = commerce.isOwner ? "Promoteur / Propriétaire" : commerce.roles.map((item) => item.name).join(", ") || "Équipe Commerce";
-      return <CommerceDashboardShell firstName={firstName} companyName={commerce.company.name} role={role} isOwner={commerce.isOwner} accessMode={commerce.accessMode} permissions={[...commerce.permissions]}><CommerceDashboardClient tenantId={commerce.tenantId} isOwner={commerce.isOwner} initialPermissions={[...commerce.permissions]} firstName={firstName} /></CommerceDashboardShell>;
+      return <CommerceDashboardShell firstName={firstName} companyName={commerce.company.name} tenantId={commerce.tenantId} role={role} isOwner={commerce.isOwner} accessMode={commerce.accessMode} permissions={[...commerce.permissions]}><CommerceDashboardClient tenantId={commerce.tenantId} isOwner={commerce.isOwner} initialPermissions={[...commerce.permissions]} firstName={firstName} /></CommerceDashboardShell>;
     }
     if (authorization.role === "COMMERCE_STAFF") redirect("/connexion?error=acces_commerce_requis");
   }

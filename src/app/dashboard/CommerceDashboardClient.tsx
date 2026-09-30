@@ -4,7 +4,6 @@ import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useLiveRefresh } from "@/hooks/useLiveRefresh";
 
-type Company = { id: string; name: string; activity_type: string; country?: string; currency?: string };
 type CommerceCompany = { id: string; name: string; activityType: string; country?: string; currency?: string };
 type Store = { id: string; name: string; store_type: string; address: string | null; city: string | null; status: string; created_at: string };
 type Role = { id: string; role_key: string; name: string; description: string | null; is_system: boolean; permissionKeys?: string[] };
@@ -16,11 +15,8 @@ type Feedback = { error: string; message: string };
 
 const dateTime = new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short" });
 const dateOnly = new Intl.DateTimeFormat("fr-FR", { dateStyle: "long" });
-const activityNames: Record<string, string> = { BUVETTE: "Buvette", BAR_RESTAURANT: "Bar restaurant", NIGHTCLUB_LOUNGE: "Boîte de nuit / lounge", HOTEL_AUBERGE: "Hôtel / auberge", BOUTIQUE_COMMERCE: "Boutique & Commerce" };
-
 export function CommerceDashboardClient({ tenantId, isOwner, initialPermissions, firstName }: { tenantId: string; isOwner: boolean; initialPermissions: string[]; firstName: string }) {
   const [data, setData] = useState<DashboardData | null>(null);
-  const [companies, setCompanies] = useState<Company[]>([]);
   const [permissionsCatalog, setPermissionsCatalog] = useState<Permission[]>([]);
   const [employeeDetails, setEmployeeDetails] = useState<Employee[]>([]);
   const [feedback, setFeedback] = useState<Feedback>({ error: "", message: "" });
@@ -53,7 +49,6 @@ export function CommerceDashboardClient({ tenantId, isOwner, initialPermissions,
       if (!dashboardResponse.ok) throw new Error(dashboardResult.error ?? "Impossible de charger le tableau Commerce.");
       setData(dashboardResult);
       const extraTasks: Promise<void>[] = [];
-      if (isOwner) extraTasks.push((async () => { const response = await fetch("/api/companies", { cache: "no-store" }); const result = await response.json() as { companies?: Company[] }; if (response.ok) setCompanies(result.companies ?? []); })());
       if (can("team.view")) {
         extraTasks.push((async () => { const response = await fetch(`/api/commerce/roles?${tenantQuery}`, { cache: "no-store" }); const result = await response.json() as { roles?: Role[]; permissionCatalog?: Permission[] }; if (response.ok) { setPermissionsCatalog(result.permissionCatalog ?? []); setData((current) => current ? { ...current, roles: result.roles ?? [] } : current); } })());
         extraTasks.push((async () => { const response = await fetch(`/api/commerce/employees?${tenantQuery}`, { cache: "no-store" }); const result = await response.json() as { employees?: Employee[] }; if (response.ok) setEmployeeDetails(result.employees ?? []); })());
@@ -65,15 +60,6 @@ export function CommerceDashboardClient({ tenantId, isOwner, initialPermissions,
   }
   useEffect(() => { void load(); }, [tenantId]);
   useLiveRefresh(() => load());
-
-  async function selectCompany(nextTenantId: string) {
-    if (!nextTenantId || nextTenantId === tenantId) return;
-    setFeedback({ error: "", message: "" });
-    const response = await fetch("/api/companies/active", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tenantId: nextTenantId }) });
-    const result = await response.json() as { error?: string };
-    if (!response.ok) { setFeedback({ error: result.error ?? "Impossible de changer d’établissement.", message: "" }); return; }
-    window.location.reload();
-  }
 
   async function submitStore(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setSaving(true); setFeedback({ error: "", message: "" });
@@ -137,7 +123,6 @@ export function CommerceDashboardClient({ tenantId, isOwner, initialPermissions,
         <div><p className="text-xs font-black uppercase tracking-[0.18em] text-amber-300">Espace autonome · Achat et vente</p><h1 className="mt-3 max-w-3xl text-3xl font-black tracking-tight sm:text-4xl">{data.company.name}</h1><p className="mt-3 max-w-2xl text-sm leading-6 text-emerald-50/80">Un espace dédié aux commerces physiques : gestion des magasins, des comptes de l’équipe et des permissions. Les opérations bar, restaurant, hôtel et nuit restent dans leurs espaces respectifs.</p></div>
         <div className="flex flex-col gap-3 sm:min-w-64 sm:items-end">
           {isOwner && <Link href="/creationboutique" className="inline-flex min-h-11 items-center justify-center rounded-xl bg-amber-300 px-4 text-sm font-black text-slate-950">+ Ajouter un établissement</Link>}
-          {isOwner && companies.length > 1 && <label className="w-full text-xs font-bold text-white/75 sm:w-auto">Changer d’établissement<select aria-label="Changer d’établissement" value={tenantId} onChange={(event) => void selectCompany(event.target.value)} className="mt-1 block min-h-11 w-full rounded-lg border border-white/20 bg-white/10 px-3 text-sm font-bold text-white sm:min-w-64"><option className="text-slate-900" value={tenantId}>{data.company.name} · {activityNames[data.company.activityType] ?? data.company.activityType}</option>{companies.filter((company) => company.id !== tenantId).map((company) => <option className="text-slate-900" key={company.id} value={company.id}>{company.name} · {activityNames[company.activity_type] ?? company.activity_type}</option>)}</select></label>}
           <p className="text-right text-xs font-semibold text-white/65">{firstName} · {data.roleNames.join(", ")}</p>
         </div>
       </div>

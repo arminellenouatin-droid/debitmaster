@@ -90,7 +90,7 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(redirectUrl);
     }
     if (commerceAccount || commerceTenant) {
-      const allowedCommercePage = request.nextUrl.pathname === "/dashboard" || (isOwner && request.nextUrl.pathname.startsWith("/dashboard/subscription"));
+      const allowedCommercePage = request.nextUrl.pathname === "/dashboard" || request.nextUrl.pathname.startsWith("/dashboard/commerce/") || (isOwner && request.nextUrl.pathname.startsWith("/dashboard/subscription"));
       if (!allowedCommercePage) {
         const redirectUrl = request.nextUrl.clone();
         redirectUrl.pathname = "/dashboard";
