@@ -9,6 +9,9 @@ import { getActiveTenantContext } from "@/lib/active-tenant";
 import { GerantClient } from "./GerantClient";
 import { MagasinierClient } from "./MagasinierClient";
 import { ServiceSalesClient } from "./service-sales/ServiceSalesClient";
+import { CommerceDashboardClient } from "./CommerceDashboardClient";
+import { CommerceDashboardShell } from "@/components/CommerceDashboardShell";
+import { getCommerceContext } from "@/lib/commerce-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +22,14 @@ export default async function DashboardPage() {
   const firstName = auth.user.user_metadata?.first_name ?? "gérant";
   const authorization = await getAuthorizationContext();
   const active = await getActiveTenantContext();
+  if (active.company?.activity_type === "BOUTIQUE_COMMERCE" || authorization.role === "COMMERCE_STAFF") {
+    const commerce = await getCommerceContext(authorization.role === "COMMERCE_STAFF" ? undefined : active.tenantId ?? undefined);
+    if (commerce.company && commerce.tenantId) {
+      const role = commerce.isOwner ? "Promoteur / Propriétaire" : commerce.roles.map((item) => item.name).join(", ") || "Équipe Commerce";
+      return <CommerceDashboardShell firstName={firstName} companyName={commerce.company.name} role={role} isOwner={commerce.isOwner} accessMode={commerce.accessMode} permissions={[...commerce.permissions]}><CommerceDashboardClient tenantId={commerce.tenantId} isOwner={commerce.isOwner} initialPermissions={[...commerce.permissions]} firstName={firstName} /></CommerceDashboardShell>;
+    }
+    if (authorization.role === "COMMERCE_STAFF") redirect("/connexion?error=acces_commerce_requis");
+  }
   if (authorization.role === "SERVEUR") return <DashboardShell firstName={firstName}><ServeurClient tenantId={active.tenantId ?? ""} firstName={firstName} companyName={active.company?.name ?? "Établissement actif"} /></DashboardShell>;
   if (authorization.role === "GERANT") return <DashboardShell firstName={firstName}><GerantClient tenantId={active.tenantId ?? ""} firstName={firstName} companyName={active.company?.name ?? "Établissement actif"} /></DashboardShell>;
   if (authorization.role === "MAGASINIER") {

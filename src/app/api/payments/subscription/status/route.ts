@@ -16,7 +16,7 @@ export async function GET(request: Request) {
     if (!paymentId) return NextResponse.json({ error: "Identifiant de paiement requis." }, { status: 400 });
     const { data: payment, error } = await context.supabase.from("saas_subscription_payments").select("id,tenant_id,plan,billing_period,amount,currency,status,provider,provider_reference,period_start,period_end,paid_at").eq("id", paymentId).maybeSingle();
     if (error || !payment || payment.provider !== "MTN_MOMO") return NextResponse.json({ error: "Paiement d’abonnement MTN MoMo introuvable." }, { status: 404 });
-    if (!context.tenantIds.includes(payment.tenant_id)) return NextResponse.json({ error: "Paiement non autorisé." }, { status: 403 });
+    if (!context.allTenantIds.includes(payment.tenant_id)) return NextResponse.json({ error: "Paiement non autorisé." }, { status: 403 });
     if (["SUCCEEDED", "FAILED", "REFUNDED"].includes(payment.status) || !payment.provider_reference) return NextResponse.json({ payment, providerStatus: payment.status });
 
     const providerPayload = await getCollectionStatus(payment.provider_reference);

@@ -3,16 +3,18 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { getAuthorizationContext } from "@/lib/authorization";
 import { ACTIVE_TENANT_COOKIE } from "@/lib/active-tenant";
+import { requestHasSameOrigin } from "@/lib/request-security";
 
 export async function POST(request: Request) {
   try {
+    if (!requestHasSameOrigin(request)) return NextResponse.json({ error: "Origine de requête non autorisée." }, { status: 403 });
     const body = await request.json();
     const tenantId = typeof body.tenantId === "string" ? body.tenantId.trim() : "";
     if (!tenantId) return NextResponse.json({ error: "Établissement requis." }, { status: 400 });
 
     const context = await getAuthorizationContext();
     if (!context.user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
-    if (!context.tenantIds.includes(tenantId)) return NextResponse.json({ error: "Établissement non autorisé." }, { status: 403 });
+    if (!context.allTenantIds.includes(tenantId)) return NextResponse.json({ error: "Établissement non autorisé." }, { status: 403 });
 
     const cookieStore = await cookies();
     cookieStore.set(ACTIVE_TENANT_COOKIE, tenantId, {

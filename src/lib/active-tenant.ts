@@ -20,13 +20,13 @@ type Company = {
 
 export async function getActiveTenantContext() {
   const context = await getAuthorizationContext();
-  if (!context.user || !context.tenantIds.length) {
+  if (!context.user || !context.allTenantIds.length) {
     return { ...context, tenantId: null, company: null as Company | null };
   }
 
   const cookieStore = await cookies();
   const requestedTenantId = cookieStore.get(ACTIVE_TENANT_COOKIE)?.value ?? "";
-  const tenantId = context.tenantIds.includes(requestedTenantId) ? requestedTenantId : context.tenantIds[0];
+  const tenantId = context.allTenantIds.includes(requestedTenantId) ? requestedTenantId : context.allTenantIds[0];
   const { data: company, error } = await context.supabase
     .from("companies")
     .select("id,name,activity_type,country,currency,language,status,trial_ends_at,subscription_plan,subscription_expires_at,zones_tables_enabled")

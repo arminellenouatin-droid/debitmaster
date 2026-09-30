@@ -31,7 +31,8 @@ export async function PATCH(request: Request) {
     const billingPeriod = typeof body.billingPeriod === "string" ? body.billingPeriod.toUpperCase() : "MONTHLY";
     const priceXof = Number(body.priceXof);
     const description = typeof body.description === "string" ? body.description.trim().slice(0, 240) : "";
-    if (!subscriptionActivityCodes.includes(activityCode as (typeof subscriptionActivityCodes)[number]) || !subscriptionPlanCodes.includes(planCode as (typeof subscriptionPlanCodes)[number]) || !billingPeriodCodes.includes(billingPeriod as (typeof billingPeriodCodes)[number]) || !Number.isSafeInteger(priceXof) || priceXof <= 0) {
+    const commercePlanMismatch = (activityCode === "BOUTIQUE_COMMERCE") !== (planCode === "BOUTIQUE_COMMERCE");
+    if (!subscriptionActivityCodes.includes(activityCode as (typeof subscriptionActivityCodes)[number]) || !subscriptionPlanCodes.includes(planCode as (typeof subscriptionPlanCodes)[number]) || commercePlanMismatch || !billingPeriodCodes.includes(billingPeriod as (typeof billingPeriodCodes)[number]) || !Number.isSafeInteger(priceXof) || priceXof <= 0) {
       return errorResponse("Type d’établissement, période et prix valides requis.", 400);
     }
 

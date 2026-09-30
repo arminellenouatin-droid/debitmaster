@@ -5,19 +5,22 @@ import { defaultRolePermissions } from "@/lib/staff-permissions";
 export async function getAuthorizationContext() {
   const supabase = await createSupabaseServerClient();
   const { data: authData } = await supabase.auth.getUser();
-  if (!authData.user) return { supabase, user: null, tenantIds: [], role: null, employeeId: null, permissions: new Set<string>(), userType: null, isPlatformAdmin: false, affiliateId: null };
+  if (!authData.user) return { supabase, user: null, tenantIds: [], allTenantIds: [], role: null, employeeId: null, permissions: new Set<string>(), userType: null, isPlatformAdmin: false, isCommerceStaff: false, affiliateId: null };
 
   const user = authData.user;
-  const { data: ownedCompanies, error: ownedError } = await supabase.from("companies").select("id").eq("owner_user_id", user.id).is("deleted_at", null).limit(50);
+  const { data: ownedCompanies, error: ownedError } = await supabase.from("companies").select("id,activity_type").eq("owner_user_id", user.id).is("deleted_at", null).order("created_at", { ascending: false }).limit(1000);
   if (ownedError) throw new Error("Impossible de vérifier les établissements.");
-  const ownedTenantIds = (ownedCompanies ?? []).map((company) => company.id);
+  const allOwnedTenantIds = (ownedCompanies ?? []).map((company) => company.id);
+  const ownedTenantIds = (ownedCompanies ?? []).filter((company) => company.activity_type !== "BOUTIQUE_COMMERCE").map((company) => company.id);
 
   const { data: profile } = await supabase.from("profiles").select("tenant_id,role,user_type,status,must_change_password").eq("id", user.id).maybeSingle();
   const isPlatformAdmin = profile?.user_type === "SUPER_ADMIN" && profile.role === "MASTER_ADMIN" && profile.status === "ACTIVE";
   const userType = profile?.user_type ?? null;
+  const isCommerceStaff = profile?.role === "COMMERCE_STAFF";
   const { data: affiliate } = userType === "AFFILIATE" ? await supabase.from("platform_affiliates").select("id").eq("user_id", user.id).eq("status", "ACTIVE").maybeSingle() : { data: null };
   const { data: employee } = await supabase.from("employees").select("id,tenant_id,position,status").eq("user_id", user.id).is("deleted_at", null).eq("status", "ACTIVE").maybeSingle();
-  const tenantIds = employee?.tenant_id ? [employee.tenant_id] : ownedTenantIds;
+  const tenantIds = isCommerceStaff ? [] : employee?.tenant_id ? [employee.tenant_id] : ownedTenantIds;
+  const allTenantIds = isCommerceStaff ? [] : employee?.tenant_id ? [employee.tenant_id] : allOwnedTenantIds;
   const role = employee?.position ?? profile?.role ?? (ownedTenantIds.length ? "ADMINISTRATEUR" : "");
   const permissions = new Set(defaultRolePermissions[role] ?? []);
 
@@ -31,7 +34,7 @@ export async function getAuthorizationContext() {
     for (const permission of defaultRolePermissions.ADMINISTRATEUR) permissions.add(permission);
   }
 
-  return { supabase, user, tenantIds, role, employeeId: employee?.id ?? null, permissions, userType, isPlatformAdmin, affiliateId: affiliate?.id ?? null, mustChangePassword: Boolean(profile?.must_change_password) };
+  return { supabase, user, tenantIds, allTenantIds, role, employeeId: employee?.id ?? null, permissions, userType, isPlatformAdmin, isCommerceStaff, affiliateId: affiliate?.id ?? null, mustChangePassword: Boolean(profile?.must_change_password) };
 }
 
 export function can(context: Awaited<ReturnType<typeof getAuthorizationContext>>, permission: string) {
