@@ -1,19 +1,24 @@
 import Link from "next/link";
 import type { CommerceAccessMode } from "@/lib/commerce-auth";
+import { CommerceCompanySwitcher } from "@/components/CommerceCompanySwitcher";
 
 type NavItem = { label: string; href: string; permission?: string; ownerOnly?: boolean };
 const navItems: NavItem[] = [
   { label: "Tableau de bord", href: "/dashboard#commerce-home" },
+  { label: "Catalogue", href: "/dashboard/commerce/catalogue", permission: "catalog.view" },
+  { label: "Clients", href: "/dashboard/commerce/clients", permission: "customers.view" },
+  { label: "Fournisseurs", href: "/dashboard/commerce/fournisseurs", permission: "suppliers.view" },
   { label: "Magasins", href: "/dashboard#commerce-stores", permission: "stores.view" },
   { label: "Équipe et rôles", href: "/dashboard#commerce-team", permission: "team.view" },
   { label: "Journal d’audit", href: "/dashboard#commerce-audit", permission: "audit.view" },
   { label: "Abonnement", href: "/dashboard/subscription", ownerOnly: true },
 ];
 
-export function CommerceDashboardShell({ children, firstName, companyName, role, isOwner, accessMode, permissions }: {
+export function CommerceDashboardShell({ children, firstName, companyName, tenantId, role, isOwner, accessMode, permissions }: {
   children: React.ReactNode;
   firstName: string;
   companyName: string;
+  tenantId: string;
   role: string;
   isOwner: boolean;
   accessMode: CommerceAccessMode;
@@ -47,7 +52,7 @@ export function CommerceDashboardShell({ children, firstName, companyName, role,
     <header className="sticky top-0 z-20 border-b border-[var(--line)] bg-[var(--surface)]/95 px-4 py-3 backdrop-blur sm:px-6 lg:px-8">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3">
         <div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-[var(--secondary)]">Commerce d’achat-vente · établissement actif</p><p className="max-w-[70vw] truncate text-sm font-black text-[var(--primary)] sm:max-w-[30rem]">{companyName}</p></div>
-        <div className="flex items-center gap-3"><span className="hidden text-xs font-semibold text-[var(--muted)] sm:inline">Bonjour, {firstName}</span>{isOwner && <Link href="/dashboard/subscription" className="inline-flex min-h-10 items-center rounded-lg bg-[var(--primary)] px-3 text-xs font-black text-white">Abonnement</Link>}</div>
+        <div className="flex items-center gap-2"><span className="hidden text-xs font-semibold text-[var(--muted)] sm:inline">Bonjour, {firstName}</span>{isOwner && <CommerceCompanySwitcher tenantId={tenantId} />}{isOwner && <Link href="/dashboard/subscription" className="inline-flex min-h-10 items-center rounded-lg bg-[var(--primary)] px-3 text-xs font-black text-white">Abonnement</Link>}</div>
       </div>
     </header>
     {accessMessage && <div className={`border-b px-4 py-3 text-sm font-bold sm:px-6 lg:px-8 ${accessMode === "BLOCKED" ? "border-red-200 bg-red-50 text-red-800" : "border-amber-200 bg-amber-50 text-amber-900"}`} role="status"><div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3"><span>{accessMessage}</span>{isOwner && <Link href="/dashboard/subscription" className="underline underline-offset-2">Voir l’abonnement</Link>}</div></div>}
