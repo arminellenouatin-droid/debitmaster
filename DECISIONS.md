@@ -54,3 +54,22 @@ Ce document consigne toutes les décisions techniques, fonctionnelles et hypoth�
 - **Formats d'impression** :
   - Format Reçu thermique 58/80 mm pour caisse rapide.
   - Format Facture/Devis A4 avec coordonnées complètes de l'établissement, mentions légales et QR code de vérification.
+
+---
+
+## 5. Caisse, Règlements, Sessions & Clôtures Z (Sprint 5)
+- **Sessions de caisse (Ticket Z)** :
+  - Chaque caisse physique ou logique est modélisée dans `cash_registers` rattachée à un magasin.
+  - L'ouverture d'une session (`cash_register_sessions`) exige un fond de caisse initial (`opening_float`).
+  - Une seule session ouverte par caisse et par caissier à la fois.
+  - La clôture de caisse calcule le solde théorique attendu (`expected_cash = opening_float + encaissements espèces + entrées diverses - sorties diverses - dépenses`).
+  - L'écart (`closing_cash_counted - expected_cash`) exige un motif descriptif obligatoire s'il est non nul.
+- **Règlements multi-modes & mixtes** :
+  - Support de l'ensemble des modes d'encaissement de la sous-région : Espèces, MTN MoMo, Moov Money, Orange Money, Wave, Carte bancaire, Chèque, Virement bancaire, Crédit autorisé.
+  - Table `order_payments` horodatée et rattachée à la session de caisse active.
+  - Rendu de monnaie calculé automatiquement en temps réel sur la saisie des espèces reçues.
+- **Séparation stricte des tâches** :
+  - Le `CAISSIER` ne peut pas modifier les lignes d'un devis/facture.
+  - Le `VENDEUR` ne peut pas encaisser de règlements.
+  - Seul le règlement complet d'une commande (statut `PAID`) rend la commande disponible pour livraison dans l'espace du Magasinier (Sprint 6).
+
