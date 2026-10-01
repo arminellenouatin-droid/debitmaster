@@ -11,6 +11,7 @@ const navigation: ReadonlyArray<readonly [string, string, string]> = [
   ["💵", "Caisse & Règlements", "/dashboard/caissier"],
   ["🚚", "Livraisons & Magasin", "/dashboard/magasinier"],
   ["📥", "Achats & Approvisionnement", "/dashboard/approvisionnement"],
+  ["📊", "Inventaire Physique", "/dashboard/inventaire"],
   ["📦", "Produits et services", "/dashboard/catalog"],
   ["🍽", "Repas / Cuisine", "/dashboard/meals"],
   ["▦", "Plan de salle", "/dashboard/tables"],
@@ -127,11 +128,13 @@ export async function DashboardShell({ children, firstName }: { children: React.
     : activeContext.role === "APPROVISIONNEMENT"
     ? navigation.filter(([, label]) => ["Dashboard", "Achats & Approvisionnement", "Gestion des stocks", "Produits et services", "Profil"].includes(label))
     : activeContext.role === "MAGASINIER"
-    ? navigation.filter(([, label]) => ["Dashboard", "Livraisons & Magasin", "Achats & Approvisionnement", "Gestion des stocks", "Produits et services", "Profil"].includes(label))
+    ? navigation.filter(([, label]) => ["Dashboard", "Livraisons & Magasin", "Achats & Approvisionnement", "Inventaire Physique", "Gestion des stocks", "Produits et services", "Profil"].includes(label))
+    : activeContext.role === "INVENTAIRE"
+    ? navigation.filter(([, label]) => ["Dashboard", "Inventaire Physique", "Gestion des stocks", "Produits et services", "Profil"].includes(label))
     : activeContext.role === "GERANT" || activeContext.role === "GERANT_ADJOINT"
     ? navigation.filter(
         ([, label]) =>
-          ["Dashboard", "Devis & Ventes", "Caisse & Règlements", "Livraisons & Magasin", "Achats & Approvisionnement", "Produits et services", "Commandes", "Profil"].includes(label) ||
+          ["Dashboard", "Devis & Ventes", "Caisse & Règlements", "Livraisons & Magasin", "Achats & Approvisionnement", "Inventaire Physique", "Produits et services", "Commandes", "Profil"].includes(label) ||
           (label === "Plan de salle" && activeContext.permissions.has("tables.view")) ||
           (label === "Personnel" && activeContext.permissions.has("team.view")) ||
           (label === "Finance" && activeContext.permissions.has("finance.view")) ||

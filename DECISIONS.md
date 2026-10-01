@@ -117,5 +117,28 @@ Ce document consigne toutes les décisions techniques, fonctionnelles et hypoth�
   - L'opérateur Approvisionnement prépare et émet les DA et BC ; seul le Promoteur/Gérant peut approuver les montants au-delà du seuil.
   - Le Magasinier contrôle physiquement la réception de marchandise et les transferts.
 
+---
+
+## 8. Inventaires Physiques, Comptages, Écarts & Régularisations (Sprint 8)
+- **Circuit d'inventaire physique** :
+  - Numérotation séquentielle des sessions : `INV-YYYY-XXXXXX` via `next_document_number(tenant_id, 'INVENTORY_SESSION')`.
+  - Types d'inventaires supportés : Général (tout le magasin), Partiel (par catégorie ciblée), Tournant / Cyclique.
+  - Gel théorique : lors de l'ouverture de la session, le stock théorique en base (`store_inventory`) est capturé avec la valorisation unitaire (CMP) de chaque article (`commerce_inventory_items`).
+  - Option "Comptage à l'aveugle" (`is_blind_count`) : masque le stock théorique à la saisie et sur les fiches de comptage pour éviter les biais et fraudes.
+  - Fiche de comptage vierge imprimable au format A4 avec en-tête de l'établissement, magasin, date, colonnes pour Comptage 1, Recomptage, Observations et signatures du Chargé d'inventaire et du Gérant.
+- **Saisie des comptages, Recomptages & Écarts** :
+  - Double comptage : Comptage 1 puis Recomptage si écart constaté.
+  - Calcul automatique et en temps réel des écarts de quantité (`final_qty - theo_qty`) et de valorisation financière (`variance_amount_xof`).
+  - Badges visuels de statut par ligne : Conforme (vert), Écart (ambre/rouge), Recompté (bleu), Régularisé (violet).
+  - Justification obligatoire par l'opérateur pour chaque ligne en écart.
+- **Validation & Régularisation automatique de stock** :
+  - La validation officielle met à jour le stock physique officiel dans `store_inventory` pour l'aligner sur la quantité physique finale constatée.
+  - Chaque écart donne lieu à la génération automatique d'un mouvement d'ajustement dans `stock_movements` (`movement_type = 'ADJUSTMENT'`) avec la référence `INV-YYYY-XXXXXX` et la justification.
+  - La session passe en statut `VALIDATED` et devient verrouillée et immuable.
+- **Séparation stricte des tâches** :
+  - Le rôle `INVENTAIRE` ou `MAGASINIER` peut créer une session, imprimer les fiches, saisir les comptages et justifier les écarts (`inventory.view`, `inventory.count`).
+  - **SEUL** le Promoteur (`ADMINISTRATEUR`), le Gérant ou un utilisateur habilité avec `inventory.validate` peut valider l'inventaire et autoriser l'écriture financière de régularisation du stock.
+
+
 
 
