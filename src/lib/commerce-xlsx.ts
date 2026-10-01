@@ -52,7 +52,7 @@ export function readCommerceWorkbookRows(bytes: Uint8Array, maxRows: number, max
   const cells = Object.keys(sheet).filter((key) => !key.startsWith("!"));
   if (cells.length > (maxRows + 1) * 20) throw new Error("La feuille contient trop de cellules.");
   if (cells.some((address) => Boolean((sheet[address] as XLSX.CellObject | undefined)?.f))) throw new Error("Les cellules contenant des formules ne sont pas acceptées. Utilisez des valeurs simples.");
-  return XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: "", blankrows: false }).map((row) =>
-    Array.isArray(row) ? row.map((cell) => String(cell ?? "")) : [],
+  return (XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: "", blankrows: false }) as unknown[][]).map((row: unknown) =>
+    Array.isArray(row) ? row.map((cell: unknown) => String(cell ?? "")) : [],
   );
 }
