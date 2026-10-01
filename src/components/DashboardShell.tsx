@@ -24,6 +24,7 @@ const navigation: ReadonlyArray<readonly [string, string, string]> = [
   ["♙", "Personnel", "/dashboard/personnel"],
   ["◫", "Finance", "/dashboard/finance"],
   ["📑", "Comptabilité SYSCOHADA", "/dashboard/comptabilite"],
+  ["📊", "Rapports & KPI", "/dashboard/rapports"],
   ["✉", "Messages", "/dashboard/messages"],
   ["✦", "Gestion Power", "/dashboard/power"],
   ["⚙", "Profil", "/dashboard/settings"],
@@ -133,11 +134,11 @@ export async function DashboardShell({ children, firstName }: { children: React.
     : activeContext.role === "INVENTAIRE"
     ? navigation.filter(([, label]) => ["Dashboard", "Inventaire Physique", "Gestion des stocks", "Produits et services", "Profil"].includes(label))
     : activeContext.role === "COMPTABLE"
-    ? navigation.filter(([, label]) => ["Dashboard", "Finance", "Comptabilité SYSCOHADA", "Produits et services", "Profil"].includes(label))
+    ? navigation.filter(([, label]) => ["Dashboard", "Finance", "Comptabilité SYSCOHADA", "Rapports & KPI", "Produits et services", "Profil"].includes(label))
     : activeContext.role === "GERANT" || activeContext.role === "GERANT_ADJOINT"
     ? navigation.filter(
         ([, label]) =>
-          ["Dashboard", "Devis & Ventes", "Caisse & Règlements", "Livraisons & Magasin", "Achats & Approvisionnement", "Inventaire Physique", "Finance", "Comptabilité SYSCOHADA", "Produits et services", "Commandes", "Profil"].includes(label) ||
+          ["Dashboard", "Devis & Ventes", "Caisse & Règlements", "Livraisons & Magasin", "Achats & Approvisionnement", "Inventaire Physique", "Finance", "Comptabilité SYSCOHADA", "Rapports & KPI", "Produits et services", "Commandes", "Profil"].includes(label) ||
           (label === "Plan de salle" && activeContext.permissions.has("tables.view")) ||
           (label === "Personnel" && activeContext.permissions.has("team.view")) ||
           (label === "WIFI" && activeContext.permissions.has("services.view"))

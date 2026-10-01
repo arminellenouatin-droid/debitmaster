@@ -182,6 +182,48 @@ Ce document consigne toutes les décisions techniques, fonctionnelles et hypoth�
   - Permissions dédiées `accounting.view`, `accounting.entry`, `accounting.close`.
   - Attribuées exclusivement aux profils `COMPTABLE`, `GERANT` et `ADMINISTRATEUR`.
 
+---
+
+## 11. Personnel, Présences, Commissions, Dashboards par profil, Rapports et Notifications (Sprint 11)
+- **Gestion du Personnel & Fiches Collaborateurs** :
+  - Affectation multi-magasins et multi-rôles au sein du tenant `BOUTIQUE_COMMERCE`.
+  - Statut actif/désactivé et gestion des habilitations sans rupture d'isolation.
+- **Présences & Pointage Journalier** :
+  - Table `commerce_attendance` avec date de travail, horodatage d'arrivée (`check_in_time`) et de départ (`check_out_time`).
+  - Statuts d'assiduité : `PRESENT`, `LATE`, `ABSENT`, `ON_LEAVE`, `EXCUSED`.
+  - Calcul et suivi en minutes des retards.
+- **Objectifs de Vente & Calcul Automatisé des Commissions** :
+  - Table `commerce_sales_targets` : Quotas mensuels en FCFA fixés par commercial (`target_revenue_xof`).
+  - Formules de rémunération configurables :
+    - Pourcentage sur le Chiffre d'Affaires encaissé (`REVENUE_PERCENT`).
+    - Pourcentage sur la Marge brute générée (`MARGIN_PERCENT`).
+    - Prime fixe sur palier d'atteinte du quota (`FIXED_BONUS`).
+  - Calcul dynamique en temps réel fondé sur les factures et commandes réglées.
+  - Table `commerce_commissions` avec cycle de validation : `PENDING` $\rightarrow$ `APPROVED` $\rightarrow$ `PAID`.
+- **Dashboards Opérationnels Finaux par Profil** :
+  - Sélecteur et vue dédiée selon le rôle de l'utilisateur avec indicateurs et raccourcis d'action :
+    - **Promoteur / Gérant** : Chiffres d'affaires jour/mois, trésorerie active disponible (Caisse, Banque, Mobile Money), alertes de validation en attente (dépenses > 100k, achats, inventaires).
+    - **Vendeur / Commercial** : Ventes jour/mois, jauge de progression d'objectif, commission estimée, devis en cours, factures à encaisser.
+    - **Caissier** : File des commandes en attente d'encaissement, encaissements du jour, session de caisse en cours.
+    - **Magasinier** : Bons de livraison à préparer (BL), réceptions attendues (BR), alertes de stock critique.
+    - **Approvisionnement** : Suggestions de réapprovisionnement sous seuil min, bons de commande (BC) en cours, dettes fournisseurs.
+    - **Inventaire** : Sessions actives, fiches de comptage, état des régularisations de stock.
+    - **Comptable** : Écritures récentes, conformité partie double, raccourcis balance et états financiers.
+- **Rapports Analytiques & Classification ABC de Pareto** :
+  - Filtrage multi-périodes : Aujourd'hui, 7 jours, 30 jours, Ce mois.
+  - Indicateurs de rentabilité : CA Net, Coût CMP Total, Marge Brute Globale (FCFA et %), Panier Moyen.
+  - Ventilation par catégorie de produits et performance par commercial.
+  - **Classification ABC (Loi de Pareto)** :
+    - Classe A : Produits générant les premiers 80% du CA (coeur stratégique).
+    - Classe B : Produits intermédiaires générant les 15% suivants (80% à 95%).
+    - Classe C : Produits dormants / faible rotation générant les derniers 5% (95% à 100%).
+  - Balances âgées pour créances clients et dettes fournisseurs (< 30j, 30-60j, > 60j).
+  - Export CSV direct compatible Excel (UTF-8 BOM) et format d'impression A4.
+- **Centre de Notifications & Alertes Métier** :
+  - Table `commerce_notifications` avec typologie d'alerte (`INFO`, `SUCCESS`, `WARNING`, `ALERT`), lien d'action directe et horodatage.
+  - Composant cloche interactif `CommerceNotificationBell` avec badge des non-lues et marquage instantané.
+
+
 
 
 
