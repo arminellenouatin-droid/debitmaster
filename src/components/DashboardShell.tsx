@@ -10,6 +10,7 @@ const navigation: ReadonlyArray<readonly [string, string, string]> = [
   ["📋", "Devis & Ventes", "/dashboard/vendeur"],
   ["💵", "Caisse & Règlements", "/dashboard/caissier"],
   ["🚚", "Livraisons & Magasin", "/dashboard/magasinier"],
+  ["📥", "Achats & Approvisionnement", "/dashboard/approvisionnement"],
   ["📦", "Produits et services", "/dashboard/catalog"],
   ["🍽", "Repas / Cuisine", "/dashboard/meals"],
   ["▦", "Plan de salle", "/dashboard/tables"],
@@ -123,18 +124,20 @@ export async function DashboardShell({ children, firstName }: { children: React.
     ? navigation.filter(([, label]) => ["Dashboard", "Caisse & Règlements", "Profil"].includes(label))
     : activeContext.role === "CHEF_CUISINE" || activeContext.role === "CUISINIER"
     ? navigation.filter(([, label]) => ["Dashboard", "Produits et services", "Repas / Cuisine", "Profil"].includes(label))
+    : activeContext.role === "APPROVISIONNEMENT"
+    ? navigation.filter(([, label]) => ["Dashboard", "Achats & Approvisionnement", "Gestion des stocks", "Produits et services", "Profil"].includes(label))
     : activeContext.role === "MAGASINIER"
-    ? navigation.filter(([, label]) => ["Dashboard", "Livraisons & Magasin", "Gestion des stocks", "Produits et services", "Profil"].includes(label))
+    ? navigation.filter(([, label]) => ["Dashboard", "Livraisons & Magasin", "Achats & Approvisionnement", "Gestion des stocks", "Produits et services", "Profil"].includes(label))
     : activeContext.role === "GERANT" || activeContext.role === "GERANT_ADJOINT"
     ? navigation.filter(
         ([, label]) =>
-          ["Dashboard", "Devis & Ventes", "Caisse & Règlements", "Livraisons & Magasin", "Produits et services", "Commandes", "Profil"].includes(label) ||
+          ["Dashboard", "Devis & Ventes", "Caisse & Règlements", "Livraisons & Magasin", "Achats & Approvisionnement", "Produits et services", "Commandes", "Profil"].includes(label) ||
           (label === "Plan de salle" && activeContext.permissions.has("tables.view")) ||
           (label === "Personnel" && activeContext.permissions.has("team.view")) ||
           (label === "Finance" && activeContext.permissions.has("finance.view")) ||
           (label === "WIFI" && activeContext.permissions.has("services.view"))
       )
-    : navigation.filter(([, label]) => label !== "Ventes" && label !== "Approvisionnement");
+    : navigation.filter(([, label]) => label !== "Ventes" && (label !== "Approvisionnement" || activeContext.company?.activity_type === "BOUTIQUE_COMMERCE"));
 
   const visibleNavigation: ReadonlyArray<NavItem> =
     (activeContext.company?.activity_type === "HOTEL_AUBERGE" || activeContext.company?.activity_type === "POWER") &&

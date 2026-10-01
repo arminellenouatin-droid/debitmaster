@@ -94,4 +94,28 @@ Ce document consigne toutes les décisions techniques, fonctionnelles et hypoth�
   - Le `MAGASINIER` n'a pas accès à la caisse ni aux devis de vente.
   - Le `VENDEUR` ne peut pas valider lui-même la sortie de stock.
 
+---
+
+## 7. Approvisionnements complets, Réceptions 3-voies & Transferts (Sprint 7)
+- **Circuit d'approvisionnement** :
+  - Suggestion automatique de réapprovisionnement basée sur les seuils d'alerte et points de commande (`current_stock <= reorder_point`).
+  - Demandes d'Achat (DA) avec numérotation séquentielle sans trou `DA-YYYY-XXXXXX`.
+  - Bons de Commande Fournisseur (BC) avec numérotation `BC-YYYY-XXXXXX`.
+  - Seuil d'approbation : les commandes $\ge$ 500 000 FCFA requièrent la validation explicite du Promoteur ou du Gérant (`PENDING_APPROVAL`).
+  - Impression A4 du Bon de Commande avec ventilation des frais d'approche (transport, douane, manutention).
+- **Réception Fournisseur (BR) & Rapprochement 3-voies** :
+  - Numérotation séquentielle `BR-YYYY-XXXXXX`.
+  - Rapprochement entre Commande (BC) et Réception physique (BR) avec saisie de la référence facture/BL fournisseur.
+  - Entrée en stock physique immédiate (`store_inventory`) avec mouvement `PURCHASE_RECEIPT` dans `stock_movements`.
+  - Recalcul automatique du Coût Moyen Pondéré (CMP) selon la formule officielle :
+    $CMP_{nouveau} = \frac{(Stock_{ancien} \times CMP_{ancien}) + (Q_{reçue} \times Coût_{revient\_unitaire})}{Stock_{ancien} + Q_{reçue}}$
+  - Clôture ou passage en réception partielle (`PARTIALLY_RECEIVED` vs `RECEIVED`) du Bon de Commande.
+- **Transferts Inter-Magasins & Dépôts** :
+  - Numérotation séquentielle `TRF-YYYY-XXXXXX`.
+  - Cycle en deux temps : Expédition (`IN_TRANSIT` avec décrément stock source et mouvement `OUT_TRANSFER`) puis Réception (`RECEIVED` avec incrément stock cible et mouvement `IN_TRANSFER`).
+- **Séparation stricte des tâches** :
+  - L'opérateur Approvisionnement prépare et émet les DA et BC ; seul le Promoteur/Gérant peut approuver les montants au-delà du seuil.
+  - Le Magasinier contrôle physiquement la réception de marchandise et les transferts.
+
+
 
