@@ -6,6 +6,7 @@ type NavItem = { label: string; href: string; permission?: string; ownerOnly?: b
 const navItems: NavItem[] = [
   { label: "Tableau de bord", href: "/dashboard#commerce-home" },
   { label: "Catalogue", href: "/dashboard/commerce/catalogue", permission: "catalog.view" },
+  { label: "Stock", href: "/dashboard/commerce/stock", permission: "stock.view" },
   { label: "Clients", href: "/dashboard/commerce/clients", permission: "customers.view" },
   { label: "Fournisseurs", href: "/dashboard/commerce/fournisseurs", permission: "suppliers.view" },
   { label: "Magasins", href: "/dashboard#commerce-stores", permission: "stores.view" },
