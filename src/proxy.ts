@@ -30,7 +30,12 @@ export async function proxy(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   const { data: profile } = user ? await supabase.from("profiles").select("tenant_id,user_type,role,status,must_change_password").eq("id", user.id).maybeSingle() : { data: null };
   const isPlatformAdmin = (candidate: { user_type?: string | null; role?: string | null; status?: string | null } | null) => candidate?.user_type === "SUPER_ADMIN" && candidate.role === "MASTER_ADMIN" && candidate.status === "ACTIVE";
-  const isPrivateArea = request.nextUrl.pathname.startsWith("/dashboard") || request.nextUrl.pathname.startsWith("/admin") || request.nextUrl.pathname.startsWith("/affilie");
+  const isPrivateArea =
+    request.nextUrl.pathname.startsWith("/dashboard") ||
+    request.nextUrl.pathname.startsWith("/admin") ||
+    request.nextUrl.pathname.startsWith("/affilie") ||
+    request.nextUrl.pathname.startsWith("/creationboutique") ||
+    request.nextUrl.pathname.startsWith("/choixprofil");
   if (!isPrivateArea) return response;
   if (!user) {
     const redirectUrl = request.nextUrl.clone();
@@ -122,4 +127,4 @@ export async function proxy(request: NextRequest) {
   return response;
 }
 
-export const config = { matcher: ["/dashboard/:path*", "/admin/:path*", "/affilie/:path*", "/auth/callback"] };
+export const config = { matcher: ["/dashboard/:path*", "/admin/:path*", "/affilie/:path*", "/creationboutique/:path*", "/choixprofil/:path*", "/auth/callback"] };

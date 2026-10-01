@@ -1,5 +1,5 @@
 // DebitMaster SaaS plans: legacy activity plans stay unchanged; Commerce has its own per-establishment offer.
-export const subscriptionPlanCodes = ["BUVETTE", "BAR_RESTAURANT", "HOTEL_AUBERGE", "SPECIAL", "BOUTIQUE_COMMERCE"] as const;
+export const subscriptionPlanCodes = ["BUVETTE", "BAR_RESTAURANT", "HOTEL_AUBERGE", "BOUTIQUE_COMMERCE", "SPECIAL"] as const;
 export type SubscriptionPlanCode = (typeof subscriptionPlanCodes)[number];
 export const standardSubscriptionPlanCodes = ["BUVETTE", "BAR_RESTAURANT", "HOTEL_AUBERGE", "BOUTIQUE_COMMERCE"] as const;
 export type StandardSubscriptionPlanCode = (typeof standardSubscriptionPlanCodes)[number];
@@ -13,8 +13,8 @@ const planDefinitions: Record<SubscriptionPlanCode, PlanDefinition> = {
   BUVETTE: { label: "Buvette", monthlyPriceXof: 40000, annualPriceXof: 360000, description: "Pour vendre des boissons uniquement.", features: ["Vente de boissons", "Stocks et inventaire", "Équipe et rapports"] },
   BAR_RESTAURANT: { label: "Bar et restaurant", monthlyPriceXof: 60000, annualPriceXof: 540000, description: "Pour vendre des boissons et des repas, y compris pour une boîte de nuit ou un lounge.", features: ["Vente de boissons", "Vente de repas", "Commandes, cuisine et stocks", "Équipe et rapports"] },
   HOTEL_AUBERGE: { label: "Hôtel et auberge", monthlyPriceXof: 75000, annualPriceXof: 675000, description: "Pour vendre des boissons, des repas et gérer des chambres.", features: ["Vente de boissons", "Vente de repas", "Chambres et hébergement", "Équipe et rapports"] },
+  BOUTIQUE_COMMERCE: { label: "Boutique & Commerce", monthlyPriceXof: 50000, annualPriceXof: 450000, description: "Pour tout commerce de négoce, vente au détail ou demi-gros.", features: ["Catalogue, conditionnements et codes-barres", "Devis, proformas et facturation", "Multi-magasins et inventaire", "Gestion clients et équipe"] },
   SPECIAL: { label: "Spécial sur cotation", monthlyPriceXof: 0, annualPriceXof: 0, description: "Ajoutez des activités complémentaires comme Gym, Lavage ou Wi-Fi après étude de votre demande.", features: ["Activités complémentaires sur demande", "Prix personnalisé", "Environnement configuré selon le devis"], quoteRequired: true },
-  BOUTIQUE_COMMERCE: { label: "Boutique & Commerce", monthlyPriceXof: 50000, annualPriceXof: 450000, description: "Pour les commerces d’achat-vente en magasin.", features: ["Achat et vente de marchandises", "Magasins, stocks et inventaires", "Caisse, équipe et rapports"] },
 };
 
 const activityDefinitions: Record<string, { label: string; includedServices: string[]; commonServices: string[] }> = {
@@ -22,7 +22,7 @@ const activityDefinitions: Record<string, { label: string; includedServices: str
   BAR_RESTAURANT: { label: "Bar et restaurant", includedServices: ["Vente de boissons", "Vente de repas"], commonServices: ["Commandes, cuisine, stocks, équipe et rapports"] },
   NIGHTCLUB_LOUNGE: { label: "Boîte de nuit et lounge", includedServices: ["Vente de boissons", "Vente de repas"], commonServices: ["Commandes, stocks, équipe et rapports"] },
   HOTEL_AUBERGE: { label: "Hôtel et auberge", includedServices: ["Vente de boissons", "Vente de repas", "Chambres et hébergement"], commonServices: ["Stocks, équipe et rapports"] },
-  BOUTIQUE_COMMERCE: { label: "Boutique & Commerce", includedServices: ["Achat-vente en magasin"], commonServices: ["Catalogue, caisse, stocks, approvisionnement et comptabilité commerciale"] },
+  BOUTIQUE_COMMERCE: { label: "Boutique & Commerce", includedServices: ["Achat-vente en magasin", "Catalogue et vente au comptoir", "Devis et facturation"], commonServices: ["Stocks multi-magasins, inventaire, équipe et rapports"] },
 };
 
 export const subscriptionActivityCodes = ["BUVETTE", "BAR_RESTAURANT", "NIGHTCLUB_LOUNGE", "HOTEL_AUBERGE", "BOUTIQUE_COMMERCE"] as const;

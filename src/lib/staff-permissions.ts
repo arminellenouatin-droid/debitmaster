@@ -31,16 +31,21 @@ export const permissionCatalog = [
   { key: "services.manage", label: "Gérer les services et leurs prix", group: "Power" },
   { key: "team.salary.manage", label: "Gérer les salaires", group: "Équipe" },
   { key: "power.view", label: "Consulter les modules Power", group: "Power" },
+  { key: "quotes.view", label: "Consulter les devis et proformas", group: "Devis & Ventes" },
+  { key: "quotes.create", label: "Créer et modifier des devis", group: "Devis & Ventes" },
+  { key: "quotes.convert", label: "Convertir un devis en facture", group: "Devis & Ventes" },
+  { key: "invoices.view", label: "Consulter les factures de vente", group: "Facturation" },
 ] as const;
 
 export const defaultRolePermissions: Record<string, string[]> = {
   SERVEUR: ["orders.view", "orders.create", "orders.receive", "orders.deliver", "tables.view", "payments.create"],
+  VENDEUR: ["orders.view", "orders.create", "quotes.view", "quotes.create", "quotes.convert", "invoices.view"],
   SUPERVISEUR: permissionCatalog.map((permission) => permission.key),
   MAGASINIER: ["stock.view", "stock.receive", "stock.issue", "stock.handoff", "products.manage"],
-  GERANT: ["orders.view", "orders.prepare", "orders.handoff", "stock.view", "stock.accept_counter", "team.view", "team.manage", "tables.view", "tables.manage", "finance.view", "reports.view", "reports.daily_close", "messages.view", "messages.send"],
+  GERANT: ["orders.view", "orders.prepare", "orders.handoff", "quotes.view", "quotes.create", "quotes.convert", "invoices.view", "stock.view", "stock.accept_counter", "team.view", "team.manage", "tables.view", "tables.manage", "finance.view", "reports.view", "reports.daily_close", "messages.view", "messages.send"],
   BARMAN: ["orders.view", "orders.create", "stock.view", "tables.view", "payments.create"],
   SECRETAIRE: ["orders.view", "team.view", "reports.view", "messages.view", "messages.send", "tables.view"],
-  COMPTABLE: ["finance.view", "reports.view"],
+  COMPTABLE: ["finance.view", "reports.view", "invoices.view", "quotes.view"],
   APPROVISIONNEMENT: ["stock.view", "stock.receive", "stock.issue", "reports.view"],
   CUISINIER: ["orders.view", "orders.prepare", "orders.handoff"],
   CHEF_CUISINE: ["orders.view", "orders.prepare", "stock.view", "stock.accept_kitchen", "products.manage", "messages.view", "messages.send"],
@@ -50,11 +55,11 @@ export const defaultRolePermissions: Record<string, string[]> = {
   WIFI: ["services.view", "payments.create", "power.view"],
   SECURITE: ["power.view"],
   INVENTAIRE: ["stock.view", "stock.audit", "reports.view"],
-  GERANT_ADJOINT: ["orders.view", "orders.prepare", "orders.handoff", "stock.view", "stock.accept_counter", "team.view", "team.manage", "tables.view", "tables.manage", "finance.view", "reports.view", "reports.daily_close", "messages.view", "messages.send", "activities.view", "services.view", "power.view"],
-  CAISSIER: ["finance.view", "payments.create", "reports.view", "power.view"],
+  GERANT_ADJOINT: ["orders.view", "orders.prepare", "orders.handoff", "quotes.view", "quotes.create", "quotes.convert", "invoices.view", "stock.view", "stock.accept_counter", "team.view", "team.manage", "tables.view", "tables.manage", "finance.view", "reports.view", "reports.daily_close", "messages.view", "messages.send", "activities.view", "services.view", "power.view"],
+  CAISSIER: ["finance.view", "payments.create", "reports.view", "invoices.view", "power.view"],
   ADMINISTRATEUR: permissionCatalog.map((permission) => permission.key),
 };
 
 export const roleLabels: Record<string, string> = {
-  SERVEUR: "Serveur", SUPERVISEUR: "Superviseur", MAGASINIER: "Magasinier", GERANT: "Gérant", BARMAN: "Barman", SECRETAIRE: "Secrétaire", COMPTABLE: "Comptable", APPROVISIONNEMENT: "Approvisionnement", CUISINIER: "Cuisinier", CHEF_CUISINE: "Chef cuisine", SECURITE: "Sécurité", INVENTAIRE: "Chargé d’inventaire", GYM: "Équipe gym", AUBERGE: "Équipe auberge", LAVAGE: "Équipe lavage", WIFI: "Équipe Wi-Fi", GERANT_ADJOINT: "Gérant adjoint", CAISSIER: "Caissier", ADMINISTRATEUR: "Administrateur",
+  SERVEUR: "Serveur", VENDEUR: "Vendeur / Commercial", SUPERVISEUR: "Superviseur", MAGASINIER: "Magasinier", GERANT: "Gérant", BARMAN: "Barman", SECRETAIRE: "Secrétaire", COMPTABLE: "Comptable", APPROVISIONNEMENT: "Approvisionnement", CUISINIER: "Cuisinier", CHEF_CUISINE: "Chef cuisine", SECURITE: "Sécurité", INVENTAIRE: "Chargé d’inventaire", GYM: "Équipe gym", AUBERGE: "Équipe auberge", LAVAGE: "Équipe lavage", WIFI: "Équipe Wi-Fi", GERANT_ADJOINT: "Gérant adjoint", CAISSIER: "Caissier", ADMINISTRATEUR: "Administrateur",
 };

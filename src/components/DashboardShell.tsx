@@ -7,6 +7,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 const navigation: ReadonlyArray<readonly [string, string, string]> = [
   ["⌂", "Dashboard", "/dashboard"],
+  ["📋", "Devis & Ventes", "/dashboard/vendeur"],
   ["📦", "Produits et services", "/dashboard/catalog"],
   ["🍽", "Repas / Cuisine", "/dashboard/meals"],
   ["▦", "Plan de salle", "/dashboard/tables"],
@@ -114,6 +115,8 @@ export async function DashboardShell({ children, firstName }: { children: React.
     ? navigation.filter(([, label]) => label !== "Ventes")
     : activeContext.role === "SERVEUR"
     ? navigation.filter(([, label]) => ["Dashboard", "Commandes", "Profil"].includes(label))
+    : activeContext.role === "VENDEUR"
+    ? navigation.filter(([, label]) => ["Dashboard", "Devis & Ventes", "Produits et services", "Profil"].includes(label))
     : activeContext.role === "CHEF_CUISINE" || activeContext.role === "CUISINIER"
     ? navigation.filter(([, label]) => ["Dashboard", "Produits et services", "Repas / Cuisine", "Profil"].includes(label))
     : activeContext.role === "MAGASINIER"
@@ -121,7 +124,7 @@ export async function DashboardShell({ children, firstName }: { children: React.
     : activeContext.role === "GERANT" || activeContext.role === "GERANT_ADJOINT"
     ? navigation.filter(
         ([, label]) =>
-          ["Dashboard", "Produits et services", "Commandes", "Profil"].includes(label) ||
+          ["Dashboard", "Devis & Ventes", "Produits et services", "Commandes", "Profil"].includes(label) ||
           (label === "Plan de salle" && activeContext.permissions.has("tables.view")) ||
           (label === "Personnel" && activeContext.permissions.has("team.view")) ||
           (label === "Finance" && activeContext.permissions.has("finance.view")) ||

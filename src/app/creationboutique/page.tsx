@@ -5,8 +5,9 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 
 const activities = [
-  { value: "BUVETTE", label: "Buvette", text: "Pour un point de vente simple et rapide." },
+  { value: "BOUTIQUE_COMMERCE", label: "Boutique & Commerce", text: "Pour commerce de détail, demi-gros, quincaillerie, alimentation ou magasin." },
   { value: "BAR_RESTAURANT", label: "Bar & restaurant", text: "Pour gérer salle, cuisine, commandes et stocks." },
+  { value: "BUVETTE", label: "Buvette", text: "Pour un point de vente simple et rapide." },
   { value: "NIGHTCLUB_LOUNGE", label: "Nightclub & lounge", text: "Pour les établissements avec service et ambiance." },
   { value: "HOTEL_AUBERGE", label: "Hôtel et auberge", text: "Pour gérer les chambres, nuitées et services d’hébergement." },
   { value: "BOUTIQUE_COMMERCE", label: "Boutique & Commerce", text: "Pour l’achat-vente en magasin : marchandises, stock, caisse et fournisseurs." },
