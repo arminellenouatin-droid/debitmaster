@@ -23,6 +23,7 @@ const navigation: ReadonlyArray<readonly [string, string, string]> = [
   ["◌", "WIFI", "/dashboard/wifi"],
   ["♙", "Personnel", "/dashboard/personnel"],
   ["◫", "Finance", "/dashboard/finance"],
+  ["📑", "Comptabilité SYSCOHADA", "/dashboard/comptabilite"],
   ["✉", "Messages", "/dashboard/messages"],
   ["✦", "Gestion Power", "/dashboard/power"],
   ["⚙", "Profil", "/dashboard/settings"],
@@ -131,13 +132,14 @@ export async function DashboardShell({ children, firstName }: { children: React.
     ? navigation.filter(([, label]) => ["Dashboard", "Livraisons & Magasin", "Achats & Approvisionnement", "Inventaire Physique", "Gestion des stocks", "Produits et services", "Profil"].includes(label))
     : activeContext.role === "INVENTAIRE"
     ? navigation.filter(([, label]) => ["Dashboard", "Inventaire Physique", "Gestion des stocks", "Produits et services", "Profil"].includes(label))
+    : activeContext.role === "COMPTABLE"
+    ? navigation.filter(([, label]) => ["Dashboard", "Finance", "Comptabilité SYSCOHADA", "Produits et services", "Profil"].includes(label))
     : activeContext.role === "GERANT" || activeContext.role === "GERANT_ADJOINT"
     ? navigation.filter(
         ([, label]) =>
-          ["Dashboard", "Devis & Ventes", "Caisse & Règlements", "Livraisons & Magasin", "Achats & Approvisionnement", "Inventaire Physique", "Produits et services", "Commandes", "Profil"].includes(label) ||
+          ["Dashboard", "Devis & Ventes", "Caisse & Règlements", "Livraisons & Magasin", "Achats & Approvisionnement", "Inventaire Physique", "Finance", "Comptabilité SYSCOHADA", "Produits et services", "Commandes", "Profil"].includes(label) ||
           (label === "Plan de salle" && activeContext.permissions.has("tables.view")) ||
           (label === "Personnel" && activeContext.permissions.has("team.view")) ||
-          (label === "Finance" && activeContext.permissions.has("finance.view")) ||
           (label === "WIFI" && activeContext.permissions.has("services.view"))
       )
     : navigation.filter(([, label]) => label !== "Ventes" && (label !== "Approvisionnement" || activeContext.company?.activity_type === "BOUTIQUE_COMMERCE"));

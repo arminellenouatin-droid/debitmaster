@@ -161,6 +161,28 @@ Ce document consigne toutes les décisions techniques, fonctionnelles et hypoth�
   - Génération automatique du plan d'amortissement prévisionnel linéaire complet sur la durée d'utilité (1 à 50 ans) : Base, Dotation annuelle, Amortissements cumulés, Valeur Nette Comptable (VNC).
   - Module de sortie d'actif (Cession ou Mise au rebut) avec calcul automatique du résultat de cession ($Prix - VNC$).
 
+---
+
+## 10. Comptabilité Générale SYSCOHADA Révisé (Sprint 10)
+- **Plan Comptable SYSCOHADA Révisé (Classes 1 à 8)** :
+  - Pré-initialisation automatique et isolée par établissement (`tenant_id`) de tous les comptes directeurs et usuels du système comptable ouest-africain (Classe 1 : Capitaux propres & emprunts, Classe 2 : Actif immobilisé, Classe 3 : Stocks, Classe 4 : Tiers [411 Clients, 401 Fournisseurs, 421 Personnel, 44 État], Classe 5 : Trésorerie [521 Banques, 571 Caisse, 572 Mobile Money], Classe 6 : Charges [601 Achats, 6031 Variation stocks, 605/62/63 Services, 66 Frais de personnel, 68 Dotations], Classe 7 : Produits [701 Ventes marchandises, 706 Prestations, 77 Revenus financiers], Classe 8 : H.A.O.).
+  - Possibilité d'enrichissement et d'adjonction de sous-comptes personnalisés à tout moment.
+- **Journaux Auxiliaires Standardisés** :
+  - Ventes (`VE`), Achats (`AC`), Banque (`BQ`), Caisse (`CA`), Opérations Diverses (`OD`), À-Nouveau (`AN`), Immobilisations (`IM`).
+- **Principe Fondamental de la Partie Double & Contrôle d'Équilibre** :
+  - Vérification obligatoire : $\sum \text{Débits} = \sum \text{Crédits}$.
+  - Rejet bloquant immédiat (Code HTTP 400) par le backend si l'écriture est déséquilibrée, avec indication de l'écart exact en FCFA.
+  - Numérotation chronologique continue et infalsifiable `ECR-YYYY-XXXXXX`.
+- **Génération Temps Réel des États Réglementaires OHADA** :
+  - **Balance Générale à 6 colonnes** : Mouvements période (Débit/Crédit), Cumul (Débit/Crédit), Soldes de clôture (Débiteur/Créditeur) avec vérification de l'égalité globale $\sum \text{Soldes Débiteurs} = \sum \text{Soldes Créditeurs}$.
+  - **Grand Livre des Comptes** : Historique exhaustif des écritures compte par compte avec solde progressif en ligne.
+  - **Compte de Résultat en Solde Intermédiaire de Gestion (SIG)** : Calcul automatisé de la Marge Commerciale (701 - 601 - 6031), Valeur Ajoutée (VA), Excédent Brut d'Exploitation (EBE), Résultat d'Exploitation (REX), Résultat Financier, Résultat Hors Activités Ordinaires (HAO) et Résultat Net de l'exercice.
+  - **Bilan SYSCOHADA** : Contrôle d'équilibre Actif (Immobilisations nettes + Stocks + Créances clients + Trésorerie active) vs Passif (Capitaux propres + Résultat net + Dettes fournisseurs + Trésorerie passive).
+- **Habilitations & Rôles** :
+  - Permissions dédiées `accounting.view`, `accounting.entry`, `accounting.close`.
+  - Attribuées exclusivement aux profils `COMPTABLE`, `GERANT` et `ADMINISTRATEUR`.
+
+
 
 
 
