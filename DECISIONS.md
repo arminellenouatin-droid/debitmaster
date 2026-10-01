@@ -139,6 +139,29 @@ Ce document consigne toutes les décisions techniques, fonctionnelles et hypoth�
   - Le rôle `INVENTAIRE` ou `MAGASINIER` peut créer une session, imprimer les fiches, saisir les comptages et justifier les écarts (`inventory.view`, `inventory.count`).
   - **SEUL** le Promoteur (`ADMINISTRATEUR`), le Gérant ou un utilisateur habilité avec `inventory.validate` peut valider l'inventaire et autoriser l'écriture financière de régularisation du stock.
 
+---
+
+## 9. Trésorerie, Dépenses & Immobilisations (Sprint 9)
+- **Comptes de trésorerie & Liquidités** :
+  - Support des 3 types de liquidités indispensables en Afrique de l'Ouest : Caisses physiques (`CASH`), Banques (`BANK` avec IBAN/RIB), Comptes Mobile Money (`MOBILE_MONEY` avec MTN MoMo, Moov Money, Wave).
+  - Suivi en temps réel des soldes courants (`current_balance_xof`) et solde net global disponible.
+  - Journal immuable des flux de trésorerie (`commerce_treasury_transactions`) avec horodatage, références, montants et soldes après opération.
+- **Virements internes** :
+  - Numérotation séquentielle sans trou `VIR-YYYY-XXXXXX` via `next_document_number(tenant_id, 'TREASURY_TRANSFER')`.
+  - Transaction atomique : décrément du compte source (montant + frais éventuels) et crédit du compte destination, avec journalisation des deux flux (`TRANSFER_OUT` et `TRANSFER_IN`).
+- **Dépenses, Charges & Seuil d'approbation** :
+  - Numérotation séquentielle `DEP-YYYY-XXXXXX`.
+  - Catégorisation SYSCOHADA : Loyer, Énergie/Eau, Fournitures, Transport/Carburant, Salaires/Primes, Entretien/Maintenance, Impôts/Taxes, Frais bancaires, Marketing, Divers.
+  - Justificatif obligatoire (référence pièce, bon, reçu).
+  - Règle de seuil de validation : Toute dépense $\ge$ 100 000 FCFA saisie par un collaborateur non-responsable est placée en attente (`PENDING_APPROVAL`, `approval_threshold_exceeded = true`).
+  - Validation exclusive par le Promoteur ou Gérant (`expenses.approve`) déclenchant le décaissement effectif et l'écriture de trésorerie.
+- **Immobilisations & Amortissements SYSCOHADA** :
+  - Numérotation séquentielle `IMM-YYYY-XXXXXX`.
+  - Catégorisation avec comptes OHADA révisés : Incorporelles (21), Bâtiments (23), Matériel & outillage (241), Informatique & bureautique (244), Matériel de transport (245), Autres (248).
+  - Génération automatique du plan d'amortissement prévisionnel linéaire complet sur la durée d'utilité (1 à 50 ans) : Base, Dotation annuelle, Amortissements cumulés, Valeur Nette Comptable (VNC).
+  - Module de sortie d'actif (Cession ou Mise au rebut) avec calcul automatique du résultat de cession ($Prix - VNC$).
+
+
 
 
 

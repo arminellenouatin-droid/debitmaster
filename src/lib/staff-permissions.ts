@@ -50,6 +50,13 @@ export const permissionCatalog = [
   { key: "inventory.view", label: "Consulter les inventaires physiques", group: "Inventaire" },
   { key: "inventory.count", label: "Saisir les comptages physiques", group: "Inventaire" },
   { key: "inventory.validate", label: "Valider les écarts et régulariser le stock", group: "Inventaire" },
+  { key: "treasury.view", label: "Consulter les comptes de trésorerie et soldes", group: "Trésorerie" },
+  { key: "treasury.transfer", label: "Effectuer des virements internes", group: "Trésorerie" },
+  { key: "expenses.view", label: "Consulter les dépenses", group: "Dépenses" },
+  { key: "expenses.create", label: "Enregistrer des dépenses", group: "Dépenses" },
+  { key: "expenses.approve", label: "Valider les dépenses selon seuil", group: "Dépenses" },
+  { key: "assets.view", label: "Consulter le registre des immobilisations", group: "Immobilisations" },
+  { key: "assets.manage", label: "Gérer les immobilisations et amortissements", group: "Immobilisations" },
 ] as const;
 
 export const defaultRolePermissions: Record<string, string[]> = {
@@ -57,10 +64,10 @@ export const defaultRolePermissions: Record<string, string[]> = {
   VENDEUR: ["orders.view", "orders.create", "quotes.view", "quotes.create", "quotes.convert", "invoices.view"],
   SUPERVISEUR: permissionCatalog.map((permission) => permission.key),
   MAGASINIER: ["stock.view", "stock.receive", "stock.issue", "stock.handoff", "products.manage", "deliveries.view", "deliveries.confirm", "returns.manage", "purchases.receive", "stock.transfers", "inventory.view", "inventory.count"],
-  GERANT: ["orders.view", "orders.prepare", "orders.handoff", "quotes.view", "quotes.create", "quotes.convert", "invoices.view", "cash.view", "cash.manage", "cash.close", "deliveries.view", "deliveries.confirm", "returns.manage", "purchases.view", "purchases.create", "purchases.approve", "purchases.receive", "suppliers.manage", "stock.transfers", "inventory.view", "inventory.count", "inventory.validate", "stock.view", "stock.accept_counter", "team.view", "team.manage", "tables.view", "tables.manage", "finance.view", "reports.view", "reports.daily_close", "messages.view", "messages.send"],
+  GERANT: ["orders.view", "orders.prepare", "orders.handoff", "quotes.view", "quotes.create", "quotes.convert", "invoices.view", "cash.view", "cash.manage", "cash.close", "deliveries.view", "deliveries.confirm", "returns.manage", "purchases.view", "purchases.create", "purchases.approve", "purchases.receive", "suppliers.manage", "stock.transfers", "inventory.view", "inventory.count", "inventory.validate", "treasury.view", "treasury.transfer", "expenses.view", "expenses.create", "expenses.approve", "assets.view", "assets.manage", "stock.view", "stock.accept_counter", "team.view", "team.manage", "tables.view", "tables.manage", "finance.view", "reports.view", "reports.daily_close", "messages.view", "messages.send"],
   BARMAN: ["orders.view", "orders.create", "stock.view", "tables.view", "payments.create"],
   SECRETAIRE: ["orders.view", "team.view", "reports.view", "messages.view", "messages.send", "tables.view"],
-  COMPTABLE: ["finance.view", "reports.view", "invoices.view", "quotes.view", "purchases.view", "inventory.view"],
+  COMPTABLE: ["finance.view", "reports.view", "invoices.view", "quotes.view", "purchases.view", "inventory.view", "treasury.view", "treasury.transfer", "expenses.view", "expenses.create", "assets.view", "assets.manage"],
   APPROVISIONNEMENT: ["stock.view", "stock.receive", "stock.issue", "purchases.view", "purchases.create", "purchases.receive", "suppliers.manage", "stock.transfers", "reports.view"],
   CUISINIER: ["orders.view", "orders.prepare", "orders.handoff"],
   CHEF_CUISINE: ["orders.view", "orders.prepare", "stock.view", "stock.accept_kitchen", "products.manage", "messages.view", "messages.send"],
