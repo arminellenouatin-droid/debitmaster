@@ -38,14 +38,17 @@ export const permissionCatalog = [
   { key: "cash.view", label: "Consulter la caisse et sessions", group: "Caisse" },
   { key: "cash.manage", label: "Encaisser les règlements et gérer la caisse", group: "Caisse" },
   { key: "cash.close", label: "Clôturer la caisse (Ticket Z)", group: "Caisse" },
+  { key: "deliveries.view", label: "Consulter les bons de livraison", group: "Livraisons" },
+  { key: "deliveries.confirm", label: "Confirmer la livraison et sortie de stock", group: "Livraisons" },
+  { key: "returns.manage", label: "Gérer les retours clients et avoirs", group: "Livraisons" },
 ] as const;
 
 export const defaultRolePermissions: Record<string, string[]> = {
   SERVEUR: ["orders.view", "orders.create", "orders.receive", "orders.deliver", "tables.view", "payments.create"],
   VENDEUR: ["orders.view", "orders.create", "quotes.view", "quotes.create", "quotes.convert", "invoices.view"],
   SUPERVISEUR: permissionCatalog.map((permission) => permission.key),
-  MAGASINIER: ["stock.view", "stock.receive", "stock.issue", "stock.handoff", "products.manage"],
-  GERANT: ["orders.view", "orders.prepare", "orders.handoff", "quotes.view", "quotes.create", "quotes.convert", "invoices.view", "cash.view", "cash.manage", "cash.close", "stock.view", "stock.accept_counter", "team.view", "team.manage", "tables.view", "tables.manage", "finance.view", "reports.view", "reports.daily_close", "messages.view", "messages.send"],
+  MAGASINIER: ["stock.view", "stock.receive", "stock.issue", "stock.handoff", "products.manage", "deliveries.view", "deliveries.confirm", "returns.manage"],
+  GERANT: ["orders.view", "orders.prepare", "orders.handoff", "quotes.view", "quotes.create", "quotes.convert", "invoices.view", "cash.view", "cash.manage", "cash.close", "deliveries.view", "deliveries.confirm", "returns.manage", "stock.view", "stock.accept_counter", "team.view", "team.manage", "tables.view", "tables.manage", "finance.view", "reports.view", "reports.daily_close", "messages.view", "messages.send"],
   BARMAN: ["orders.view", "orders.create", "stock.view", "tables.view", "payments.create"],
   SECRETAIRE: ["orders.view", "team.view", "reports.view", "messages.view", "messages.send", "tables.view"],
   COMPTABLE: ["finance.view", "reports.view", "invoices.view", "quotes.view"],

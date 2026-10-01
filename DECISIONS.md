@@ -73,3 +73,25 @@ Ce document consigne toutes les décisions techniques, fonctionnelles et hypoth�
   - Le `VENDEUR` ne peut pas encaisser de règlements.
   - Seul le règlement complet d'une commande (statut `PAID`) rend la commande disponible pour livraison dans l'espace du Magasinier (Sprint 6).
 
+---
+
+## 6. Livraisons, Bons de Livraison (BL), Sorties & Retours (Sprint 6)
+- **Circuit de livraison contrôlé** :
+  - La file d'attente « À livrer » de l'espace Magasinier est alimentée automatiquement par les commandes payées (`PAID`) ou à crédit validé.
+  - La génération du bon de livraison attribue un numéro séquentiel sans trou `BL-YYYY-XXXXXX` via `next_document_number(tenant_id, 'DELIVERY_NOTE')`.
+  - La confirmation de livraison par le Magasinier (avec nom du réceptionnaire et code de retrait optionnel) :
+    - Décrémente le stock physique officiel dans `store_inventory`.
+    - Règle les réservations en attente (`SETTLED` dans `order_stock_allocations`).
+    - Enregistre le mouvement de stock officiel (`SALE_DELIVERY` dans `stock_movements`).
+    - Bascule la commande en statut `DELIVERED`.
+- **Retours clients et Avoirs** :
+  - Chaque article retourné est inspecté par le Magasinier avec choix d'affectation :
+    - `RESTOCKED` : Réintégration immédiate en stock disponible avec mouvement `CUSTOMER_RETURN`.
+    - `SCRAPPED` : Rebut / casse (pas de réintégration en stock).
+  - Génération automatique de la facture d'avoir (`AVR-YYYY-XXXXXX` dans `credit_notes`).
+- **Séparation stricte des tâches** :
+  - Le `MAGASINIER` ne voit et ne traite que les commandes dûment payées ou à crédit autorisé.
+  - Le `MAGASINIER` n'a pas accès à la caisse ni aux devis de vente.
+  - Le `VENDEUR` ne peut pas valider lui-même la sortie de stock.
+
+
