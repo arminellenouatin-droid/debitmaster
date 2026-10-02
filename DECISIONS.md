@@ -300,6 +300,30 @@ Ce document consigne toutes les décisions techniques, fonctionnelles et hypoth�
   - `DIRECTEUR_GERANT` / `PROMOTEUR` : gestion des modèles, gammes et grille de prix (`catalog.manage`).
   - `OUVRIER` : aucun accès direct au fichier client ni à la grille tarifaire boutique.
 
+---
+
+## 15. Module « Atelier de couture » — Vente boutique & Règlements (Sprint 3)
+- **Typologie des 4 ventes boutique (`sale_type`)** :
+  - `VENTE_SIMPLE` : Vente directe de produit fini en stock boutique (vêtement ou accessoire).
+  - `COMMANDE` : Commande de fabrication sur mesure ou de réassort déclenchée côté atelier après versement de l'acompte/paiement.
+  - `CONFECTION` : Client apporte son tissu, seule la main d'œuvre (façon) est facturée ; aucun impact sur le stock de tissu de l'atelier (`fabric_provided_by_customer = true`).
+  - `RETOUCHE` : Prestation de modification ou d'ajustement sur un vêtement existant, avec notes de retouche horodatées.
+- **Numérotation séquentielle inviolable** :
+  - Format réglementaire : `VTE-YYYY-XXXXXX` (ex. `VTE-2026-000001`).
+  - Calcul de séquence garanti et isolé par établissement (`tenant_id`).
+- **Calcul serveur des montants & Totaux** :
+  - Lignes de vente : `total_price_xof = quantity * unit_price_xof`.
+  - Vente globale : `subtotal_amount_xof`, `discount_amount_xof` plafonnée au sous-total, `total_amount_xof`, `paid_amount_xof`, `balance_amount_xof`.
+  - Statut de règlement dynamique : `DRAFT` $\rightarrow$ `CONFIRMED` $\rightarrow$ `PARTIALLY_PAID` $\rightarrow$ `PAID`.
+- **Règlements & Acomptes (`couture_sale_payments`)** :
+  - Modes de paiement : `CASH`, `MOBILE_MONEY`, `CARD`, `BANK_TRANSFER`.
+  - Gestion des acomptes initiaux à la création de la vente et encaissements complémentaires ultérieurs avec recalcul automatique du reste à payer.
+- **Sécurité RLS & RBAC** :
+  - RLS activée sur `couture_sales`, `couture_sale_lines`, `couture_sale_payments` avec politiques isolées par `tenant_id`.
+  - Permissions requises : `sales.view` pour la consultation, `sales.create` pour l'enregistrement de ventes et règlements.
+  - `OUVRIER` exclu des données financières et de vente boutique.
+
+
 
 
 
