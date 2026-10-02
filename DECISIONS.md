@@ -323,6 +323,27 @@ Ce document consigne toutes les décisions techniques, fonctionnelles et hypoth�
   - Permissions requises : `sales.view` pour la consultation, `sales.create` pour l'enregistrement de ventes et règlements.
   - `OUVRIER` exclu des données financières et de vente boutique.
 
+---
+
+## 16. Module « Atelier de couture » — Encaissement multidevise & Paiements Mobile Money / TPE (Sprint 4)
+- **Affichage et Saisie Simultanée Multidevise (FCFA, USD, EUR)** :
+  - Taux officiels de référence par défaut : 1 EUR = 655,957 FCFA (zone franc), 1 USD = 600,00 FCFA (taux marché), modifiables et historisés par établissement dans `couture_exchange_rates`.
+  - Les espèces peuvent être reçues simultanément en FCFA, USD et EUR sur le même ticket comptoir (`MultiCurrencyCashInput`).
+  - Conversion instantanée serveur en équivalent FCFA entier et calcul du rendu de monnaie (`changeDueFcfa`) dans la devise souhaitée.
+- **Restriction Stricte de Devise Étrangère** :
+  - Conformément au PRD §6.4 : le multidevise ne s'applique **qu'aux espèces au comptoir**. Les autres modes (Mobile Money, TPE, virement, carte bancaire) restent impérativement libellés dans la devise locale de la boutique (FCFA).
+- **Intégration Mobile Money dans le Flux de Caisse** :
+  - Table `couture_mobile_money_requests` traçant l'envoi de la demande push sur le mobile du client (`MTN`, `MOOV`, `ORANGE`, `WAVE`).
+  - Statuts trackés : `PENDING` $\rightarrow$ `SUCCESSFUL` / `FAILED`.
+- **Intégration TPE / Carte Bancaire** :
+  - Saisie obligatoire de la référence de transaction TPE physique (`tpe_reference`).
+- **Règle d'Ordonnancement Métier (PRD §6.4)** :
+  - Si Mobile Money et TPE sont combinés sur un même règlement, le Mobile Money doit obligatoirement être déclenché et validé en premier avant de passer la transaction TPE.
+- **Contrôle d'accès & Droits** :
+  - Permission `sales.multi_currency` requise pour l'encaissement comptoir multidevise (`VENDEUR`, `CHEF_AGENCE`, `DIRECTEUR_GERANT`).
+  - `OUVRIER` et `MAGASINIER` strictement exclus de la caisse.
+
+
 
 
 
