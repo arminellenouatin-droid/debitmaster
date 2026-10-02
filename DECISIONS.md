@@ -343,6 +343,34 @@ Ce document consigne toutes les décisions techniques, fonctionnelles et hypoth�
   - Permission `sales.multi_currency` requise pour l'encaissement comptoir multidevise (`VENDEUR`, `CHEF_AGENCE`, `DIRECTEUR_GERANT`).
   - `OUVRIER` et `MAGASINIER` strictement exclus de la caisse.
 
+---
+
+## 17. Module « Atelier de couture » — Production, Circuit d'étapes & Contrôle qualité (Sprint 5)
+- **Fiches de Fabrication (`couture_production_cards`)** :
+  - Déclenchées automatiquement depuis les ventes/commandes/confections ou créées manuellement par le chef d'atelier (`card_type IN ('COMMANDE', 'CONFECTION', 'RETOUCHE', 'STOCK_MANUFACTURE')`).
+  - Numérotation séquentielle inviolable au format `FAB-YYYY-XXXXXX` (ex. `FAB-2026-000001`).
+  - Stockage des mensurations du client (`measurements_snapshot`), priorité (`NORMAL`, `URGENT`, `VERY_URGENT`), date cible de livraison et option broderie (`has_embroidery`, `MAIN`/`MACHINE`).
+- **Circuit Fixe des Étapes de Fabrication (`couture_production_steps`)** :
+  - Séquence ordonnée non réversible : `COUPE` $\rightarrow$ `COUTURE` $\rightarrow$ `BRODERIE` (si applicable) $\rightarrow$ `FINITION_REPASSAGE` $\rightarrow$ `CONTROLE_QUALITE` $\rightarrow$ `EMBALLAGE` $\rightarrow$ `LIVRAISON`.
+  - Statuts d'étape : `PENDING`, `IN_PROGRESS`, `COMPLETED`, `REJECTED`.
+  - L'achèvement d'une étape active automatiquement l'étape suivante et met à jour le statut global de la fiche.
+- **Assignation et Matrice des Métiers** :
+  - Vérification stricte de compatibilité métier à l'assignation :
+    - `COUPE` $\rightarrow$ Ouvrier avec métier `COUPEUR`.
+    - `COUTURE` $\rightarrow$ Ouvrier avec métier `COUTURIER`.
+    - `BRODERIE` $\rightarrow$ Ouvrier avec métier `BRODEUR_MAIN` ou `BRODEUR_MACHINE`.
+    - `FINITION_REPASSAGE` $\rightarrow$ `FINISSEUR` ou `COUTURIER`.
+- **Contrôle Qualité de Conformité (`couture_quality_controls`)** :
+  - Étape obligatoire avant emballage et livraison.
+  - Deux issues possibles :
+    - `PASSED` : validation de la pièce, étape `CONTROLE_QUALITE` marquée `COMPLETED`, fiche basculée à `PACKED` puis `EMBALLAGE`.
+    - `REJECTED` : motif obligatoire, étape marquée `REJECTED`, réactivation de l'étape de production en cause (ex. `COUTURE`) en `IN_PROGRESS` pour reprise par l'ouvrier sans clôturer la fiche.
+- **Sécurité & Droits d'Accès** :
+  - `CHEF_ATELIER` : pilotage complet (`production.view`, `production.manage`, `production.assign`, `production.quality_control`).
+  - `OUVRIER` : consultation de ses tâches (`production.view`) et déclaration d'achèvement (`piecework.declare`), aucun droit de réassignation ni de contrôle qualité.
+  - RLS activée sur `couture_production_cards`, `couture_production_steps`, `couture_quality_controls`.
+
+
 
 
 
