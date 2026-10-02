@@ -497,6 +497,31 @@ Ce document consigne toutes les décisions techniques, fonctionnelles et hypoth�
   - `VENDEUR` : enregistrement de son pointage (`attendance.track`), consultation de ses points et classements (`incentives.view`).
   - RLS activée à 100 % sur les 6 tables créées.
 
+---
+
+## 23. Module « Atelier de couture » — Cockpits par profil, Rapports Pareto ABC & Notifications (Sprint 11)
+- **Cockpits Opérationnels & Tableaux de Bord par Profil (`/api/couture/dashboards/profile`)** :
+  - Métriques contextualisées selon le rôle de l'utilisateur :
+    - **Direction / Promoteur** : Chiffre d'affaires global et encaissé, commandes de production actives, cartes urgentes, demandes d'achat en attente, alertes et notifications non lues.
+    - **Vendeur / Chef d'agence** : Points du mois, primes de gros achat, ventes de la boutique, commandes en cours.
+    - **Chef d'atelier** : Fiches par étape (Coupe, Couture, Broderie, Finitions, QC), contrôles qualité en attente.
+    - **Ouvrier** : Tâches de la semaine, décompte de paie à la tâche en cours.
+    - **Comptable / Magasinier / RH** : Alertes spécialisées selon le domaine de responsabilité.
+- **Analyse Analytique ABC de Pareto (`couture-analytics.ts`, `/api/couture/reports/pareto-abc`)** :
+  - Classification automatisée selon la loi des 80/15/5 :
+    - **Classe A** : Modèles et articles générant les premiers 80 % du chiffre d'affaires cumulé (coeur stratégique de la marque).
+    - **Classe B** : Articles générant les 15 % suivants (80 % à 95 % du CA).
+    - **Classe C** : Articles à rotation lente générant les 5 % restants (95 % à 100 % du CA).
+  - Filtrage possible par boutique ou consolidé sur l'ensemble des sites de l'établissement.
+- **Centre de Notifications & Alertes Métier (`couture_notifications`, `/api/couture/notifications`)** :
+  - Typologies d'alertes : Demandes d'achat à valider (`PURCHASE_APPROVAL`), Stock critique sous seuil (`LOW_STOCK`), Alertes de production & retards (`PRODUCTION_ALERT`), Incidents de présence (`ATTENDANCE_INCIDENT`), Paie prête pour visa (`PAYROLL_READY`), Contrôle qualité refusé (`QC_REJECTED`), Général (`GENERAL`).
+  - Niveaux de gravité : `INFO`, `WARNING`, `URGENT`.
+  - Routage par rôle ou utilisateur avec marquage de lecture (`PATCH /api/couture/notifications/[id]/read`).
+- **Sécurité & Droits d'Accès** :
+  - Contrôle d'accès strict côté serveur (`dashboard.view`, `reports.view`, `reports.export`).
+  - RLS activée à 100 % sur `couture_notifications` avec isolation multi-tenant stricte par `tenant_id`.
+
+
 
 
 
