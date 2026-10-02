@@ -521,6 +521,57 @@ Ce document consigne toutes les décisions techniques, fonctionnelles et hypoth�
   - Contrôle d'accès strict côté serveur (`dashboard.view`, `reports.view`, `reports.export`).
   - RLS activée à 100 % sur `couture_notifications` avec isolation multi-tenant stricte par `tenant_id`.
 
+---
+
+## 24. Module « Atelier de couture » — Établissement de Démonstration DISTINCTION, Master E2E & Finalisation (Sprint 12)
+- **Établissement Témoin « DISTINCTION » (`src/lib/couture-distinction-provisioning.ts`, `migrations/20261002_couture_sprint12_distinction_demo_provisioning.sql`)** :
+  - Provisionnement complet d'une maison de haute couture de référence à structure transfrontalière :
+    - **6 Sites d'exploitation** : 1 Atelier Central à Lomé (Kodjoviakopé), 3 Boutiques à Lomé (Nyékonakpoè, Hôtel 2 Février, Agoè Minamadou), 2 Boutiques à Douala / Cameroun (Bonamoussadi, Bonapriso).
+    - **49 Collaborateurs** :
+      - Atelier Lomé (19) : 1 Chef d'atelier, 2 Coupeurs, 10 Couturiers, 5 Brodeurs (main et machine), 1 Magasinier atelier.
+      - Boutiques Lomé (12) : 3 Chefs d'agence, 9 Vendeuses réparties sur les 3 boutiques.
+      - Boutiques Douala (8) : 2 Chefs d'agence, 6 Vendeuses réparties sur Bonamoussadi et Bonapriso.
+      - Administration Centrale (10) : 1 Comptable, 1 Directeur Marketing, 1 Directeur Communication, 1 Directeur RH, 1 Chargé des Achats, 2 Agents d'entretien, 3 Gardiens.
+    - **Matrice Tarifaire des 6 Modèles phares Distinction** :
+      - Goodluck (120k à 500k FCFA), Danshiki (150k à 700k FCFA), Agbada (300k à 900k FCFA), Abacost (250k à 900k FCFA), Robe (100k à 600k FCFA), Boubou (100k à 500k FCFA) sur les 4 gammes (Leader, VIP, Royale, Présidentiel).
+      - Règle de confection Enfant à 50 % du tarif adulte applicable automatiquement.
+    - **Plannings et Horaires de Travail Fixés** :
+      - Boutiques : 9h-13h et 15h-21h du lundi au samedi, 10h-13h et 15h-19h le dimanche.
+      - Administration : 8h-12h et 14h-18h du lundi au samedi, dimanche repos.
+      - Atelier : 8h-11h, 12h-15h et 16h-20h du lundi au samedi, dimanche repos.
+    - **Politique Salariale & Incitations Vendeurs** :
+      - Points vendeurs (1 pt / 50 000 FCFA), seuil d'alerte sous 60 points/mois.
+      - Prime gros achat (2 % si vente unitaire ≥ 1 000 000 FCFA).
+      - Programme de fidélité clients VIP (remise trimestrielle de 2 % si dépenses ≥ 1 000 000 FCFA sur au moins 3 achats distincts).
+      - Récompenses d'excellence annuelles (Voiture + carburant à 1600 pts et 3 ans d'ancienneté, Moto + carburant à 900 pts et 3 ans).
+    - **Organisation Financière & Approvisionnements** :
+      - Caisse atelier dotée d'un fonds de petite caisse de 20 000 FCFA (plafond unitaire de 2 000 FCFA).
+      - Circuit d'achats à double niveau : signature comptable simple ≤ 50 000 FCFA, validation tripartite (Comptable + Promoteur + Magasinier) au-delà.
+      - Plan comptable SYSCOHADA intégré à 28 comptes et 6 journaux dédiés (`VE`, `AC`, `BQ`, `CA`, `OD`, `PA`), avec consolidation multidevise automatique (Douala XAF / Lomé FCFA).
+- **Route API Dédiée de Provisionnement (`POST /api/couture/demo/distinction`)** :
+  - Déclenchement sécurisé réservé aux administrateurs DebitMaster (`system.manage` ou superadmin).
+  - Validation idempotente de l'établissement témoin.
+- **Suite de Validation E2E Master Intégrale (`tests/couture-sprint12-e2e-master-verification.test.mjs`)** :
+  - 12 étapes de vérification couvrant la totalité du PRD Couture v1.0 :
+    1. Structure des 6 sites et 49 employés.
+    2. Catalogue & calcul des prix enfants.
+    3. Cycle des 4 types de ventes (Prêt-à-porter, Sur-mesure, Confection, Retouche).
+    4. Encaissement multidevise simultané (FCFA, USD, EUR, Mobile Money, TPE).
+    5. Circuit de fabrication (FAB-YYYY-XXXXXX) et contrôle qualité d'atelier.
+    6. Décompte de paie à la tâche des ouvriers avec majoration de 20 % hors horaires.
+    7. Circuit d'achats de fournitures et gestion de la petite caisse.
+    8. Stocks multi-sites, transferts inter-sites et inventaire physique avec écarts.
+    9. Trésorerie multi-caisses et écritures comptables SYSCOHADA équilibrées.
+    10. Présence géolocalisée (Haversine), paie mensuelle et incitations vendeurs.
+    11. Tableaux de bord de pilotage par profil et analyse Pareto ABC.
+    12. Étanchéité multi-tenant absolue par `tenant_id` et principe du moindre privilège.
+- **Conformité AGENTS.md & Règles Sanctifiées** :
+  - Zéro secret dans le code ou l'historique git.
+  - 100 % RLS sur l'ensemble des tables publiques.
+  - Zéro modification des composants sanctifiés d'Envol Africa Magazine (`Header.tsx`, `HeaderShell.tsx`).
+  - Aucun calcul financier ou d'inventaire confié au client navigateur.
+
+
 
 
 
