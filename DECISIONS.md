@@ -278,6 +278,29 @@ Ce document consigne toutes les décisions techniques, fonctionnelles et hypoth�
   - Composant `PasswordField.tsx` avec bouton œil (SVG ouvert / barré), accessibilité (`aria-label`, `aria-pressed`, `tabIndex=0`) et support thèmes clair/sombre.
   - Intégré sur `/connexion`, `/inscription`, `/dashboard/settings`, `/invitation/accept`.
 
+---
+
+## 14. Module « Atelier de couture » — Catalogue mode & Clients avec mensurations (Sprint 2)
+- **Catalogue Vêtements** :
+  - **Modèles (`couture_models`)** : Goodluck, Danshiki, Agbada, Abacost, Robe, Boubou (extensibles par l'établissement).
+  - **Gammes (`couture_ranges`)** : Leader (rang 1), VIP (rang 2), Royale (rang 3), Présidentiel (rang 4).
+  - **Grille de prix (`couture_price_grid`)** : Matrice modèle × gamme stockée en base avec prix adulte et prix enfant.
+  - **Règle de tarification enfant** : Le prix enfant est égal à 50 % du prix adulte par défaut (`computeChildPrice()`), modifiable individuellement par l'établissement.
+  - **Tailles (`couture_sizes`)** : S, M, MK (Medium King), L, XL, 2XL, 3XL, et Sur mesure (`SUR_MESURE`).
+  - **Couleurs (`couture_colors`)** : Couleurs de base avec code hexadécimal et support de couleurs personnalisées.
+- **Catalogue Accessoires (`couture_accessories`)** :
+  - Famille dédiée distincte des vêtements : sacs, chaussettes, lunettes, manchettes, montres, accessoires divers.
+  - Prix de vente, coût d'achat et seuil d'alerte stock paramétrable.
+- **Fiches clients & Mensurations (`couture_customers`)** :
+  - Coordonnées : nom, prénom, téléphone normalisé (identifiant unique par établissement), email, genre, anniversaire, photo et notes morphologiques.
+  - 15 mensurations normalisées en centimètres (cou, poitrine, taille, hanches, carrures, longueur manche, biceps, poignet, longueur veste/robe, pantalon, cuisse, bas, entrejambe).
+  - Bénéficiaires habituels (`habitual_beneficiaries`) : conservation des proches pour qui le client commande fréquemment avec leurs mensurations respectives.
+- **Séparation des droits** :
+  - `VENDEUR` / `CHEF_AGENCE` : lecture du catalogue (`catalog.view`), création et gestion des clients (`customers.manage`).
+  - `DIRECTEUR_GERANT` / `PROMOTEUR` : gestion des modèles, gammes et grille de prix (`catalog.manage`).
+  - `OUVRIER` : aucun accès direct au fichier client ni à la grille tarifaire boutique.
+
+
 
 
 
