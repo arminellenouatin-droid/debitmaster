@@ -440,6 +440,35 @@ Ce document consigne toutes les décisions techniques, fonctionnelles et hypoth�
   - `INVENTAIRE` / `DIRECTEUR_GERANT` : validation définitive des inventaires et ajustement des stocks en base (`inventory.validate`).
   - RLS activée à 100 % sur les 5 tables créées, permissions minimales et isolation multi-tenant stricte par `tenant_id`.
 
+---
+
+## 21. Module « Atelier de couture » — Trésorerie multi-caisses & Comptabilité SYSCOHADA (Sprint 9)
+- **Trésorerie Multi-Caisses & Suivi des Liquidités (`couture_treasury_accounts`, `couture_treasury_transactions`)** :
+  - Typologie : Caisse de boutique (`CASH`), Compte bancaire (`BANK`), Mobile Money (`MOBILE_MONEY`), Terminal de paiement (`POS`), Petite caisse d'atelier (`PETTY_CASH`).
+  - Tenue du solde après mouvement (`balance_after`) garantissant l'intégrité comptable et l'absence de divergence.
+- **Virements Internes de Trésorerie (`couture_treasury_transfers`)** :
+  - Numérotation séquentielle inviolable au format `VIR-YYYY-XXXXXX`.
+  - Exécution atomique : débit du compte source, conversion au taux applicable en cas de devises distinctes (ex: boutique Lomé en XOF vers boutique Douala en XAF), crédit du compte destination, et écriture des transactions de trésorerie correspondantes.
+- **Plan Comptable SYSCOHADA Révisé & Journaux Dédiés (`couture_chart_of_accounts`, `couture_accounting_journals`)** :
+  - 28 comptes fondamentaux pré-configurés :
+    - 701 (Vente vêtements finis) vs 706 (Prestations de confection sur tissu client et retouches).
+    - 601 (Achats tissus) et 602 (Fournitures mercerie).
+    - 662 (Rémunérations ouvriers à la tâche) et 421 (Personnel rémunérations dues).
+    - 571 (Caisse), 572 (Petite caisse atelier), 573 (Mobile Money).
+  - 6 journaux auxiliaires : Ventes (`VE`), Achats (`AC`), Banque (`BQ`), Caisse (`CA`), Opérations Diverses (`OD`), Paie à la tâche (`PA`).
+- **Pièces & Écritures Comptables à Partie Double Équilibrée (`couture_journal_entries`, `couture_journal_entry_lines`)** :
+  - Numérotation séquentielle inviolable au format `ECR-YYYY-XXXXXX`.
+  - Contrôle strict de l'égalité de la partie double ($\sum \text{Débit} = \sum \text{Crédit}$) avec blocage immédiat de toute écriture asymétrique.
+  - Génération automatique intégrée pour les ventes (avec ventilation HT / TVA 443 / créance 411 / caisse 571), les achats, la petite caisse (602 / 572) et la paie à la tâche ouvrière (662 / 421 ou 571).
+- **Consolidation Multidevise Multi-Sites (`couture_consolidated_settings`, `/api/couture/accounting/consolidated-ledger`)** :
+  - Devise de référence de l'établissement (défaut `FCFA`).
+  - Calcul dynamique de la balance générale et du grand livre consolidé pour tous les sites (Lomé et Douala), avec conversion historisée et préservation absolue des écritures locales.
+- **Sécurité & Droits d'Accès** :
+  - `COMPTABLE` / `DIRECTEUR_GERANT` : accès exclusif à la trésorerie (`treasury.view`) et à la comptabilité générale (`accounting.view`).
+  - `VENDEUR` / `OUVRIER` : aucun accès aux écritures comptables ni aux comptes de trésorerie.
+  - RLS activée à 100 % sur les 8 tables créées, révocation stricte de tout accès direct anonyme/authentifié non filtré.
+
+
 
 
 
