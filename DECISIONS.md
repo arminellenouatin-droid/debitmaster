@@ -468,6 +468,36 @@ Ce document consigne toutes les décisions techniques, fonctionnelles et hypoth�
   - `VENDEUR` / `OUVRIER` : aucun accès aux écritures comptables ni aux comptes de trésorerie.
   - RLS activée à 100 % sur les 8 tables créées, révocation stricte de tout accès direct anonyme/authentifié non filtré.
 
+---
+
+## 22. Module « Atelier de couture » — Personnel, Présence géolocalisée, Paie mensuelle & Primes vendeurs (Sprint 10)
+- **Horaires & Plannings de Travail (`couture_work_schedules`)** :
+  - Catégorisation du personnel : Boutique (Lun-Sam 9h-13h & 15h-21h, Dim 10h-13h & 15h-19h), Administratif (Lun-Sam 8h-12h & 14h-18h), Atelier (Lun-Sam 8h-11h, 12h-15h, 16h-20h).
+  - Couverture minimale en continu garantie en boutique avec pause échelonnée.
+- **Présence Géolocalisée & Incidents d'Éloignement (`couture_attendance_logs`, `couture_attendance_incidents`)** :
+  - Pointage d'arrivée et de départ avec contrôle de proximité par formule de Haversine (`verifySiteGeofence`, rayon 300 mètres).
+  - Détection automatique des absences prolongées : tout éloignement non autorisé supérieur à **15 minutes** génère un incident de présence et la déconnexion immédiate de la session.
+- **Paie Mensuelle du Personnel Administratif & Boutique (`couture_monthly_payrolls`)** :
+  - Numérotation séquentielle inviolable au format `PAY-YYYY-XXXXXX`.
+  - Calcul transparent : salaire de base + primes - retenues = net à payer.
+  - Cycle de validation sécurisé : `DRAFT` $\rightarrow$ `APPROVED` (visa RH / Direction) $\rightarrow$ `PAID`.
+- **Moteur d'Incentives, Points & Primes Vendeurs (`couture_sales_incentives_config`, `couture_seller_points`)** :
+  - **Points de vente** : 1 point par tranche de 50 000 FCFA vendue.
+  - **Gros achat** : toute vente unique supérieure à 1 000 000 FCFA attribue automatiquement une prime de **2 %** au vendeur.
+  - **Fidélité client trimestrielle** : prime de **2 %** si un même client commande $\ge 4$ fois dans le trimestre ou $\ge 2$ fois pour un total $> 3 500 000$ FCFA.
+  - **Récompenses d'excellence annuelle** :
+    - 1ᵉʳ vendeur ($\ge 1 600$ points et $\ge 3$ ans d'ancienneté) : Voiture neuve + bon carburant 300 000 FCFA.
+    - 2ᵉ vendeur ($\ge 900$ points et $\ge 3$ ans d'ancienneté) : Moto neuve + bon carburant 150 000 FCFA.
+  - **Alertes de motivation mensuelles** : alerte de niveau 1 si $< 60$ points sur le mois, et alerte renforcée de niveau 2 pour accompagnement RH si $< 60$ points pendant 2 mois consécutifs.
+- **Classement & Palmarès (`/api/couture/incentives/leaderboard`)** :
+  - Classement dynamique individuel des vendeurs (mensuel et annuel) avec badges d'éligibilité aux véhicules.
+  - Comparatif consolidé des performances de chiffre d'affaires entre boutiques.
+- **Sécurité & Droits d'Accès** :
+  - `RH / DIRECTION` : gestion des plannings (`hr.manage`), approbation finale de la paie (`payroll.approve`), ajustement des seuils de primes (`incentives.manage`).
+  - `VENDEUR` : enregistrement de son pointage (`attendance.track`), consultation de ses points et classements (`incentives.view`).
+  - RLS activée à 100 % sur les 6 tables créées.
+
+
 
 
 
