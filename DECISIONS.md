@@ -396,6 +396,31 @@ Ce document consigne toutes les décisions techniques, fonctionnelles et hypoth�
   - `RH / DIRECTION` : valide et approuve les décomptes (`payroll.approve`).
   - RLS activée sur `couture_piecework_rates`, `couture_completed_tasks`, `couture_weekly_payrolls`.
 
+---
+
+## 19. Module « Atelier de couture » — Fournitures, Circuit d'achats à seuil & Petite caisse (Sprint 7)
+- **Catalogue Fournitures & Stocks Atelier (`couture_supplies`, `couture_workshop_supply_stocks`)** :
+  - Familles : Tissus (`FABRIC`), Fils (`THREAD`), Boutons (`BUTTON`), Fermetures éclair (`ZIPPER`), Doublures (`LINING`), Bouclerie & mercerie (`ACCESSORY_HARDWARE`), Emballages (`PACKAGING`), Autres.
+  - Suivi des unités (mètres, pièces, rouleaux, boîtes, bobines), seuil de réapprovisionnement et coût d'achat.
+- **Circuit d'Approbation des Achats à Seuil Strict (50 000 FCFA)** :
+  - `Achat < 50 000 FCFA` (`SINGLE_ACCOUNTANT`) : La validation du **comptable seul** (`purchases.approve_small`) suffit pour passer commande.
+  - `Achat ≥ 50 000 FCFA` (`THREE_STEP`) : Circuit hiérarchique complet obligatoire en 3 étapes :
+    1. Avis de l'acheteur (`buyer_opinion` FAVORABLE / DÉFAVORABLE)
+    2. Validation préalable du comptable (`accountant_approval = APPROVED`)
+    3. Accord final de la Direction / RH (`purchases.approve_large`, `direction_approval = APPROVED`).
+  - Numérotation séquentielle inviolable au format `DA-YYYY-XXXXXX`.
+- **Petite Caisse d'Atelier (`couture_petty_cash_funds`, `couture_petty_cash_expenses`)** :
+  - Fonds fixe de **20 000 FCFA** par atelier confié au magasinier.
+  - Plafond strict par dépense : **2 000 FCFA maximum** (contrôle et rejet serveur si supérieur à 2 000 FCFA ou si solde disponible insuffisant).
+  - Visa comptable obligatoire dans le système (`petty_cash.visa`). En cas de rejet par le comptable, le montant de la dépense est automatiquement restitué au solde de la petite caisse.
+  - Renouvellement automatisé du fonds au niveau initial (20 000 FCFA) tracé en mouvement d'audit.
+- **Sécurité & Droits d'Accès** :
+  - `MAGASINIER_ATELIER` : gère les stocks fournitures (`supplies.manage`), engage les petites dépenses (`petty_cash.spend`), aucun droit d'approbation d'achat ni de visa de sa propre caisse.
+  - `COMPTABLE` : valide les achats < 50k (`purchases.approve_small`), vise les petites dépenses et renouvellements (`petty_cash.visa`).
+  - `RH / DIRECTION` : valide les achats ≥ 50k (`purchases.approve_large`).
+  - RLS activée sur les 5 tables créées.
+
+
 
 
 
