@@ -420,6 +420,27 @@ Ce document consigne toutes les décisions techniques, fonctionnelles et hypoth�
   - `RH / DIRECTION` : valide les achats ≥ 50k (`purchases.approve_large`).
   - RLS activée sur les 5 tables créées.
 
+---
+
+## 20. Module « Atelier de couture » — Stocks multi-sites, Transferts & Inventaires physiques (Sprint 8)
+- **Stocks Produits Finis par Boutique (`couture_boutique_stocks`)** :
+  - Suivi par site (`site_id`), typologie (`product_type` : Vêtement / Accessoire), liaisons facultatives aux modèles, gammes, tailles et coloris.
+  - Seuil d'alerte paramétrable (`min_threshold`, défaut 2 unités) pour détection proactive du réapprovisionnement boutique.
+- **Transferts Multi-Sites & Suivi d'Écarts (`couture_transfers`, `couture_transfer_lines`)** :
+  - Types de transferts : Atelier $\rightarrow$ Boutique, Boutique $\rightarrow$ Boutique, Boutique $\rightarrow$ Atelier, Atelier $\rightarrow$ Atelier.
+  - Numérotation séquentielle inviolable au format `TRF-YYYY-XXXXXX`.
+  - Cycle de vie : `DRAFT` $\rightarrow$ `IN_TRANSIT` (expédition horodatée) $\rightarrow$ `RECEIVED` (conforme sans écart) ou `DISCREPANCY` (écart quantitatif détecté à la réception).
+- **Inventaires Physiques & Clôture d'Écarts (`couture_inventory_sessions`, `couture_inventory_counts`)** :
+  - Sessions d'inventaire par site (`site_id`), types d'inventaire : stocks boutique produits finis (`BOUTIQUE_FINISHED_GOODS`) ou fournitures atelier (`ATELIER_SUPPLIES`).
+  - Numérotation séquentielle au format `INV-YYYY-XXXXXX`.
+  - Calcul automatique et transparent des écarts : quantité théorique vs quantité comptée, montant de valorisation de l'écart en FCFA (`variance_value_xof`).
+  - Clôture de session (`VALIDATED`) : ajuste automatiquement et fidèlement les niveaux de stock réel (`couture_boutique_stocks` ou `couture_supplies`), consigne les totaux dans le journal d'audit immuable.
+- **Sécurité & Droits d'Accès** :
+  - `CHEF_AGENCE` / `MAGASINIER_BOUTIQUE` : consultation des stocks (`stock.view`), création et expédition de transferts (`stock.transfer`, `stock.manage`), saisie des comptages (`inventory.count`).
+  - `INVENTAIRE` / `DIRECTEUR_GERANT` : validation définitive des inventaires et ajustement des stocks en base (`inventory.validate`).
+  - RLS activée à 100 % sur les 5 tables créées, permissions minimales et isolation multi-tenant stricte par `tenant_id`.
+
+
 
 
 
