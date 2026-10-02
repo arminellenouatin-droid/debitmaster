@@ -223,6 +223,37 @@ Ce document consigne toutes les décisions techniques, fonctionnelles et hypoth�
   - Table `commerce_notifications` avec typologie d'alerte (`INFO`, `SUCCESS`, `WARNING`, `ALERT`), lien d'action directe et horodatage.
   - Composant cloche interactif `CommerceNotificationBell` avec badge des non-lues et marquage instantané.
 
+---
+
+## 12. PWA Hors-ligne, Durcissement de Sécurité & Validation Globale (Sprint 12)
+- **Manifeste PWA & Expérience Mobile Installable** :
+  - `src/app/manifest.ts` générant automatiquement `/manifest.webmanifest`.
+  - Affichage en mode application autonome (`display: standalone`), icônes masquables et thème couleur (`#063327`).
+  - Métadonnées Apple Web App configurées (`apple-mobile-web-app-capable`).
+- **Résilience Hors-ligne & File de Synchronisation** :
+  - Module `src/lib/offline-sync.ts` avec file d'attente locale (`localStorage`).
+  - Détection automatique du retour réseau (`online` event listener) avec rejeu des opérations de caisse et de vente.
+- **Durcissement de Sécurité & Contrôles AGENTS.md §14** :
+  - RLS activée sur 100% des tables créées au fil des 12 sprints (`revoke all from anon, authenticated`).
+  - Politiques RLS strictes avec isolation hermétique par établissement (`tenant_id`).
+  - Validation serveur des montants, prix, CMP et cohérence débit/crédit (aucun calcul financier confié au client).
+  - Zéro secret dans le code ou l'historique de commit.
+  - Tests d'isolation multi-tenant confirmant l'inviolabilité des données entre établissements concurrents.
+- **Suite de Recette Maîtresse E2E (Master Test Suite)** :
+  - `tests/commerce-sprint12-e2e-master-verification.test.mjs` simulant l'intégralité du cycle de vie commercial de bout en bout :
+    1. Multi-magasins et catalogue
+    2. Devis $\rightarrow$ Facture
+    3. Caisse $\rightarrow$ Paiement $\rightarrow$ Ticket Z
+    4. Bon de livraison $\rightarrow$ Sortie physique $\rightarrow$ Coût des ventes (CMP)
+    5. Commande fournisseur $\rightarrow$ Réception BR $\rightarrow$ Recalcul CMP moyen pondéré
+    6. Inventaire $\rightarrow$ Écart constaté $\rightarrow$ Régularisation automatique de stock
+    7. Trésorerie multi-liquidités $\rightarrow$ Virement interne $\rightarrow$ Seuil de validation dépense $\ge$ 100k
+    8. Écriture comptable SYSCOHADA $\rightarrow$ Contrôle d'équilibre de la partie double ($\sum \text{Débit} = \sum \text{Crédit}$)
+    9. Quotas commerciaux $\rightarrow$ Commissions calculées et validées $\rightarrow$ Pareto ABC
+    10. Synchronisation hors-ligne PWA
+    11. Isolation des données multi-tenant (Tenant A vs Tenant B).
+
+
 
 
 

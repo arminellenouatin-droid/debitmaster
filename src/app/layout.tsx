@@ -3,8 +3,21 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "DebitManager | Pilotage de votre établissement",
-  description: "Commandes, stocks, équipe et trésorerie réunis dans un seul espace.",
+  title: "DebitMaster | Pilotage de votre établissement",
+  description: "Système de caisse, facturation, stocks, approvisionnement et comptabilité SYSCOHADA.",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "DebitMaster",
+  },
+};
+
+export const viewport = {
+  themeColor: "#063327",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
