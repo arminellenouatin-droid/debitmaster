@@ -370,6 +370,33 @@ Ce document consigne toutes les décisions techniques, fonctionnelles et hypoth�
   - `OUVRIER` : consultation de ses tâches (`production.view`) et déclaration d'achèvement (`piecework.declare`), aucun droit de réassignation ni de contrôle qualité.
   - RLS activée sur `couture_production_cards`, `couture_production_steps`, `couture_quality_controls`.
 
+---
+
+## 18. Module « Atelier de couture » — Paie à la tâche des ouvriers & Barème (Sprint 6)
+- **Barème Paramétrable des Tâches (`couture_piecework_rates`)** :
+  - Tarifs de référence Distinction :
+    - Chapeau : 1 000 FCFA (sans broderie) / 1 000 FCFA (avec broderie)
+    - Agbada : 5 000 FCFA / 6 000 FCFA
+    - Haut Goodluck : 1 600 FCFA / 3 000 FCFA
+    - Haut Danshiki : 2 000 FCFA / 4 000 FCFA
+    - Pantalon droit : 2 000 FCFA
+    - Pantalon simple : 1 000 FCFA
+    - Robe : 3 000 FCFA / 3 000 FCFA
+    - Boubou : 3 000 FCFA / 3 000 FCFA
+  - Barème entièrement administrable par la direction (`piecework.manage`), avec capture immuable du tarif unitaire au moment où la tâche est déclarée (protection contre les modifications rétroactives).
+- **Majoration Travail Hors Horaires (+20 %)** :
+  - Conformément au PRD §12.1 : toute tâche déclarée hors des horaires prévus bénéficie d'une majoration automatique de 20 % (`overtime_multiplier = 1.2`), tracée de manière transparente sur la tâche.
+- **Décompte de Paie Hebdomadaire Ouvriers (`couture_weekly_payrolls`)** :
+  - Période : du lundi (`week_start_date`) au dimanche (`week_end_date`).
+  - Cumul dynamique des tâches accomplies : nombre de tâches, montant de base, supplément majoration heures, primes et retenues éventuelles, montant net dû.
+  - Cycle de statut : `DRAFT` $\rightarrow$ `VALIDATED` (visa Direction / RH) $\rightarrow$ `PAID` (règlement avec référence).
+- **Contrôle d'Accès & Sécurité** :
+  - `OUVRIER` : consulte ses propres tâches et barème (`piecework.view`), déclare ses achèvements (`piecework.declare`), aucun droit de modification du barème ni d'auto-validation de paie.
+  - `COMPTABLE` : calcule les décomptes hebdomadaires (`payroll.calculate`).
+  - `RH / DIRECTION` : valide et approuve les décomptes (`payroll.approve`).
+  - RLS activée sur `couture_piecework_rates`, `couture_completed_tasks`, `couture_weekly_payrolls`.
+
+
 
 
 
