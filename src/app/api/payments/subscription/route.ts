@@ -40,9 +40,12 @@ export async function GET(request: Request) {
     ]);
     if (paymentsError) return NextResponse.json({ error: "Impossible de charger l’historique d’abonnement." }, { status: 500 });
     const activityCatalog = getSubscriptionActivityCatalog(overrides, billingPeriod);
-    const visibleActivities = normalizeActivityCode(company.activity_type) === "BOUTIQUE_COMMERCE"
+    const normActivity = normalizeActivityCode(company.activity_type);
+    const visibleActivities = normActivity === "BOUTIQUE_COMMERCE"
       ? activityCatalog.filter((activity) => activity.code === "BOUTIQUE_COMMERCE")
-      : activityCatalog;
+      : normActivity === "ATELIER_COUTURE"
+      ? activityCatalog.filter((activity) => activity.code === "ATELIER_COUTURE")
+      : activityCatalog.filter((activity) => activity.code !== "BOUTIQUE_COMMERCE" && activity.code !== "ATELIER_COUTURE");
 
     return NextResponse.json({
       activity: { type: company.activity_type, currency: company.currency },

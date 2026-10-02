@@ -6,7 +6,7 @@ import { getAuthorizationContext } from "@/lib/authorization";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { requestHasSameOrigin } from "@/lib/request-security";
 
-const activityTypes = ["BUVETTE", "BAR_RESTAURANT", "NIGHTCLUB_LOUNGE", "HOTEL_AUBERGE", "BOUTIQUE_COMMERCE"] as const;
+const activityTypes = ["BUVETTE", "BAR_RESTAURANT", "NIGHTCLUB_LOUNGE", "HOTEL_AUBERGE", "BOUTIQUE_COMMERCE", "ATELIER_COUTURE"] as const;
 
 export async function GET() {
   try {
@@ -47,7 +47,7 @@ export async function POST(request: Request) {
     if (context.affiliateId || context.userType === "AFFILIATE") {
       return NextResponse.json({ error: "Un compte affilié ne peut pas créer un établissement. Utilisez un compte propriétaire séparé." }, { status: 403 });
     }
-    if (context.employeeId || context.isCommerceStaff) {
+    if (context.employeeId || context.isCommerceStaff || context.isCoutureStaff) {
       return NextResponse.json({ error: "Vous êtes actuellement connecté avec un compte employé. Seul un compte propriétaire peut créer un établissement." }, { status: 403 });
     }
 
@@ -55,8 +55,8 @@ export async function POST(request: Request) {
     const countryRaw = typeof body.country === "string" ? body.country.trim() : "";
     const currencyRaw = typeof body.currency === "string" ? body.currency.trim() : "";
 
-    const countryMap: Record<string, string> = { "Côte d’Ivoire": "CI", "Cote d'Ivoire": "CI", "Bénin": "BJ", "Benin": "BJ", "Sénégal": "SN", "Senegal": "SN", "Togo": "TG" };
-    const currencyMap: Record<string, string> = { "FCFA": "XOF", "XOF": "XOF", "GHS": "GHS", "NGN": "NGN" };
+    const countryMap: Record<string, string> = { "Côte d’Ivoire": "CI", "Cote d'Ivoire": "CI", "Bénin": "BJ", "Benin": "BJ", "Sénégal": "SN", "Senegal": "SN", "Togo": "TG", "Cameroun": "CM", "Cameroon": "CM" };
+    const currencyMap: Record<string, string> = { "FCFA": "XOF", "XOF": "XOF", "XAF": "XAF", "EUR": "EUR", "USD": "USD", "GHS": "GHS", "NGN": "NGN" };
     const country = countryMap[countryRaw] || (countryRaw.length === 2 ? countryRaw.toUpperCase() : "CI");
     const currency = currencyMap[currencyRaw] || (currencyRaw.length === 3 ? currencyRaw.toUpperCase() : "XOF");
 

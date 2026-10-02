@@ -4,6 +4,7 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PhoneField } from "@/components/PhoneField";
+import { PasswordField } from "@/components/PasswordField";
 import { composePhone } from "@/lib/phone-countries";
 
 type LoginMode = "EMAIL" | "PHONE";
@@ -100,17 +101,13 @@ export function ConnexionForm() {
           hint="Choisissez le pays puis saisissez uniquement le numéro national."
         />
       )}
-      <label className="block font-sans text-sm font-semibold">
-        Mot de passe
-        <input
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          type="password"
-          required
-          autoComplete="current-password"
-          className="mt-2 h-12 w-full rounded-xl border border-[var(--line)] bg-[var(--surface)] px-4"
-        />
-      </label>
+      <PasswordField
+        label="Mot de passe"
+        value={password}
+        onChange={setPassword}
+        autoComplete="current-password"
+        required
+      />
       <button
         disabled={pending}
         className="w-full rounded-full bg-[var(--ink)] px-5 py-3.5 font-sans text-sm font-bold text-white disabled:cursor-wait disabled:opacity-60"

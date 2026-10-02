@@ -1,7 +1,7 @@
-// DebitMaster SaaS plans: legacy activity plans stay unchanged; Commerce has its own per-establishment offer.
-export const subscriptionPlanCodes = ["BUVETTE", "BAR_RESTAURANT", "HOTEL_AUBERGE", "BOUTIQUE_COMMERCE", "SPECIAL"] as const;
+// DebitMaster SaaS plans: legacy activity plans stay unchanged; Commerce & Couture have their own dedicated offers.
+export const subscriptionPlanCodes = ["BUVETTE", "BAR_RESTAURANT", "HOTEL_AUBERGE", "BOUTIQUE_COMMERCE", "ATELIER_COUTURE", "SPECIAL"] as const;
 export type SubscriptionPlanCode = (typeof subscriptionPlanCodes)[number];
-export const standardSubscriptionPlanCodes = ["BUVETTE", "BAR_RESTAURANT", "HOTEL_AUBERGE", "BOUTIQUE_COMMERCE"] as const;
+export const standardSubscriptionPlanCodes = ["BUVETTE", "BAR_RESTAURANT", "HOTEL_AUBERGE", "BOUTIQUE_COMMERCE", "ATELIER_COUTURE"] as const;
 export type StandardSubscriptionPlanCode = (typeof standardSubscriptionPlanCodes)[number];
 export const billingPeriodCodes = ["MONTHLY", "ANNUAL"] as const;
 export type BillingPeriod = (typeof billingPeriodCodes)[number];
@@ -14,6 +14,7 @@ const planDefinitions: Record<SubscriptionPlanCode, PlanDefinition> = {
   BAR_RESTAURANT: { label: "Bar et restaurant", monthlyPriceXof: 60000, annualPriceXof: 540000, description: "Pour vendre des boissons et des repas, y compris pour une boîte de nuit ou un lounge.", features: ["Vente de boissons", "Vente de repas", "Commandes, cuisine et stocks", "Équipe et rapports"] },
   HOTEL_AUBERGE: { label: "Hôtel et auberge", monthlyPriceXof: 75000, annualPriceXof: 675000, description: "Pour vendre des boissons, des repas et gérer des chambres.", features: ["Vente de boissons", "Vente de repas", "Chambres et hébergement", "Équipe et rapports"] },
   BOUTIQUE_COMMERCE: { label: "Boutique & Commerce", monthlyPriceXof: 50000, annualPriceXof: 450000, description: "Pour tout commerce de négoce, vente au détail ou demi-gros.", features: ["Catalogue, conditionnements et codes-barres", "Devis, proformas et facturation", "Multi-magasins et inventaire", "Gestion clients et équipe"] },
+  ATELIER_COUTURE: { label: "Atelier de couture", monthlyPriceXof: 150000, annualPriceXof: 1350000, description: "Pour marque de couture, confection sur mesure, atelier de production et boutiques.", features: ["Production en atelier et paie à la tâche", "Vente boutique et encaissement multidevise", "Multi-boutiques et multi-ateliers", "Stock fournitures et produits finis", "Comptabilité SYSCOHADA consolidée"] },
   SPECIAL: { label: "Spécial sur cotation", monthlyPriceXof: 0, annualPriceXof: 0, description: "Ajoutez des activités complémentaires comme Gym, Lavage ou Wi-Fi après étude de votre demande.", features: ["Activités complémentaires sur demande", "Prix personnalisé", "Environnement configuré selon le devis"], quoteRequired: true },
 };
 
@@ -23,9 +24,10 @@ const activityDefinitions: Record<string, { label: string; includedServices: str
   NIGHTCLUB_LOUNGE: { label: "Boîte de nuit et lounge", includedServices: ["Vente de boissons", "Vente de repas"], commonServices: ["Commandes, stocks, équipe et rapports"] },
   HOTEL_AUBERGE: { label: "Hôtel et auberge", includedServices: ["Vente de boissons", "Vente de repas", "Chambres et hébergement"], commonServices: ["Stocks, équipe et rapports"] },
   BOUTIQUE_COMMERCE: { label: "Boutique & Commerce", includedServices: ["Achat-vente en magasin", "Catalogue et vente au comptoir", "Devis et facturation"], commonServices: ["Stocks multi-magasins, inventaire, équipe et rapports"] },
+  ATELIER_COUTURE: { label: "Atelier de couture", includedServices: ["Production en atelier et façon", "Vente en boutique et confection", "Encaissement multidevise", "Paie à la tâche"], commonServices: ["Multi-sites, stocks fournitures, comptabilité SYSCOHADA, équipe et rapports"] },
 };
 
-export const subscriptionActivityCodes = ["BUVETTE", "BAR_RESTAURANT", "NIGHTCLUB_LOUNGE", "HOTEL_AUBERGE", "BOUTIQUE_COMMERCE"] as const;
+export const subscriptionActivityCodes = ["BUVETTE", "BAR_RESTAURANT", "NIGHTCLUB_LOUNGE", "HOTEL_AUBERGE", "BOUTIQUE_COMMERCE", "ATELIER_COUTURE"] as const;
 export const freeTrialDays = 30;
 
 function normalizePeriod(period: string | null | undefined): BillingPeriod { return String(period ?? "MONTHLY").toUpperCase() === "ANNUAL" ? "ANNUAL" : "MONTHLY"; }
@@ -47,12 +49,17 @@ export function getSubscriptionPrice(activityType: string, plan: string, billing
   if (!definition || definition.quoteRequired) return null;
   const prices = overrideMap(overrides);
   const activityCode = normalizeActivityCode(activityType);
+  if (activityCode === "ATELIER_COUTURE") {
+    if (normalizedPlan !== "ATELIER_COUTURE") return null;
+    const override = prices.get(`${activityCode}:${normalizedPlan}:${billingPeriod}`);
+    return override?.price_xof ?? (billingPeriod === "ANNUAL" ? definition.annualPriceXof : definition.monthlyPriceXof);
+  }
   if (activityCode === "BOUTIQUE_COMMERCE") {
     if (normalizedPlan !== "BOUTIQUE_COMMERCE") return null;
     const override = prices.get(`${activityCode}:${normalizedPlan}:${billingPeriod}`);
     return override?.price_xof ?? (billingPeriod === "ANNUAL" ? definition.annualPriceXof : definition.monthlyPriceXof);
   }
-  if (normalizedPlan === "BOUTIQUE_COMMERCE") return null;
+  if (normalizedPlan === "BOUTIQUE_COMMERCE" || normalizedPlan === "ATELIER_COUTURE") return null;
   const override = prices.get(`${activityCode}:${normalizedPlan}:${billingPeriod}`) ?? prices.get(`BAR_RESTAURANT:${normalizedPlan}:${billingPeriod}`) ?? prices.get(`BUVETTE:${normalizedPlan}:${billingPeriod}`);
   return override?.price_xof ?? (billingPeriod === "ANNUAL" ? definition.annualPriceXof : definition.monthlyPriceXof);
 }
@@ -62,10 +69,15 @@ export function addSubscriptionPeriod(start: Date, billingPeriod: BillingPeriod 
 export function getSubscriptionCatalog(activityType: string, overrides: readonly SubscriptionPriceOverride[] = [], billingPeriod: BillingPeriod = "MONTHLY") {
   const prices = overrideMap(overrides);
   const activityCode = normalizeActivityCode(activityType);
-  const allowedPlans = activityCode === "BOUTIQUE_COMMERCE" ? ["BOUTIQUE_COMMERCE"] as const : subscriptionPlanCodes.filter((code) => code !== "BOUTIQUE_COMMERCE");
+  const allowedPlans = activityCode === "ATELIER_COUTURE"
+    ? ["ATELIER_COUTURE"] as const
+    : activityCode === "BOUTIQUE_COMMERCE"
+    ? ["BOUTIQUE_COMMERCE"] as const
+    : subscriptionPlanCodes.filter((code) => code !== "BOUTIQUE_COMMERCE" && code !== "ATELIER_COUTURE");
+
   return allowedPlans.map((code) => {
     const definition = planDefinitions[code];
-    const override = activityCode === "BOUTIQUE_COMMERCE"
+    const override = (activityCode === "BOUTIQUE_COMMERCE" || activityCode === "ATELIER_COUTURE")
       ? prices.get(`${activityCode}:${code}:${billingPeriod}`)
       : prices.get(`${activityCode}:${code}:${billingPeriod}`) ?? prices.get(`BAR_RESTAURANT:${code}:${billingPeriod}`) ?? prices.get(`BUVETTE:${code}:${billingPeriod}`);
     const priceXof = definition.quoteRequired ? 0 : override?.price_xof ?? (billingPeriod === "ANNUAL" ? definition.annualPriceXof : definition.monthlyPriceXof);
@@ -92,4 +104,5 @@ export function subscriptionDisplayStatus(status: string | null | undefined, tri
   if (String(status ?? "").toUpperCase() === "TRIAL") return "Essai";
   return "À activer";
 }
-export function isLegacyActivityCode(value: string) { return value.toUpperCase() !== "BOUTIQUE_COMMERCE" && subscriptionActivityCodes.includes(value.toUpperCase() as (typeof subscriptionActivityCodes)[number]); }
+export function isLegacyActivityCode(value: string) { return value.toUpperCase() !== "BOUTIQUE_COMMERCE" && value.toUpperCase() !== "ATELIER_COUTURE" && subscriptionActivityCodes.includes(value.toUpperCase() as (typeof subscriptionActivityCodes)[number]); }
+

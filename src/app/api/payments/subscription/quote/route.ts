@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     const notes = typeof body.notes === "string" ? body.notes.trim().slice(0, 2000) : null;
     const { data: company } = await context.supabase.from("companies").select("id,owner_user_id,activity_type").eq("id", tenantId).eq("owner_user_id", context.user.id).is("deleted_at", null).maybeSingle();
     if (!company) return NextResponse.json({ error: "Établissement non autorisé." }, { status: 403 });
-    if (company.activity_type === "BOUTIQUE_COMMERCE") return NextResponse.json({ error: "Cette activité possède une formule dédiée et ne nécessite pas de cotation." }, { status: 400 });
+    if (company.activity_type === "BOUTIQUE_COMMERCE" || company.activity_type === "ATELIER_COUTURE") return NextResponse.json({ error: "Cette activité possède une formule dédiée et ne nécessite pas de cotation." }, { status: 400 });
     const { data, error } = await context.supabase.from("subscription_quote_requests").insert({ tenant_id: tenantId, requested_by: context.user.id, requested_activities: requestedActivities, notes }).select("id,tenant_id,requested_activities,notes,status,quoted_amount,currency,created_at").single();
     if (error) return NextResponse.json({ error: "Impossible d’enregistrer la demande de cotation." }, { status: 500 });
     return NextResponse.json({ request: data }, { status: 201 });

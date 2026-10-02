@@ -253,6 +253,32 @@ Ce document consigne toutes les décisions techniques, fonctionnelles et hypoth�
     10. Synchronisation hors-ligne PWA
     11. Isolation des données multi-tenant (Tenant A vs Tenant B).
 
+---
+
+## 13. Module « Atelier de couture » — Activité, Sites & Rôles (Sprint 1)
+- **Code d'activité** : `ATELIER_COUTURE` (6ᵉ activité indépendante du SaaS DebitMaster).
+- **Tarification officielle** :
+  - Mensuel : 150 000 FCFA / mois (`billing_period = 'MONTHLY'`).
+  - Annuel : 1 350 000 FCFA / an (`billing_period = 'ANNUAL'`, soit 25 % de réduction / 3 mois offerts).
+  - Période d'essai : 30 jours gratuits dès la création, suivi d'une période de grâce de 5 jours, puis bascule en mode lecture seule (règle globale SaaS).
+  - Étanche : aucun plan historique ou plan Boutique & Commerce ne peut être souscrit par un établissement Couture, et inversement.
+- **Entité Sites (`couture_sites`)** :
+  - Modèle dual : `site_type IN ('BOUTIQUE', 'ATELIER')`.
+  - Multi-pays et multidevise : chaque site a son pays (Togo, Cameroun, etc.) et sa devise locale (`currency IN ('FCFA', 'XOF', 'XAF', 'EUR', 'USD', 'GHS', 'NGN')`).
+  - Un établissement peut disposer d'un atelier central à Lomé et de plusieurs boutiques à Lomé et Douala.
+- **Rôles & Permissions (`couture_roles`, `couture_role_permissions`)** :
+  - 11 rôles opérationnels définis : `DIRECTEUR_GERANT`, `CHEF_AGENCE`, `VENDEUR`, `CHEF_ATELIER`, `OUVRIER`, `MAGASINIER_ATELIER`, `MAGASINIER_BOUTIQUE`, `ACHETEUR`, `COMPTABLE`, `RH`, `INVENTAIRE`.
+  - Catalogue de 37 permissions granulaires et exclusives à l'activité.
+  - Séparation stricte des tâches : `OUVRIER` n'a accès qu'à ses tâches et à la déclaration d'achèvement (`piecework.declare`) ; `COMPTABLE` valide les achats < 50 000 FCFA ; `RH/Direction` valide les achats ≥ 50 000 FCFA et la paie.
+- **Métiers de production (Crafts)** :
+  - Sur `couture_employees`, un ouvrier détient un ou plusieurs métiers : `COUPEUR`, `COUTURIER`, `BRODEUR_MAIN`, `BRODEUR_MACHINE`, `FINISSEUR`.
+- **Provisionnement automatique (`provision_couture_tenant()`)** :
+  - À la création d'un établissement `ATELIER_COUTURE`, création automatique de `Atelier central`, `Boutique principale`, des 11 rôles système avec leurs permissions par défaut, et enregistrement de l'événement d'audit.
+- **Visibilité des mots de passe (Feature transversale)** :
+  - Composant `PasswordField.tsx` avec bouton œil (SVG ouvert / barré), accessibilité (`aria-label`, `aria-pressed`, `tabIndex=0`) et support thèmes clair/sombre.
+  - Intégré sur `/connexion`, `/inscription`, `/dashboard/settings`, `/invitation/accept`.
+
+
 
 
 

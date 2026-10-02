@@ -88,7 +88,10 @@ export async function proxy(request: NextRequest) {
     const isOwner = company?.owner_user_id === user.id;
     const commerceAccount = profile?.role === "COMMERCE_STAFF";
     const commerceTenant = company?.activity_type === "BOUTIQUE_COMMERCE";
-    if (commerceAccount && profile?.must_change_password) {
+    const coutureAccount = profile?.role === "COUTURE_STAFF";
+    const coutureTenant = company?.activity_type === "ATELIER_COUTURE";
+
+    if ((commerceAccount || coutureAccount) && profile?.must_change_password) {
       const redirectUrl = request.nextUrl.clone();
       redirectUrl.pathname = "/commerce/mot-de-passe";
       redirectUrl.searchParams.delete("error");
@@ -103,7 +106,16 @@ export async function proxy(request: NextRequest) {
         return NextResponse.redirect(redirectUrl);
       }
     }
-    if (company?.activity_type === "BOUTIQUE_COMMERCE") {
+    if (coutureAccount || coutureTenant) {
+      const allowedCouturePage = request.nextUrl.pathname === "/dashboard" || request.nextUrl.pathname.startsWith("/dashboard/couture/") || (isOwner && request.nextUrl.pathname.startsWith("/dashboard/subscription"));
+      if (!allowedCouturePage) {
+        const redirectUrl = request.nextUrl.clone();
+        redirectUrl.pathname = "/dashboard";
+        redirectUrl.searchParams.set("error", "espace_couture");
+        return NextResponse.redirect(redirectUrl);
+      }
+    }
+    if (company?.activity_type === "BOUTIQUE_COMMERCE" || company?.activity_type === "ATELIER_COUTURE") {
       const status = String(company.status ?? "").toUpperCase();
       if (["SUSPENDED", "CANCELLED"].includes(status)) {
         const billingPage = request.nextUrl.pathname.startsWith("/dashboard/subscription");
