@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { getAuthorizationContext, can } from "@/lib/authorization";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { companyHasPowerFeatures } from "@/lib/subscription-plans";
 
 const CATALOG = [
   { ticket_code: "3_HOURS", label: "Ticket 3 heures", duration_label: "3 heures", unit_price_xof: 100 },
@@ -10,8 +11,12 @@ const CATALOG = [
 ] as const;
 async function allowed(context: Awaited<ReturnType<typeof getAuthorizationContext>>, tenantId: string) {
   if (!context.user || !tenantId || !context.tenantIds.includes(tenantId) || (!can(context, "services.view") && !can(context, "finance.view"))) return false;
-  const { data: company } = await context.supabase.from("companies").select("subscription_plan").eq("id", tenantId).eq("subscription_plan", "SPECIAL").maybeSingle();
-  return Boolean(company);
+  const { data: company } = await context.supabase
+    .from("companies")
+    .select("id, activity_type, subscription_plan, has_special_option")
+    .eq("id", tenantId)
+    .maybeSingle();
+  return Boolean(company && companyHasPowerFeatures(company));
 }
 
 export async function GET(request: Request) {

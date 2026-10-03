@@ -2,14 +2,21 @@
 import { NextResponse } from "next/server";
 import { getAuthorizationContext } from "@/lib/authorization";
 import { encryptMtnMomoCredentials, last4 } from "@/lib/mtn-momo-credentials";
+import { companyHasSpecialOption } from "@/lib/subscription-plans";
 
 const credentialFields = ["apiUser", "apiKey", "collectionSubscriptionKey", "disbursementSubscriptionKey"] as const;
 type CredentialField = (typeof credentialFields)[number];
 
 async function isSpecialOwner(context: Awaited<ReturnType<typeof getAuthorizationContext>>, tenantId: string) {
   if (!context.user || context.employeeId !== null || context.role !== "ADMINISTRATEUR" || !context.tenantIds.includes(tenantId)) return false;
-  const { data } = await context.supabase.from("companies").select("id").eq("id", tenantId).eq("owner_user_id", context.user.id).eq("subscription_plan", "SPECIAL").is("deleted_at", null).maybeSingle();
-  return Boolean(data?.id);
+  const { data } = await context.supabase
+    .from("companies")
+    .select("id, activity_type, subscription_plan, has_special_option")
+    .eq("id", tenantId)
+    .eq("owner_user_id", context.user.id)
+    .is("deleted_at", null)
+    .maybeSingle();
+  return Boolean(data?.id && companyHasSpecialOption(data));
 }
 
 export async function GET(request: Request) {

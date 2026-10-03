@@ -22,6 +22,8 @@ import {
   Building2,
   HelpCircle,
   Play,
+  Scissors,
+  ShoppingBag,
 } from "@/components/Icons";
 
 type RolePreview = "server" | "kitchen" | "manager" | "qrmenu";
@@ -36,11 +38,11 @@ export function LandingClient() {
       {/* Top Banner Notice */}
       <div className="relative z-50 border-b border-amber-500/20 bg-gradient-to-r from-emerald-950 via-emerald-900 to-amber-950 px-4 py-2.5 text-center text-xs font-semibold text-amber-200">
         <span className="mr-2 inline-flex items-center gap-1 rounded-full bg-amber-400/20 px-2.5 py-0.5 text-[11px] font-extrabold text-amber-300">
-          <Sparkles className="h-3 w-3" /> NOUVEAU
+          <Sparkles className="h-3 w-3" /> NOUVELLE GRILLE
         </span>
-        Intégration MTN Mobile Money native & Menus QR interactifs pour bars et restaurants.{" "}
+        30 jours d’essai entièrement gratuits sur les 6 activités du SaaS, sans aucun engagement.{" "}
         <Link href="/inscription" className="ml-1 inline-flex items-center underline hover:text-white">
-          Essai 14 jours sans engagement <ChevronRight className="h-3 w-3" />
+          Démarrer mon essai gratuit <ChevronRight className="h-3 w-3" />
         </Link>
       </div>
 
@@ -72,9 +74,9 @@ export function LandingClient() {
             <a href="#menu-qr" className="transition hover:text-amber-400">
               Menu QR Code
             </a>
-            <a href="#tarifs" className="transition hover:text-amber-400">
+            <Link href="/tarifs" className="transition hover:text-amber-400">
               Tarifs & Formules
-            </a>
+            </Link>
             <a href="#faq" className="transition hover:text-amber-400">
               FAQ
             </a>
@@ -548,13 +550,13 @@ export function LandingClient() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-3xl text-center">
             <span className="text-xs font-black uppercase tracking-widest text-amber-400">
-              Formules claires & transparentes
+              Tarification claire par activité
             </span>
             <h2 className="mt-3 text-3xl font-black text-white sm:text-5xl">
-              Choisissez la formule adaptée à votre taille
+              Une formule dédiée à votre métier
             </h2>
             <p className="mt-4 text-base text-slate-400">
-              Tous les forfaits incluent 14 jours d’essai gratuit, l’accès illimité aux serveurs et le support local 7j/7.
+              Tous nos forfaits incluent 30 jours d’essai entièrement gratuits sans carte bancaire, l’accès illimité aux serveurs et le support local 7j/7.
             </p>
 
             <div className="mt-8 inline-flex items-center rounded-xl bg-slate-900 p-1.5 ring-1 ring-slate-800">
@@ -575,131 +577,204 @@ export function LandingClient() {
                 }`}
               >
                 <span>Paiement Annuel</span>
-                <span className="rounded bg-amber-400/20 px-1.5 py-0.5 text-[10px] text-amber-300">-20%</span>
+                <span className="rounded bg-amber-400/20 px-1.5 py-0.5 text-[10px] text-amber-300">-25% (3 mois offerts)</span>
               </button>
             </div>
           </div>
 
-          <div className="mt-14 grid gap-8 lg:grid-cols-3">
-            {/* Plan 1: Essentiel */}
-            <div className="flex flex-col justify-between rounded-3xl border border-slate-800 bg-slate-900/60 p-8">
-              <div>
-                <span className="text-xs font-bold uppercase text-slate-400">Maquis & Petits Bars</span>
-                <h3 className="mt-2 text-2xl font-black text-white">Formule Starter</h3>
-                <p className="mt-3 text-sm text-slate-400">
-                  Idéal pour démarrer avec la commande mobile et le contrôle des boissons.
-                </p>
-                <div className="mt-6">
-                  <span className="text-4xl font-black text-white">
-                    {currencyPeriod === "yearly" ? "24 000" : "30 000"}
-                  </span>{" "}
-                  <span className="text-sm font-semibold text-slate-400">XOF / mois</span>
-                </div>
-                <ul className="mt-8 space-y-3 text-sm text-slate-300">
-                  <li className="flex items-center gap-2.5">
-                    <Check className="h-4 w-4 text-emerald-400" /> Jusqu’à 5 serveuses connectées
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <Check className="h-4 w-4 text-emerald-400" /> Gestion des stocks de boissons
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <Check className="h-4 w-4 text-emerald-400" /> Caisse et encaissements espèces
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <Check className="h-4 w-4 text-emerald-400" /> Support WhatsApp standard
-                  </li>
-                </ul>
-              </div>
-              <Link
-                href="/inscription"
-                className="mt-8 block rounded-xl border border-slate-700 bg-slate-800 py-3 text-center text-sm font-black text-white hover:bg-slate-700"
-              >
-                Démarrer en Starter
-              </Link>
-            </div>
+          <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {[
+              {
+                code: "BUVETTE",
+                name: "Buvette",
+                badge: "Boissons & Maquis",
+                monthly: 30000,
+                yearlyMonthly: 22500,
+                yearlyTotal: 270000,
+                icon: <Wine className="h-6 w-6 text-amber-400" />,
+                desc: "Idéal pour les maquis, buvettes et dépôts de boissons avec suivi rigoureux des casiers et vente rapide.",
+                features: [
+                  "Prise de commande mobile serveuses",
+                  "Gestion stricte des stocks & casiers",
+                  "Traçabilité anti-coulage en temps réel",
+                  "Caisse et encaissements MTN MoMo & espèces",
+                ],
+              },
+              {
+                code: "BAR_RESTAURANT",
+                name: "Bar et restaurant",
+                badge: "Le plus populaire",
+                monthly: 50000,
+                yearlyMonthly: 37500,
+                yearlyTotal: 450000,
+                icon: <UtensilsCrossed className="h-6 w-6 text-emerald-400" />,
+                isPopular: true,
+                desc: "Pour synchroniser salle, bar et cuisine avec écran KDS, plan de table et encaissements instantanés.",
+                features: [
+                  "Vente boissons & repas avec recettes",
+                  "Écran KDS cuisine interactif en temps réel",
+                  "Plan de salle tactile & gestion des tables",
+                  "Encaissements rapides & tickets de caisse",
+                ],
+              },
+              {
+                code: "BOUTIQUE_COMMERCE",
+                name: "Boutique et commerce",
+                badge: "Négoce & Retail",
+                monthly: 50000,
+                yearlyMonthly: 37500,
+                yearlyTotal: 450000,
+                icon: <ShoppingBag className="h-6 w-6 text-amber-400" />,
+                desc: "Pour magasins, grossistes et points de vente avec codes-barres, devis, livraisons et stocks multi-magasins.",
+                features: [
+                  "Multi-magasins & stocks avec CMP automatique",
+                  "Devis, factures & bons de livraison (BL)",
+                  "Sessions de caisse, Ticket Z & règlements mixtes",
+                  "Comptabilité SYSCOHADA & analyse Pareto ABC",
+                ],
+              },
+              {
+                code: "NIGHTCLUB_LOUNGE",
+                name: "Lounge et night-club",
+                badge: "Vie Nocturne & VIP",
+                monthly: 75000,
+                yearlyMonthly: 56250,
+                yearlyTotal: 675000,
+                icon: <Sparkles className="h-6 w-6 text-purple-400" />,
+                desc: "Vente au verre et à la bouteille, gestion des salons VIP, service chicha et cadencement nuit intensif.",
+                features: [
+                  "Service VIP & gestion des salons / tables",
+                  "Vente bouteilles & contrôle de service",
+                  "Commandes ultra-rapides en ambiance festive",
+                  "Clôture nocturne sécurisée et anti-fraude",
+                ],
+              },
+              {
+                code: "HOTEL_AUBERGE",
+                name: "Hôtel et auberge",
+                badge: "Hôtellerie & Séjours",
+                monthly: 80000,
+                yearlyMonthly: 60000,
+                yearlyTotal: 720000,
+                icon: <Building2 className="h-6 w-6 text-sky-400" />,
+                desc: "Pour auberges, motels et complexes hôteliers avec planning des chambres, nuitées, passes et consommations.",
+                features: [
+                  "Planning d'occupation des chambres en direct",
+                  "Gestion des passes courts & nuitées complètes",
+                  "Facturation globale hébergement & restauration",
+                  "Statuts de ménage et gouvernance des étages",
+                ],
+              },
+              {
+                code: "ATELIER_COUTURE",
+                name: "Atelier de couture",
+                badge: "Haute Couture & Confection",
+                monthly: 100000,
+                yearlyMonthly: 75000,
+                yearlyTotal: 900000,
+                icon: <Scissors className="h-6 w-6 text-pink-400" />,
+                desc: "Gestion complète multi-sites : fiches clients à 15 mensurations, circuit de fabrication et paie à la tâche.",
+                features: [
+                  "Clients & 15 mensurations avec bénéficiaires",
+                  "4 types de ventes & encaissement multidevise",
+                  "Fiches de fabrication (Coupe, Couture, Broderie, QC)",
+                  "Paie à la tâche des ouvriers & petite caisse",
+                ],
+              },
+            ].map((act) => {
+              const displayPrice = currencyPeriod === "yearly" ? act.yearlyMonthly : act.monthly;
+              const formattedPrice = new Intl.NumberFormat("fr-FR").format(displayPrice);
+              const formattedYearly = new Intl.NumberFormat("fr-FR").format(act.yearlyTotal);
 
-            {/* Plan 2: Bar Restaurant (Recommended) */}
-            <div className="relative flex flex-col justify-between rounded-3xl border-2 border-amber-500/80 bg-gradient-to-b from-slate-900 via-slate-900 to-[#0c1815] p-8 shadow-2xl shadow-emerald-950/60">
-              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full bg-amber-400 px-3.5 py-1 text-[11px] font-black uppercase tracking-wider text-slate-950 shadow-md">
-                Le plus populaire
-              </div>
-              <div>
-                <span className="text-xs font-bold uppercase text-amber-400">Bars, Lounges & Restaurants</span>
-                <h3 className="mt-2 text-2xl font-black text-white">Bar Restaurant Pro</h3>
-                <p className="mt-3 text-sm text-slate-400">
-                  Pour synchroniser salle, bar et cuisine avec le KDS et les paiements MTN MoMo.
-                </p>
-                <div className="mt-6">
-                  <span className="text-4xl font-black text-amber-400">
-                    {currencyPeriod === "yearly" ? "48 000" : "60 000"}
-                  </span>{" "}
-                  <span className="text-sm font-semibold text-slate-400">XOF / mois</span>
-                </div>
-                <ul className="mt-8 space-y-3 text-sm text-slate-300">
-                  <li className="flex items-center gap-2.5">
-                    <Check className="h-4 w-4 text-emerald-400" /> Serveuses et serveurs illimités
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <Check className="h-4 w-4 text-emerald-400" /> Écran KDS Cuisine en temps réel
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <Check className="h-4 w-4 text-emerald-400" /> Menus QR Code à table avec commande
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <Check className="h-4 w-4 text-emerald-400" /> Paiements MTN Mobile Money directs
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <Check className="h-4 w-4 text-emerald-400" /> Point de caisse et réconciliation
-                  </li>
-                </ul>
-              </div>
-              <Link
-                href="/inscription"
-                className="mt-8 block rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 py-3.5 text-center text-sm font-black text-slate-950 shadow-lg shadow-amber-500/20 hover:from-amber-400 hover:to-amber-300"
-              >
-                Choisir Bar Restaurant Pro
-              </Link>
-            </div>
+              return (
+                <div
+                  key={act.code}
+                  className={`relative flex flex-col justify-between rounded-3xl p-6 transition duration-200 ${
+                    act.isPopular
+                      ? "border-2 border-amber-500/80 bg-gradient-to-b from-slate-900 via-slate-900 to-[#0c1815] shadow-2xl shadow-emerald-950/60"
+                      : "border border-slate-800 bg-slate-900/60 hover:border-slate-700"
+                  }`}
+                >
+                  {act.isPopular && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-amber-400 px-3 py-0.5 text-[10px] font-black uppercase tracking-wider text-slate-950 shadow-md">
+                      {act.badge}
+                    </div>
+                  )}
 
-            {/* Plan 3: Formule Power Multi-Services */}
-            <div className="flex flex-col justify-between rounded-3xl border border-slate-800 bg-slate-900/60 p-8">
-              <div>
-                <span className="text-xs font-bold uppercase text-slate-400">Complexes & Hôtels</span>
-                <h3 className="mt-2 text-2xl font-black text-white">Formule Power</h3>
-                <p className="mt-3 text-sm text-slate-400">
-                  Pour les établissements complets : Restaurant, Auberge/Hôtel, Lavage, Gym & Wi-Fi.
-                </p>
-                <div className="mt-6">
-                  <span className="text-4xl font-black text-white">
-                    {currencyPeriod === "yearly" ? "120 000" : "150 000"}
-                  </span>{" "}
-                  <span className="text-sm font-semibold text-slate-400">XOF / mois</span>
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-800/80 border border-slate-700/50">
+                        {act.icon}
+                      </div>
+                      {!act.isPopular && (
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                          {act.badge}
+                        </span>
+                      )}
+                    </div>
+
+                    <h3 className="mt-4 text-xl font-black text-white">{act.name}</h3>
+                    <p className="mt-2 text-xs leading-relaxed text-slate-400 min-h-[36px]">{act.desc}</p>
+
+                    <div className="mt-5 rounded-xl bg-slate-950/50 p-3.5 border border-slate-800/60">
+                      <div className="flex items-baseline gap-1.5">
+                        <span className={`text-3xl font-black ${act.isPopular ? "text-amber-400" : "text-white"}`}>
+                          {formattedPrice}
+                        </span>
+                        <span className="text-xs font-semibold text-slate-400">FCFA / mois</span>
+                      </div>
+                      {currencyPeriod === "yearly" && (
+                        <p className="mt-1 text-[11px] font-medium text-emerald-400">
+                          Facturé {formattedYearly} FCFA / an (-25%)
+                        </p>
+                      )}
+                    </div>
+
+                    <ul className="mt-6 space-y-2.5 text-xs text-slate-300">
+                      {act.features.map((feat, fIdx) => (
+                        <li key={fIdx} className="flex items-start gap-2">
+                          <Check className="h-4 w-4 shrink-0 text-emerald-400 mt-0.5" />
+                          <span>{feat}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="mt-6 pt-4 border-t border-slate-800/60">
+                    <Link
+                      href={`/inscription?activite=${act.code.toLowerCase()}`}
+                      className={`block w-full rounded-xl py-3 text-center text-xs font-black transition ${
+                        act.isPopular
+                          ? "bg-gradient-to-r from-amber-500 to-amber-400 text-slate-950 shadow-lg shadow-amber-500/20 hover:from-amber-400 hover:to-amber-300"
+                          : "border border-slate-700 bg-slate-800/90 text-white hover:bg-slate-700"
+                      }`}
+                    >
+                      Démarrer l’essai 30 jours
+                    </Link>
+                  </div>
                 </div>
-                <ul className="mt-8 space-y-3 text-sm text-slate-300">
-                  <li className="flex items-center gap-2.5">
-                    <Check className="h-4 w-4 text-emerald-400" /> Tous les modules Bar & Restaurant
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <Check className="h-4 w-4 text-emerald-400" /> Module Auberge & Chambres (passe / nuit)
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <Check className="h-4 w-4 text-emerald-400" /> Module Lavage Auto & Moto
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <Check className="h-4 w-4 text-emerald-400" /> Module Gym, Fitness & Wi-Fi tickets
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <Check className="h-4 w-4 text-emerald-400" /> Gestionnaire de compte dédié 24/7
-                  </li>
-                </ul>
+              );
+            })}
+          </div>
+
+          {/* Special Option Discovery Callout */}
+          <div className="mt-12 rounded-3xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 via-slate-900 to-emerald-950/40 p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-xl">
+            <div>
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-amber-400" />
+                <h4 className="text-lg font-bold text-white">Besoin de modules avancés ? Découvrez les Options Spéciales (+50%)</h4>
               </div>
-              <Link
-                href="/inscription"
-                className="mt-8 block rounded-xl border border-slate-700 bg-slate-800 py-3 text-center text-sm font-black text-white hover:bg-slate-700"
-              >
-                Passer en Formule Power
-              </Link>
+              <p className="mt-2 text-sm text-slate-300 max-w-2xl leading-relaxed">
+                Repas & Cuisine KDS, Lavage auto/moto, Gym & Fitness, Auberge/Chambres, Tickets Wi-Fi et MTN MoMo Personnel : explorez les 4 combinaisons de chaque activité sur notre comparateur complet.
+              </p>
             </div>
+            <Link
+              href="/tarifs"
+              className="shrink-0 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 px-6 py-3.5 text-sm font-black text-slate-950 shadow-lg shadow-amber-500/20 hover:from-amber-400 hover:to-amber-300 transition"
+            >
+              <span>Voir la grille complète & options</span>
+              <ArrowRight className="h-4 w-4" />
+            </Link>
           </div>
         </div>
       </section>
@@ -728,7 +803,7 @@ export function LandingClient() {
               },
               {
                 q: "Puis-je tester avant de m'engager ?",
-                a: "Oui, vous bénéficiez de 14 jours d’essai entièrement gratuits et sans engagement pour tester avec votre équipe dans votre propre établissement.",
+                a: "Oui, vous bénéficiez de 30 jours d’essai entièrement gratuits et sans engagement pour tester avec votre équipe dans votre propre établissement.",
               },
             ].map((item, idx) => (
               <div key={idx} className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5">

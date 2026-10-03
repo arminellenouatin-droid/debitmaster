@@ -6,40 +6,86 @@ import {
   getSubscriptionPrice,
   isLegacyActivityCode,
   subscriptionIsExpired,
+  referenceActivityConfigs,
+  calculateAnnualPrice,
+  calculateSpecialPrice,
 } from "../src/lib/subscription-plans.ts";
 
-test("Commerce keeps its approved monthly and annual prices", () => {
-  assert.equal(getSubscriptionPrice("BOUTIQUE_COMMERCE", "BOUTIQUE_COMMERCE", "MONTHLY"), 50_000);
-  assert.equal(getSubscriptionPrice("BOUTIQUE_COMMERCE", "BOUTIQUE_COMMERCE", "ANNUAL"), 450_000);
+test("PRD v1.1 Reference prices for all 6 activities (Section 2)", () => {
+  // 1. Buvette
+  assert.equal(getSubscriptionPrice("BUVETTE", "NORMAL", "MONTHLY"), 30_000);
+  assert.equal(getSubscriptionPrice("BUVETTE", "NORMAL", "ANNUAL"), 270_000);
+  assert.equal(getSubscriptionPrice("BUVETTE", "SPECIAL", "MONTHLY"), 45_000);
+  assert.equal(getSubscriptionPrice("BUVETTE", "SPECIAL", "ANNUAL"), 405_000);
+
+  // 2. Bar et restaurant
+  assert.equal(getSubscriptionPrice("BAR_RESTAURANT", "NORMAL", "MONTHLY"), 50_000);
+  assert.equal(getSubscriptionPrice("BAR_RESTAURANT", "NORMAL", "ANNUAL"), 450_000);
+  assert.equal(getSubscriptionPrice("BAR_RESTAURANT", "SPECIAL", "MONTHLY"), 75_000);
+  assert.equal(getSubscriptionPrice("BAR_RESTAURANT", "SPECIAL", "ANNUAL"), 675_000);
+
+  // 3. Lounge et night-club
+  assert.equal(getSubscriptionPrice("NIGHTCLUB_LOUNGE", "NORMAL", "MONTHLY"), 75_000);
+  assert.equal(getSubscriptionPrice("NIGHTCLUB_LOUNGE", "NORMAL", "ANNUAL"), 675_000);
+  assert.equal(getSubscriptionPrice("NIGHTCLUB_LOUNGE", "SPECIAL", "MONTHLY"), 112_500);
+  assert.equal(getSubscriptionPrice("NIGHTCLUB_LOUNGE", "SPECIAL", "ANNUAL"), 1_012_500);
+
+  // 4. Hôtel et auberge
+  assert.equal(getSubscriptionPrice("HOTEL_AUBERGE", "NORMAL", "MONTHLY"), 80_000);
+  assert.equal(getSubscriptionPrice("HOTEL_AUBERGE", "NORMAL", "ANNUAL"), 720_000);
+  assert.equal(getSubscriptionPrice("HOTEL_AUBERGE", "SPECIAL", "MONTHLY"), 120_000);
+  assert.equal(getSubscriptionPrice("HOTEL_AUBERGE", "SPECIAL", "ANNUAL"), 1_080_000);
+
+  // 5. Boutique et commerce
+  assert.equal(getSubscriptionPrice("BOUTIQUE_COMMERCE", "NORMAL", "MONTHLY"), 50_000);
+  assert.equal(getSubscriptionPrice("BOUTIQUE_COMMERCE", "NORMAL", "ANNUAL"), 450_000);
+  assert.equal(getSubscriptionPrice("BOUTIQUE_COMMERCE", "SPECIAL", "MONTHLY"), 75_000);
+  assert.equal(getSubscriptionPrice("BOUTIQUE_COMMERCE", "SPECIAL", "ANNUAL"), 675_000);
+
+  // 6. Atelier de couture
+  assert.equal(getSubscriptionPrice("ATELIER_COUTURE", "NORMAL", "MONTHLY"), 100_000);
+  assert.equal(getSubscriptionPrice("ATELIER_COUTURE", "NORMAL", "ANNUAL"), 900_000);
+  assert.equal(getSubscriptionPrice("ATELIER_COUTURE", "SPECIAL", "MONTHLY"), 150_000);
+  assert.equal(getSubscriptionPrice("ATELIER_COUTURE", "SPECIAL", "ANNUAL"), 1_350_000);
 });
 
-test("Commerce and legacy subscription catalogs remain isolated", () => {
-  assert.deepEqual(getSubscriptionCatalog("BOUTIQUE_COMMERCE").map(({ code }) => code), ["BOUTIQUE_COMMERCE"]);
-  assert.equal(getSubscriptionCatalog("BUVETTE").some(({ code }) => code === "BOUTIQUE_COMMERCE"), false);
-  assert.equal(getSubscriptionPrice("BUVETTE", "BOUTIQUE_COMMERCE"), null);
-  assert.equal(getSubscriptionPrice("BOUTIQUE_COMMERCE", "BUVETTE"), null);
+test("Each activity has exactly 2 options: Normal and Special Option", () => {
+  const commercePlans = getSubscriptionCatalog("BOUTIQUE_COMMERCE");
+  assert.deepEqual(commercePlans.map(({ code }) => code), ["BOUTIQUE_COMMERCE", "BOUTIQUE_COMMERCE_SPECIAL"]);
+
+  const buvettePlans = getSubscriptionCatalog("BUVETTE");
+  assert.deepEqual(buvettePlans.map(({ code }) => code), ["BUVETTE", "BUVETTE_SPECIAL"]);
+  assert.equal(buvettePlans.some(({ code }) => code.startsWith("BOUTIQUE_COMMERCE")), false);
 });
 
-test("legacy price overrides cannot change the Commerce offer", () => {
+test("Calculation helpers obey PRD rules (25% annual discount and x1.5 special option)", () => {
+  assert.equal(calculateAnnualPrice(30_000, 0.25), 270_000);
+  assert.equal(calculateSpecialPrice(30_000, 1.5), 45_000);
+  assert.equal(calculateAnnualPrice(45_000, 0.25), 405_000);
+});
+
+test("Price overrides apply properly", () => {
   const overrides = [
-    { activity_code: "BUVETTE", plan_code: "BOUTIQUE_COMMERCE", billing_period: "MONTHLY", price_xof: 1 },
     { activity_code: "BOUTIQUE_COMMERCE", plan_code: "BOUTIQUE_COMMERCE", billing_period: "MONTHLY", price_xof: 52_000 },
   ];
-  assert.equal(getSubscriptionPrice("BOUTIQUE_COMMERCE", "BOUTIQUE_COMMERCE", "MONTHLY", overrides), 52_000);
-  assert.equal(getSubscriptionPrice("BOUTIQUE_COMMERCE", "BOUTIQUE_COMMERCE", "MONTHLY", overrides.slice(0, 1)), 50_000);
+  assert.equal(getSubscriptionPrice("BOUTIQUE_COMMERCE", "NORMAL", "MONTHLY", overrides), 52_000);
+  assert.equal(getSubscriptionPrice("BOUTIQUE_COMMERCE", "NORMAL", "MONTHLY"), 50_000);
 });
 
-test("multi-activity list includes Commerce without leaking its plan into older activities", () => {
+test("Catalog contains all 6 activities with 100% immediate availability", () => {
   const activities = getSubscriptionActivityCatalog();
-  assert.equal(activities.some(({ code }) => code === "BOUTIQUE_COMMERCE"), true);
-  for (const activity of activities.filter(({ code }) => code !== "BOUTIQUE_COMMERCE")) {
-    assert.equal(activity.plans.some(({ code }) => code === "BOUTIQUE_COMMERCE"), false);
+  assert.equal(activities.length, 6);
+  assert.deepEqual(
+    activities.map((a) => a.code),
+    ["BUVETTE", "BAR_RESTAURANT", "NIGHTCLUB_LOUNGE", "HOTEL_AUBERGE", "BOUTIQUE_COMMERCE", "ATELIER_COUTURE"]
+  );
+  for (const act of activities) {
+    assert.equal(act.isAvailable, true);
+    assert.equal(act.plans.length, 2);
   }
-  assert.equal(isLegacyActivityCode("BUVETTE"), true);
-  assert.equal(isLegacyActivityCode("BOUTIQUE_COMMERCE"), false);
 });
 
-test("suspended, cancelled, expired and elapsed subscriptions are expired", () => {
+test("Suspended, cancelled, expired and elapsed subscriptions are expired", () => {
   const now = Date.UTC(2026, 0, 1);
   assert.equal(subscriptionIsExpired("SUSPENDED", null, null, now), true);
   assert.equal(subscriptionIsExpired("CANCELLED", null, null, now), true);

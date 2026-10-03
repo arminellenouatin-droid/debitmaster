@@ -1,13 +1,19 @@
 // DebitManager plan spécial: prestations non-stockées, avec prix gérés par le superviseur ou le propriétaire.
 import { NextResponse } from "next/server";
 import { getAuthorizationContext, can } from "@/lib/authorization";
+import { companyHasPowerFeatures } from "@/lib/subscription-plans";
 
 const normalize = (value: unknown) => typeof value === "string" ? value.trim() : "";
 
 async function specialTenant(context: Awaited<ReturnType<typeof getAuthorizationContext>>, tenantId: string) {
   if (!tenantId || !(context.tenantIds as string[]).includes(tenantId)) return false;
-  const { data } = await context.supabase.from("companies").select("id").eq("id", tenantId).eq("subscription_plan", "SPECIAL").is("deleted_at", null).maybeSingle();
-  return Boolean(data);
+  const { data } = await context.supabase
+    .from("companies")
+    .select("id, activity_type, subscription_plan, has_special_option")
+    .eq("id", tenantId)
+    .is("deleted_at", null)
+    .maybeSingle();
+  return Boolean(data && companyHasPowerFeatures(data));
 }
 
 export async function GET(request: Request) {

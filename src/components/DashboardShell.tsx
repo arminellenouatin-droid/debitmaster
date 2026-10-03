@@ -1,7 +1,7 @@
 // DebitManager Power navigation: owners and supervisors keep the management cockpit; service roles get focused, stock-free workspaces.
 import Link from "next/link";
 import { getActiveTenantContext } from "@/lib/active-tenant";
-import { subscriptionDisplayStatus } from "@/lib/subscription-plans";
+import { subscriptionDisplayStatus, companyHasPowerFeatures } from "@/lib/subscription-plans";
 import { DashboardHeader } from "@/components/DashboardHeader";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
@@ -76,9 +76,10 @@ export async function DashboardShell({ children, firstName }: { children: React.
     }
   }
   const isOwner = activeContext.role === "ADMINISTRATEUR" && activeContext.employeeId === null;
+  const hasPowerFeatures = companyHasPowerFeatures(activeContext.company);
   const isPowerSupervisor =
     activeContext.role === "SUPERVISEUR" &&
-    (activeContext.company?.activity_type === "HOTEL_AUBERGE" || activeContext.company?.activity_type === "POWER") &&
+    hasPowerFeatures &&
     activeContext.permissions.has("power.view");
   let assignedServiceRole: keyof typeof serviceNavigation | null = null;
   if (activeContext.employeeId && activeContext.tenantId) {
@@ -146,7 +147,7 @@ export async function DashboardShell({ children, firstName }: { children: React.
     : navigation.filter(([, label]) => label !== "Ventes" && (label !== "Approvisionnement" || activeContext.company?.activity_type === "BOUTIQUE_COMMERCE"));
 
   const visibleNavigation: ReadonlyArray<NavItem> =
-    (activeContext.company?.activity_type === "HOTEL_AUBERGE" || activeContext.company?.activity_type === "POWER") &&
+    hasPowerFeatures &&
     activeContext.permissions.has("power.view") &&
     !serviceRole &&
     !baseNavigation.some(([, label]) => label === "Gestion Power")

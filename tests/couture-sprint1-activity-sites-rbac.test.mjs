@@ -17,12 +17,14 @@ import {
 } from "../src/lib/subscription-plans.ts";
 
 test("Couture Sprint 1: Pricing and catalog isolation for ATELIER_COUTURE", () => {
-  // Official pricing: 150 000 FCFA / month, 1 350 000 FCFA / year
-  assert.equal(getSubscriptionPrice("ATELIER_COUTURE", "ATELIER_COUTURE", "MONTHLY"), 150_000);
-  assert.equal(getSubscriptionPrice("ATELIER_COUTURE", "ATELIER_COUTURE", "ANNUAL"), 1_350_000);
+  // Official PRD v1.1 pricing: Standard 100 000 FCFA / month, 900 000 FCFA / year; Special: 150 000 / 1 350 000
+  assert.equal(getSubscriptionPrice("ATELIER_COUTURE", "NORMAL", "MONTHLY"), 100_000);
+  assert.equal(getSubscriptionPrice("ATELIER_COUTURE", "NORMAL", "ANNUAL"), 900_000);
+  assert.equal(getSubscriptionPrice("ATELIER_COUTURE", "SPECIAL", "MONTHLY"), 150_000);
+  assert.equal(getSubscriptionPrice("ATELIER_COUTURE", "SPECIAL", "ANNUAL"), 1_350_000);
 
-  // Strict catalog isolation: Couture sees only its own plan
-  assert.deepEqual(getSubscriptionCatalog("ATELIER_COUTURE").map(({ code }) => code), ["ATELIER_COUTURE"]);
+  // Strict catalog isolation: Couture sees only its own plans
+  assert.deepEqual(getSubscriptionCatalog("ATELIER_COUTURE").map(({ code }) => code), ["ATELIER_COUTURE", "ATELIER_COUTURE_SPECIAL"]);
 
   // Legacy activities cannot access Couture plan
   assert.equal(getSubscriptionCatalog("BUVETTE").some(({ code }) => code === "ATELIER_COUTURE"), false);
@@ -39,7 +41,7 @@ test("Couture Sprint 1: Pricing and catalog isolation for ATELIER_COUTURE", () =
     { activity_code: "ATELIER_COUTURE", plan_code: "ATELIER_COUTURE", billing_period: "MONTHLY", price_xof: 160_000 },
   ];
   assert.equal(getSubscriptionPrice("ATELIER_COUTURE", "ATELIER_COUTURE", "MONTHLY", overrides), 160_000);
-  assert.equal(getSubscriptionPrice("ATELIER_COUTURE", "ATELIER_COUTURE", "MONTHLY", overrides.slice(0, 1)), 150_000);
+  assert.equal(getSubscriptionPrice("ATELIER_COUTURE", "ATELIER_COUTURE", "MONTHLY", overrides.slice(0, 1)), 100_000);
 
   // Activity list inclusion and non-leakage
   const activities = getSubscriptionActivityCatalog();

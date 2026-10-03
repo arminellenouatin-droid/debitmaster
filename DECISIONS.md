@@ -571,6 +571,51 @@ Ce document consigne toutes les décisions techniques, fonctionnelles et hypoth�
   - Zéro modification des composants sanctifiés d'Envol Africa Magazine (`Header.tsx`, `HeaderShell.tsx`).
   - Aucun calcul financier ou d'inventaire confié au client navigateur.
 
+---
+
+## 25. Refonte complète du système d'abonnement & tarification (PRD v1.1 — Sprints 1 à 7)
+- **Objectif** : Unifier l'ensemble des abonnements autour des 6 activités indépendantes du SaaS (`BUVETTE`, `BAR_RESTAURANT`, `NIGHTCLUB_LOUNGE`, `HOTEL_AUBERGE`, `BOUTIQUE_COMMERCE`, `ATELIER_COUTURE`), avec tarif mensuel propre, réduction annuelle de 25 % (mensuel × 12 × 0,75), option spéciale à +50 % (×1,5), essai gratuit global de 30 jours et pilotage complet super-administrateur.
+- **Sprint 1 : Sauvegarde & Modèle de Données** :
+  - Sauvegarde exportée : `backups/backup_abonnements_pre_refonte_20261003.json` et miroir dans `SAUVEGARDE 02102026`.
+  - Migration SQL maîtresse idempotente : `migrations/20261003_refonte_abonnements_prd_v1_1.sql` (dupliquée à la racine `A_EXECUTER_SQL_REFONTE_ABONNEMENTS_PRD_V1_1.sql`).
+  - Tables créées : `plans_activite`, `parametres_globaux_abonnement`, `historique_prix_plans`, `abonnements_etablissement`.
+  - Colonnes `companies` : `has_special_option` et `subscription_billing_period`, avec contrainte étendue sur les 6 activités.
+  - Politiques RLS actives à 100 % avec révocation des accès directs anonymes/authentifiés non contrôlés.
+- **Sprint 2 : Refonte de la Couche Logique d'Abonnement (`src/lib/subscription-plans.ts`)** :
+  - Suppression intégrale des anciens plans Starter, Bar Restaurant Pro, Power et des formules Base/Moyenne/Semestrielle/Suprême.
+  - Grille de référence officielle PRD v1.1 :
+    - Buvette : 30 000 FCFA / mois (Annuel : 270 000 FCFA) · Spécial : 45 000 FCFA / mois (Annuel : 405 000 FCFA).
+    - Bar et restaurant : 50 000 FCFA / mois (Annuel : 450 000 FCFA) · Spécial : 75 000 FCFA / mois (Annuel : 675 000 FCFA).
+    - Boutique et commerce : 50 000 FCFA / mois (Annuel : 450 000 FCFA) · Spécial : 75 000 FCFA / mois (Annuel : 675 000 FCFA).
+    - Lounge et night-club : 75 000 FCFA / mois (Annuel : 675 000 FCFA) · Spécial : 112 500 FCFA / mois (Annuel : 1 012 500 FCFA).
+    - Hôtel et auberge : 80 000 FCFA / mois (Annuel : 720 000 FCFA) · Spécial : 120 000 FCFA / mois (Annuel : 1 080 000 FCFA).
+    - Atelier de couture : 100 000 FCFA / mois (Annuel : 900 000 FCFA) · Spécial : 150 000 FCFA / mois (Annuel : 1 350 000 FCFA).
+  - Période d'essai gratuite globale : fixée à 30 jours (suppression complète de toute mention 14 jours).
+  - Helpers de compatibilité : `companyHasSpecialOption()` et `companyHasPowerFeatures()`.
+- **Sprint 3 : Migration de l'Établissement Témoin BAR SANTE PLUS & Non-Régression** :
+  - Identifiant réel migré : `f6afa300-7e9e-4891-b7f6-27ab69fc42d7` reclassé en `activity_type = 'BAR_RESTAURANT'`, plan `BAR_RESTAURANT_SPECIAL` (Option spéciale active).
+  - Préservation intégrale sans régression des modules avancés (KDS repas/cuisine, lavage auto/moto, auberge/chambres, gym, tickets Wi-Fi, MoMo dédié) et de l'ensemble des comptes employés.
+  - Gardes d'accès mises à niveau dans `DashboardShell.tsx` et routes `/api/power/*`.
+- **Sprint 4 : Page Publique des Tarifs (`/tarifs`)** :
+  - Création de `src/app/tarifs/page.tsx` et `TarifsClient.tsx`.
+  - Affichage des 6 activités, sélecteur Mensuel/Annuel (-25%), commutateur par carte pour l'Option Spéciale (+50%), badge 30 jours d'essai gratuit et accordéon FAQ complet.
+- **Sprint 5 : Mise à Jour du Landing Page (`src/app/LandingClient.tsx`)** :
+  - Bandeau d'annonce révisé : 30 jours d'essai gratuit sans engagement sur les 6 activités.
+  - Lien navbar redirigeant vers `/tarifs`.
+  - Remplacement des 3 anciennes cartes par la grille responsive des 6 activités avec calcul dynamique des remises annuelles (-25%).
+  - Encart de découverte des Options Spéciales (+50%) avec redirection vers `/tarifs`.
+  - FAQ corrigée de 14 jours à 30 jours.
+- **Sprint 6 : Espace Super-Administrateur (`/admin` & `/api/admin/pricing`)** :
+  - Tableau de bord de pilotage des 6 activités avec édition des prix normaux, coefficients spéciaux, surcharges annuelles manuelles, toggles de disponibilité et descriptions d'options spéciales.
+  - Carte de gestion des paramètres globaux (durée de l'essai gratuit, multiplicateur spécial par défaut, taux de réduction annuelle).
+  - Journal d'audit traçant toutes les mutations tarifaires avec date, auteur et motif.
+  - Bouton d'aperçu direct vers la page publique `/tarifs`.
+- **Sprint 7 : Vérification & Recette Finale** :
+  - Tests automatisés : 115 / 115 tests réussis (`npm test`).
+  - Typecheck : zéro erreur TypeScript (`npx tsc --noEmit`).
+  - Build de production : compilation et génération statique de 169 routes réussies avec Turbopack (`npm run build`).
+
+
 
 
 
