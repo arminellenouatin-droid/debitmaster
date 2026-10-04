@@ -173,7 +173,7 @@ export function ServeurClient({
   const [pendingMeal, setPendingMeal] = useState<Product | null>(null);
   const [pendingAccompaniment, setPendingAccompaniment] = useState<(typeof accompaniments)[number]>("Aucun");
   const [selectedProduct, setSelectedProduct] = useState("");
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, setQuantity] = useState("1");
   const [accompaniment, setAccompaniment] = useState<(typeof accompaniments)[number]>("Aucun");
   const [cart, setCart] = useState<CartLine[]>([]);
   const [selectedLocation, setSelectedLocation] = useState("");
@@ -312,16 +312,19 @@ export function ServeurClient({
   }, [data, orderSearch]);
 
   // Fast direct quantity increment / decrement helper for staff on touch screens
-  const addProduct = (product: Product, mealAccompaniment = "Aucun") => {
+  const addProduct = (product: Product, mealAccompaniment = "Aucun", quantityToAdd = 1) => {
+    if (!Number.isInteger(quantityToAdd) || quantityToAdd < 1 || quantityToAdd > 999) return;
     setCart((current) => {
       const existing = current.find((line) => line.product.id === product.id && line.accompaniment === mealAccompaniment);
       if (existing) {
-        return current.map((line) => line === existing ? { ...line, quantity: line.quantity + 1 } : line);
+        return current.map((line) => line === existing ? { ...line, quantity: line.quantity + quantityToAdd } : line);
       }
-      return [...current, { product, quantity: 1, fulfillmentUnit: selectedType, accompaniment: selectedType === "MEAL" ? mealAccompaniment : "Aucun" }];
+      return [...current, { product, quantity: quantityToAdd, fulfillmentUnit: selectedType, accompaniment: selectedType === "MEAL" ? mealAccompaniment : "Aucun" }];
     });
     setPendingMeal(null);
     setPendingAccompaniment("Aucun");
+    setSelectedProduct("");
+    setQuantity("1");
     setProductPickerOpen(false);
   };
 
@@ -331,7 +334,9 @@ export function ServeurClient({
       setPendingAccompaniment("Aucun");
       return;
     }
-    addProduct(product);
+    setSelectedProduct(product.id);
+    setQuantity("1");
+    setProductPickerOpen(false);
   };
 
   const decProduct = (productId: string) => {
@@ -348,6 +353,11 @@ export function ServeurClient({
   const getProductQty = (productId: string) => {
     return cart.filter((line) => line.product.id === productId).reduce((sum, line) => sum + line.quantity, 0);
   };
+
+  const selectedBeverage = products.find((product) => product.id === selectedProduct) ?? null;
+  const maxBeverageQuantity = Math.max(0, 999 - getProductQty(selectedProduct));
+  const selectedQuantity = Number(quantity);
+  const selectedQuantityIsValid = Number.isInteger(selectedQuantity) && selectedQuantity >= 1 && selectedQuantity <= maxBeverageQuantity;
 
   const removeLine = (productId: string, mealAccompaniment = "Aucun") => setCart((current) => current.filter((line) => line.product.id !== productId || line.accompaniment !== mealAccompaniment));
 
@@ -820,7 +830,7 @@ export function ServeurClient({
                   <div className="inline-flex rounded-xl bg-slate-100 p-1 ring-1 ring-slate-200">
                     <button
                       type="button"
-                      onClick={() => { setSelectedType("BEVERAGE"); setProductSearch(""); setProductPickerOpen(false); setPendingMeal(null); }}
+                      onClick={() => { setSelectedType("BEVERAGE"); setProductSearch(""); setProductPickerOpen(false); setPendingMeal(null); setSelectedProduct(""); setQuantity("1"); }}
                       className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-xs font-black transition ${
                         selectedType === "BEVERAGE"
                           ? "bg-emerald-700 text-white shadow"
@@ -832,7 +842,7 @@ export function ServeurClient({
                     </button>
                     <button
                       type="button"
-                      onClick={() => { setSelectedType("MEAL"); setProductSearch(""); setProductPickerOpen(false); setPendingMeal(null); }}
+                      onClick={() => { setSelectedType("MEAL"); setProductSearch(""); setProductPickerOpen(false); setPendingMeal(null); setSelectedProduct(""); setQuantity("1"); }}
                       className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-xs font-black transition ${
                         selectedType === "MEAL"
                           ? "bg-emerald-700 text-white shadow"
@@ -862,6 +872,69 @@ export function ServeurClient({
                     </button>
                   )}
                 </div>
+
+                {selectedType === "BEVERAGE" && selectedBeverage && (
+                  <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4" role="group" aria-labelledby="beverage-quantity-title">
+                    <p id="beverage-quantity-title" className="text-sm font-black text-slate-900">{selectedBeverage.name}</p>
+                    <p className="mt-1 text-xs text-slate-600">Choisissez la quantité avant d’ajouter cette boisson.</p>
+                    <label htmlFor="beverage-quantity" className="mt-3 block text-xs font-black text-slate-700">Quantité à ajouter</label>
+                    <div className="mt-2 flex items-center gap-3">
+                      <button
+                        type="button"
+                        aria-label={`Diminuer la quantité de ${selectedBeverage.name}`}
+                        disabled={selectedQuantity <= 1}
+                        onClick={() => setQuantity(String(Math.max(1, (Number(quantity) || 1) - 1)))}
+                        className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-emerald-200 bg-white text-slate-800 hover:bg-emerald-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        <Minus className="h-4 w-4" />
+                      </button>
+                      <input
+                        id="beverage-quantity"
+                        type="number"
+                        inputMode="numeric"
+                        min="1"
+                        max={maxBeverageQuantity}
+                        step="1"
+                        value={quantity}
+                        disabled={maxBeverageQuantity === 0}
+                        onChange={(event) => {
+                          const next = event.currentTarget.value;
+                          if (/^\d*$/.test(next)) setQuantity(next);
+                        }}
+                        className="h-11 w-24 rounded-lg border border-emerald-200 bg-white px-3 text-center text-base font-black text-slate-900 focus:border-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-700/20 disabled:cursor-not-allowed disabled:opacity-50"
+                      />
+                      <button
+                        type="button"
+                        aria-label={`Augmenter la quantité de ${selectedBeverage.name}`}
+                        disabled={maxBeverageQuantity === 0 || selectedQuantity >= maxBeverageQuantity}
+                        onClick={() => setQuantity(String(Math.min(maxBeverageQuantity, (Number(quantity) || 0) + 1)))}
+                        className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-emerald-200 bg-white text-slate-800 hover:bg-emerald-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </button>
+                    </div>
+                    {maxBeverageQuantity === 0 && <p className="mt-2 text-xs font-bold text-red-700" role="alert">La limite de 999 unités pour cette boisson est atteinte.</p>}
+                    {maxBeverageQuantity > 0 && !selectedQuantityIsValid && <p className="mt-2 text-xs font-bold text-red-700" role="alert">Saisissez un nombre entier entre 1 et {maxBeverageQuantity}.</p>}
+                    {getProductQty(selectedBeverage.id) > 0 && <p className="mt-2 text-xs text-slate-600">Déjà au panier : {getProductQty(selectedBeverage.id)}</p>}
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => { setSelectedProduct(""); setQuantity("1"); setProductPickerOpen(true); }}
+                        className="min-h-11 rounded-lg border border-emerald-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-emerald-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
+                      >
+                        Annuler
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => addProduct(selectedBeverage, "Aucun", selectedQuantity)}
+                        disabled={!selectedQuantityIsValid}
+                        className="min-h-11 flex-1 rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-black text-white hover:bg-emerald-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        Ajouter {selectedQuantityIsValid ? selectedQuantity : "la quantité"} au panier
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 {pendingMeal && (
                   <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4" role="dialog" aria-label={`Accompagnement pour ${pendingMeal.name}`}>
