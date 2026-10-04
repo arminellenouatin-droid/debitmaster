@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { PrinterSettingsModal } from "@/components/PrinterSettingsModal";
+import { getSavedPrinterConfig, printHtmlDocument } from "@/lib/printing/printer-driver";
 
 type ABCItem = {
   productId: string;
@@ -48,11 +50,20 @@ type AnalyticsData = {
 const formatFCFA = (val: number) =>
   new Intl.NumberFormat("fr-FR", { style: "currency", currency: "XOF", maximumFractionDigits: 0 }).format(val);
 
-export function RapportsClient({ tenantId, companyName }: { tenantId: string; companyName: string }) {
+export function RapportsClient({
+  tenantId,
+  companyName,
+  userRole = "ADMINISTRATEUR",
+}: {
+  tenantId: string;
+  companyName: string;
+  userRole?: string;
+}) {
   const [range, setRange] = useState<"today" | "7d" | "30d" | "this_month">("30d");
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [showPrinterModal, setShowPrinterModal] = useState(false);
 
   async function loadAnalytics() {
     setLoading(true);
@@ -100,14 +111,169 @@ export function RapportsClient({ tenantId, companyName }: { tenantId: string; co
     document.body.removeChild(link);
   }
 
+  function handlePrintReport() {
+    if (!data) return;
+    const config = getSavedPrinterConfig();
+    const rangeLabel =
+      range === "today"
+        ? "Aujourd'hui"
+        : range === "7d"
+        ? "7 derniers jours"
+        : range === "30d"
+        ? "30 derniers jours"
+        : "Ce mois";
+
+    if (config.type === "THERMAL_80MM" || config.type === "THERMAL_58MM") {
+      const is80 = config.type === "THERMAL_80MM";
+      const body = `
+        <div style="text-align:center; padding: 4px 0;">
+          <h2 style="margin:0; font-size:${is80 ? "16px" : "13px"}; font-weight:bold;">${companyName}</h2>
+          <p style="margin:2px 0; font-size:${is80 ? "12px" : "10px"};">RAPPORT D'ACTIVITÉ & VENTES</p>
+          <p style="margin:1px 0; font-size:${is80 ? "11px" : "9px"};">Période : ${rangeLabel}</p>
+          <p style="margin:1px 0; font-size:${is80 ? "11px" : "9px"};">Généré le : ${new Date().toLocaleDateString("fr-FR")} à ${new Date().toLocaleTimeString("fr-FR")}</p>
+          <div class="thermal-divider"></div>
+        </div>
+        <table class="thermal-table">
+          <tr>
+            <td>Chiffre d'Affaires Net :</td>
+            <td style="text-align:right; font-weight:bold;">${formatFCFA(data.metrics.totalRevenue)}</td>
+          </tr>
+          <tr>
+            <td>Nombre de Ventes :</td>
+            <td style="text-align:right; font-weight:bold;">${data.metrics.orderCount}</td>
+          </tr>
+          <tr>
+            <td>Panier Moyen :</td>
+            <td style="text-align:right;">${formatFCFA(data.metrics.averageBasket)}</td>
+          </tr>
+          <tr>
+            <td>Marge Brute :</td>
+            <td style="text-align:right; font-weight:bold;">${formatFCFA(data.metrics.grossProfit)} (${data.metrics.grossMarginPercent}%)</td>
+          </tr>
+        </table>
+        <div class="thermal-divider"></div>
+        <p style="margin:4px 0 2px 0; font-weight:bold; font-size:${is80 ? "11px" : "9px"};">TOP PRODUITS :</p>
+        <table class="thermal-table">
+          ${data.abcAnalysis.slice(0, 5).map((p) => `
+            <tr>
+              <td>${p.name.slice(0, 16)} x${p.quantity}</td>
+              <td style="text-align:right;">${formatFCFA(p.revenue)}</td>
+            </tr>
+          `).join("")}
+        </table>
+        <div class="thermal-divider"></div>
+        <div style="text-align:center; margin-top: 6px; font-size:${is80 ? "11px" : "9px"};">
+          <p style="margin:0;">DebitMaster Cloud · Clôture Certifiée</p>
+          <div class="thermal-cut-spacer"></div>
+        </div>
+      `;
+      printHtmlDocument({ title: `Rapport-${companyName}`, htmlBody: body, printerType: config.type });
+      return;
+    }
+
+    // A4 Standard Report
+    const body = `
+      <div style="padding: 10px 0; border-bottom: 2px solid #0f172a; margin-bottom: 20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <h1 style="margin:0; font-size:24px; color:#0f172a;">${companyName}</h1>
+            <p style="margin:4px 0; font-size:14px; color:#475569;">RAPPORT FINANCIER & PERFORMANCE COMMERCIALE</p>
+          </div>
+          <div style="text-align:right; font-size:12px; color:#64748b;">
+            <p style="margin:0;"><strong>Période :</strong> ${rangeLabel}</p>
+            <p style="margin:2px 0;"><strong>Date d'édition :</strong> ${new Date().toLocaleDateString("fr-FR")} à ${new Date().toLocaleTimeString("fr-FR")}</p>
+            <p style="margin:2px 0;"><strong>Opérateur :</strong> ${userRole}</p>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px;">
+        <div style="border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; background: #f8fafc;">
+          <span style="font-size:11px; color:#64748b;">Chiffre d'Affaires Net</span>
+          <h2 style="margin:6px 0 0 0; font-size:18px; color:#0f172a;">${formatFCFA(data.metrics.totalRevenue)}</h2>
+          <small style="color:#16a34a; font-weight:bold;">${data.metrics.orderCount} commandes</small>
+        </div>
+        <div style="border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; background: #f8fafc;">
+          <span style="font-size:11px; color:#64748b;">Coût d'Achat (CMP)</span>
+          <h2 style="margin:6px 0 0 0; font-size:18px; color:#334155;">${formatFCFA(data.metrics.totalCmp)}</h2>
+          <small style="color:#64748b;">Valorisation stock vendu</small>
+        </div>
+        <div style="border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; background: #f8fafc;">
+          <span style="font-size:11px; color:#64748b;">Marge Brute</span>
+          <h2 style="margin:6px 0 0 0; font-size:18px; color:#16a34a;">${formatFCFA(data.metrics.grossProfit)}</h2>
+          <small style="color:#16a34a; font-weight:bold;">Taux : ${data.metrics.grossMarginPercent}%</small>
+        </div>
+        <div style="border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; background: #f8fafc;">
+          <span style="font-size:11px; color:#64748b;">Panier Moyen</span>
+          <h2 style="margin:6px 0 0 0; font-size:18px; color:#4f46e5;">${formatFCFA(data.metrics.averageBasket)}</h2>
+          <small style="color:#64748b;">Par transaction</small>
+        </div>
+      </div>
+
+      <h3 style="margin:20px 0 8px 0; font-size:14px; border-bottom:1px solid #e2e8f0; padding-bottom:4px;">Classification ABC des Produits (Pareto)</h3>
+      <table style="width:100%; border-collapse:collapse; font-size:11px;">
+        <thead>
+          <tr style="background:#f1f5f9;">
+            <th style="padding:6px; text-align:left;">Classe</th>
+            <th style="padding:6px; text-align:left;">Désignation</th>
+            <th style="padding:6px; text-align:center;">Qté Vendue</th>
+            <th style="padding:6px; text-align:right;">Chiffre d'Affaires</th>
+            <th style="padding:6px; text-align:right;">Marge Brute</th>
+            <th style="padding:6px; text-align:right;">% Cumulé</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${data.abcAnalysis.map((item) => `
+            <tr>
+              <td style="padding:6px; border-bottom:1px solid #e2e8f0;"><strong>Classe ${item.classification}</strong></td>
+              <td style="padding:6px; border-bottom:1px solid #e2e8f0;">${item.name}</td>
+              <td style="padding:6px; border-bottom:1px solid #e2e8f0; text-align:center;">${item.quantity}</td>
+              <td style="padding:6px; border-bottom:1px solid #e2e8f0; text-align:right; font-weight:bold;">${formatFCFA(item.revenue)}</td>
+              <td style="padding:6px; border-bottom:1px solid #e2e8f0; text-align:right; color:#16a34a;">${formatFCFA(item.grossMargin)}</td>
+              <td style="padding:6px; border-bottom:1px solid #e2e8f0; text-align:right;">${item.cumulativePercent}%</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+
+      <div style="margin-top:30px; border-top:1px solid #e2e8f0; padding-top:10px; font-size:11px; color:#64748b; text-align:center;">
+        Document édité via DebitMaster Pro · Système d'exploitation et de caisse universel
+      </div>
+    `;
+    printHtmlDocument({ title: `Rapport-${companyName}`, htmlBody: body, printerType: "A4_STANDARD" });
+  }
+
+  // Label and badge for role
+  const isServerRole = ["SERVEUR", "SERVEUSE", "VENDEUR"].includes(userRole.toUpperCase());
+  const isCashierRole = ["CAISSIER", "CAISSIERE"].includes(userRole.toUpperCase());
+  const isStockRole = ["MAGASINIER", "APPROVISIONNEMENT", "INVENTAIRE"].includes(userRole.toUpperCase());
+  const isKitchenRole = ["CUISINIER", "CHEF_CUISINE", "COMMIS_CUISINE"].includes(userRole.toUpperCase());
+
   return (
     <div className="space-y-7">
       {/* Header */}
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center border-b border-[var(--line)] pb-5">
         <div>
-          <span className="text-xs font-black uppercase tracking-wider text-[var(--secondary)]">Direction &amp; Pilotage</span>
-          <h1 className="text-2xl font-black text-[var(--primary)] sm:text-3xl">Rapports &amp; Analyse Financière</h1>
-          <p className="text-xs text-[var(--muted)]">{companyName} · Analyse de rentabilité, marges brutes, Pareto ABC et balances âgées.</p>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-black uppercase tracking-wider text-[var(--secondary)]">
+              {isServerRole
+                ? "Espace Service & Ventes"
+                : isCashierRole
+                ? "Espace Caisse & Encaissements"
+                : isStockRole
+                ? "Espace Gestion des Stocks"
+                : isKitchenRole
+                ? "Espace Cuisine & Restauration"
+                : "Direction & Pilotage"}
+            </span>
+            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-700">
+              Profil : {userRole}
+            </span>
+          </div>
+          <h1 className="text-2xl font-black text-[var(--primary)] sm:text-3xl">Rapports &amp; KPIs</h1>
+          <p className="text-xs text-[var(--muted)]">
+            {companyName} · Analyses de rentabilité, suivi des ventes, marges et données opérationnelles adaptées à vos droits.
+          </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -153,13 +319,28 @@ export function RapportsClient({ tenantId, companyName }: { tenantId: string; co
           </button>
           <button
             type="button"
-            onClick={() => window.print()}
-            className="flex items-center gap-1.5 rounded-xl bg-[var(--primary)] px-3 py-2 text-xs font-black text-white hover:bg-[var(--primary-dark)]"
+            onClick={handlePrintReport}
+            disabled={!data}
+            className="flex items-center gap-1.5 rounded-xl bg-[var(--primary)] px-3 py-2 text-xs font-black text-white hover:bg-[var(--primary-dark)] disabled:opacity-50"
           >
-            <span>🖨</span> Imprimer
+            <span>🖨</span> Imprimer / PDF
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowPrinterModal(true)}
+            className="flex items-center gap-1.5 rounded-xl border border-[var(--line)] bg-[var(--surface-muted)] px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-200"
+            title="Configurer les imprimantes de tickets (80mm/58mm) ou bureau (A4)"
+          >
+            <span>⚙</span> Pilotes d’imprimante
           </button>
         </div>
       </div>
+
+      <PrinterSettingsModal
+        isOpen={showPrinterModal}
+        onClose={() => setShowPrinterModal(false)}
+        companyName={companyName}
+      />
 
       {error && (
         <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-xs font-bold text-red-800">

@@ -29,5 +29,25 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   const lastName = profile?.last_name ?? auth.user.user_metadata?.last_name ?? "";
   const email = profile?.email ?? auth.user.email ?? "";
   const phone = profile?.phone ?? auth.user.phone ?? "";
-  return <DashboardShell firstName={firstName || "gérant"}><SettingsClient firstName={firstName} lastName={lastName} email={email} phone={phone} avatarUrl={avatarUrl} mustChangePassword={mustChangePassword} /></DashboardShell>;
+
+  const { data: ownedCompanies } = await supabase
+    .from("companies")
+    .select("id, name, ifu_number, trade_register, promoter_photo_path, identity_card_path")
+    .eq("owner_user_id", auth.user.id)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false });
+
+  return (
+    <DashboardShell firstName={firstName || "gérant"}>
+      <SettingsClient
+        firstName={firstName}
+        lastName={lastName}
+        email={email}
+        phone={phone}
+        avatarUrl={avatarUrl}
+        mustChangePassword={mustChangePassword}
+        promoterCompanies={ownedCompanies ?? []}
+      />
+    </DashboardShell>
+  );
 }

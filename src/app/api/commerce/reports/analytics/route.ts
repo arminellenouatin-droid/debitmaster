@@ -42,7 +42,7 @@ export async function GET(request: Request) {
       startDate = new Date(now.getTime() - 30 * 24 * 3600 * 1000);
     }
 
-    // 1. Fetch valid orders in range
+    // 1. Fetch valid orders in range (filtrées si rôle serveur / serveuse individuel)
     let ordersQuery = admin
       .from("orders")
       .select(`
@@ -55,13 +55,17 @@ export async function GET(request: Request) {
       .lte("created_at", endDate.toISOString())
       .in("status", ["PAID", "DELIVERED", "COMPLETED", "SERVED"]);
 
+    if ((context.role === "SERVEUR" || context.role === "SERVEUSE") && context.user) {
+      ordersQuery = ordersQuery.eq("server_user_id", context.user.id);
+    }
+
     const { data: orders, error: ordersErr } = await ordersQuery;
     if (ordersErr) {
       console.error("[reports/analytics] orders fetch error", ordersErr);
       return NextResponse.json({ error: "Impossible de charger les données d'analyse." }, { status: 500 });
     }
 
-    // 2. Fetch products to get CMP (weighted_avg_cost_xof) & categories
+    // 2. Fetch products to get CMP (weighted_avg_cost_xof) & categories from commerce_products AND standard products
     const { data: products } = await admin
       .from("commerce_products")
       .select("id, name, category_id, weighted_avg_cost_xof, purchase_price_xof, price_retail_xof")
@@ -69,13 +73,51 @@ export async function GET(request: Request) {
 
     const productMap = new Map((products ?? []).map((p) => [p.id, p]));
 
-    // Fetch categories
+    const { data: standardProducts } = await admin
+      .from("products")
+      .select("id, name, category_id, price, current_stock, alert_threshold, safety_threshold, unit, stock_family")
+      .eq("tenant_id", tenantId)
+      .is("deleted_at", null);
+
+    for (const sp of standardProducts ?? []) {
+      if (!productMap.has(sp.id)) {
+        productMap.set(sp.id, {
+          id: sp.id,
+          name: sp.name,
+          category_id: sp.category_id,
+          weighted_avg_cost_xof: Math.round(Number(sp.price || 0) * 0.7),
+          purchase_price_xof: Math.round(Number(sp.price || 0) * 0.7),
+          price_retail_xof: Number(sp.price || 0),
+        });
+      }
+    }
+
+    // Fetch categories from commerce_categories and categories
     const { data: categories } = await admin
       .from("commerce_categories")
       .select("id, name")
       .eq("tenant_id", tenantId);
 
     const categoryMap = new Map((categories ?? []).map((c) => [c.id, c.name]));
+
+    const { data: standardCategories } = await admin
+      .from("categories")
+      .select("id, name")
+      .eq("tenant_id", tenantId);
+
+    for (const sc of standardCategories ?? []) {
+      if (!categoryMap.has(sc.id)) {
+        categoryMap.set(sc.id, sc.name);
+      }
+    }
+
+    // Fetch payments for cash register / caissier metrics
+    const { data: payments } = await admin
+      .from("payments")
+      .select("id, provider, amount, status, created_at, payment_method")
+      .eq("tenant_id", tenantId)
+      .gte("created_at", startDate.toISOString())
+      .lte("created_at", endDate.toISOString());
 
     // 3. Compute Aggregations
     let totalRevenue = 0;

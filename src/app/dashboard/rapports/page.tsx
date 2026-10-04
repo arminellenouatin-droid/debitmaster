@@ -14,11 +14,9 @@ export default async function RapportsPage() {
     redirect("/connexion");
   }
 
-  const allowedRoles = ["GERANT", "ADMINISTRATEUR", "COMPTABLE", "SUPERVISEUR"];
   const isAllowed =
-    allowedRoles.includes(context.role || "") ||
-    context.permissions.has("reports.view") ||
-    context.permissions.has("reports.analytics");
+    Boolean(context.user) &&
+    (Boolean(context.tenantId) || context.tenantIds.length > 0 || Boolean(context.company));
 
   if (!isAllowed) {
     redirect("/dashboard");
@@ -41,7 +39,11 @@ export default async function RapportsPage() {
           accessMode={commerce.accessMode}
           permissions={[...commerce.permissions]}
         >
-          <RapportsClient tenantId={commerce.tenantId} companyName={commerce.company.name} />
+          <RapportsClient
+            tenantId={commerce.tenantId}
+            companyName={commerce.company.name}
+            userRole={context.role || "COMMERCE_STAFF"}
+          />
         </CommerceDashboardShell>
       );
     }
@@ -52,6 +54,7 @@ export default async function RapportsPage() {
       <RapportsClient
         tenantId={context.tenantId || ""}
         companyName={context.company?.name || "Établissement actif"}
+        userRole={context.role || (context.allTenantIds.length ? "ADMINISTRATEUR" : "MEMBRE")}
       />
     </DashboardShell>
   );

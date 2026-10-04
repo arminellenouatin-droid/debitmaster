@@ -39,6 +39,7 @@ const serviceNavigation: Record<"GYM" | "LAVAGE" | "AUBERGE", ReadonlyArray<NavI
     ["▰", "Vente", "/dashboard/service-sales"],
     ["▤", "Liste des services", "/dashboard/services?activity=GYM"],
     ["◫", "Abonnements", "/dashboard/subscriptions"],
+    ["📊", "Rapports & KPI", "/dashboard/rapports"],
     ["⚙", "Profil", "/dashboard/settings"],
   ],
   LAVAGE: [
@@ -47,6 +48,7 @@ const serviceNavigation: Record<"GYM" | "LAVAGE" | "AUBERGE", ReadonlyArray<NavI
     ["▰", "Vente", "/dashboard/service-sales"],
     ["▤", "Liste des prestations", "/dashboard/services?activity=LAVAGE"],
     ["◫", "Caisse lavage", "/dashboard/cash"],
+    ["📊", "Rapports & KPI", "/dashboard/rapports"],
     ["⚙", "Profil", "/dashboard/settings"],
   ],
   AUBERGE: [
@@ -55,6 +57,7 @@ const serviceNavigation: Record<"GYM" | "LAVAGE" | "AUBERGE", ReadonlyArray<NavI
     ["▰", "Vente", "/dashboard/service-sales"],
     ["◫", "Liste et occupation", "/dashboard/occupancy"],
     ["▤", "Caisse auberge", "/dashboard/cash"],
+    ["📊", "Rapports & KPI", "/dashboard/rapports"],
     ["⚙", "Profil", "/dashboard/settings"],
   ],
 } as const;
@@ -124,19 +127,19 @@ export async function DashboardShell({ children, firstName }: { children: React.
     : isPowerSupervisor
     ? navigation.filter(([, label]) => label !== "Ventes")
     : activeContext.role === "SERVEUR" || activeContext.role === "SERVEUSE"
-    ? navigation.filter(([, label]) => ["Dashboard", "Commandes", "Profil"].includes(label))
+    ? navigation.filter(([, label]) => ["Dashboard", "Commandes", "Rapports & KPI", "Profil"].includes(label))
     : activeContext.role === "VENDEUR"
-    ? navigation.filter(([, label]) => ["Dashboard", "Devis & Ventes", "Produits et services", "Profil"].includes(label))
+    ? navigation.filter(([, label]) => ["Dashboard", "Devis & Ventes", "Produits et services", "Rapports & KPI", "Profil"].includes(label))
     : activeContext.role === "CAISSIER"
-    ? navigation.filter(([, label]) => ["Dashboard", "Caisse & Règlements", "Profil"].includes(label))
+    ? navigation.filter(([, label]) => ["Dashboard", "Caisse & Règlements", "Rapports & KPI", "Profil"].includes(label))
     : activeContext.role === "CHEF_CUISINE" || activeContext.role === "CUISINIER"
-    ? navigation.filter(([, label]) => ["Dashboard", "Produits et services", "Repas / Cuisine", "Profil"].includes(label))
+    ? navigation.filter(([, label]) => ["Dashboard", "Produits et services", "Repas / Cuisine", "Rapports & KPI", "Profil"].includes(label))
     : activeContext.role === "APPROVISIONNEMENT"
-    ? navigation.filter(([, label]) => ["Dashboard", "Achats & Approvisionnement", "Gestion des stocks", "Produits et services", "Profil"].includes(label))
+    ? navigation.filter(([, label]) => ["Dashboard", "Achats & Approvisionnement", "Gestion des stocks", "Produits et services", "Rapports & KPI", "Profil"].includes(label))
     : activeContext.role === "MAGASINIER"
-    ? navigation.filter(([, label]) => ["Dashboard", "Livraisons & Magasin", "Achats & Approvisionnement", "Inventaire Physique", "Gestion des stocks", "Produits et services", "Profil"].includes(label))
+    ? navigation.filter(([, label]) => ["Dashboard", "Livraisons & Magasin", "Achats & Approvisionnement", "Inventaire Physique", "Gestion des stocks", "Produits et services", "Rapports & KPI", "Profil"].includes(label))
     : activeContext.role === "INVENTAIRE"
-    ? navigation.filter(([, label]) => ["Dashboard", "Inventaire Physique", "Gestion des stocks", "Produits et services", "Profil"].includes(label))
+    ? navigation.filter(([, label]) => ["Dashboard", "Inventaire Physique", "Gestion des stocks", "Produits et services", "Rapports & KPI", "Profil"].includes(label))
     : activeContext.role === "COMPTABLE"
     ? navigation.filter(([, label]) => ["Dashboard", "Finance", "Comptabilité SYSCOHADA", "Rapports & KPI", "Produits et services", "Profil"].includes(label))
     : activeContext.role === "GERANT" || activeContext.role === "GERANT_ADJOINT"

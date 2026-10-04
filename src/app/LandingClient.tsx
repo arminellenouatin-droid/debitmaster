@@ -31,6 +31,7 @@ type RolePreview = "server" | "kitchen" | "manager" | "qrmenu";
 export function LandingClient() {
   const [activeTab, setActiveTab] = useState<RolePreview>("server");
   const [currencyPeriod, setCurrencyPeriod] = useState<"monthly" | "yearly">("monthly");
+  const [planLevel, setPlanLevel] = useState<"normal" | "special">("normal");
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
   return (
@@ -559,26 +560,58 @@ export function LandingClient() {
               Tous nos forfaits incluent 30 jours d’essai entièrement gratuits sans carte bancaire, l’accès illimité aux serveurs et le support local 7j/7.
             </p>
 
-            <div className="mt-8 inline-flex items-center rounded-xl bg-slate-900 p-1.5 ring-1 ring-slate-800">
-              <button
-                type="button"
-                onClick={() => setCurrencyPeriod("monthly")}
-                className={`rounded-lg px-4 py-2 text-xs font-black transition ${
-                  currencyPeriod === "monthly" ? "bg-emerald-600 text-white shadow" : "text-slate-400"
-                }`}
-              >
-                Paiement Mensuel
-              </button>
-              <button
-                type="button"
-                onClick={() => setCurrencyPeriod("yearly")}
-                className={`flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-black transition ${
-                  currencyPeriod === "yearly" ? "bg-emerald-600 text-white shadow" : "text-slate-400"
-                }`}
-              >
-                <span>Paiement Annuel</span>
-                <span className="rounded bg-amber-400/20 px-1.5 py-0.5 text-[10px] text-amber-300">-25% (3 mois offerts)</span>
-              </button>
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+              {/* Plan Level Toggle */}
+              <div className="inline-flex items-center rounded-xl bg-slate-900 p-1.5 ring-1 ring-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setPlanLevel("normal")}
+                  className={`rounded-lg px-4 py-2 text-xs font-black transition ${
+                    planLevel === "normal"
+                      ? "bg-amber-500 text-slate-950 shadow"
+                      : "text-slate-400 hover:text-white"
+                  }`}
+                >
+                  Option Simple (Standard)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPlanLevel("special")}
+                  className={`flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-black transition ${
+                    planLevel === "special"
+                      ? "bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 shadow"
+                      : "text-slate-400 hover:text-white"
+                  }`}
+                >
+                  <span>⭐ Option Avancée</span>
+                  <span className="rounded bg-amber-950/40 px-1.5 py-0.5 text-[10px] text-amber-200">
+                    +50% (Tout Illimité)
+                  </span>
+                </button>
+              </div>
+
+              {/* Billing Period Toggle */}
+              <div className="inline-flex items-center rounded-xl bg-slate-900 p-1.5 ring-1 ring-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setCurrencyPeriod("monthly")}
+                  className={`rounded-lg px-4 py-2 text-xs font-black transition ${
+                    currencyPeriod === "monthly" ? "bg-emerald-600 text-white shadow" : "text-slate-400 hover:text-white"
+                  }`}
+                >
+                  Paiement Mensuel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCurrencyPeriod("yearly")}
+                  className={`flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-black transition ${
+                    currencyPeriod === "yearly" ? "bg-emerald-600 text-white shadow" : "text-slate-400 hover:text-white"
+                  }`}
+                >
+                  <span>Paiement Annuel</span>
+                  <span className="rounded bg-amber-400/20 px-1.5 py-0.5 text-[10px] text-amber-300">-25% (3 mois offerts)</span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -587,104 +620,172 @@ export function LandingClient() {
               {
                 code: "BUVETTE",
                 name: "Buvette",
-                badge: "Boissons & Maquis",
-                monthly: 30000,
-                yearlyMonthly: 22500,
-                yearlyTotal: 270000,
+                badge: planLevel === "special" ? "Buvette Avancée" : "Boissons & Maquis",
+                baseMonthly: 30000,
                 icon: <Wine className="h-6 w-6 text-amber-400" />,
-                desc: "Idéal pour les maquis, buvettes et dépôts de boissons avec suivi rigoureux des casiers et vente rapide.",
-                features: [
-                  "Prise de commande mobile serveuses",
-                  "Gestion stricte des stocks & casiers",
-                  "Traçabilité anti-coulage en temps réel",
-                  "Caisse et encaissements MTN MoMo & espèces",
+                desc:
+                  planLevel === "special"
+                    ? "Buvette illimitée avec commande QR code sur table autonome, multi-magasins, comptabilité et trésorerie."
+                    : "Pour les maquis et buvettes : 5 serveuses max, 1 seul magasin, 15 tables max, traçabilité des casiers et vente rapide.",
+                normalFeatures: [
+                  "Vente de boissons uniquement (anti-coulage & casiers)",
+                  "Jusqu'à 5 serveuses connectées",
+                  "1 seul magasin de stock de boissons",
+                  "Jusqu'à 15 tables de service",
+                  "Commandes serveuse -> préparation gérant -> livraison",
+                  "Points journaliers serveuse au gérant en fin de journée",
+                  "Stocks d'alerte et bons d'approvisionnement (visa promoteur)",
+                  "Inventaires physiques & traçabilité stricte",
+                ],
+                specialFeatures: [
+                  "Tout le pack Simple inclus",
+                  "Serveuses illimitées",
+                  "Tables de service illimitées",
+                  "Magasins de stock illimités",
+                  "Commandes autonomes par QR Code sur table par les clients",
+                  "Session & module de Comptabilité générale",
+                  "Session Trésorerie et Immobilisations",
                 ],
               },
               {
                 code: "BAR_RESTAURANT",
                 name: "Bar et restaurant",
-                badge: "Le plus populaire",
-                monthly: 50000,
-                yearlyMonthly: 37500,
-                yearlyTotal: 450000,
+                badge: planLevel === "special" ? "Bar-Resto Avancé" : "Le plus populaire",
+                baseMonthly: 50000,
                 icon: <UtensilsCrossed className="h-6 w-6 text-emerald-400" />,
                 isPopular: true,
-                desc: "Pour synchroniser salle, bar et cuisine avec écran KDS, plan de table et encaissements instantanés.",
-                features: [
-                  "Vente boissons & repas avec recettes",
-                  "Écran KDS cuisine interactif en temps réel",
-                  "Plan de salle tactile & gestion des tables",
-                  "Encaissements rapides & tickets de caisse",
+                desc:
+                  planLevel === "special"
+                    ? "Formule complète : QR code table client direct, illimité, KDS cuisine, comptabilité, trésorerie et personnel."
+                    : "Tout Buvette + vente de repas cuisinés : 6 serveuses max, 20 tables max, magasin cuisine pour ingrédients, profils Cuisinier & Chef.",
+                normalFeatures: [
+                  "Tout Buvette + Vente de repas & mets cuisinés",
+                  "Profils Cuisinier & Chef cuisinier inclus",
+                  "Magasin cuisine dédié pour gestion des ingrédients",
+                  "Jusqu'à 6 serveuses connectées",
+                  "Jusqu'à 20 tables de service",
+                  "Commandes cuisine directes en temps réel",
+                  "Encaissements MTN MoMo & espèces",
+                ],
+                specialFeatures: [
+                  "Tout le pack Simple inclus",
+                  "Commandes directes par QR Code sur table par les clients",
+                  "Serveuses, tables et magasins illimités",
+                  "Session Comptabilité générale & analytique",
+                  "Session Trésorerie et Immobilisations",
+                  "Gestion complète du personnel & présences",
                 ],
               },
               {
                 code: "BOUTIQUE_COMMERCE",
                 name: "Boutique et commerce",
-                badge: "Négoce & Retail",
-                monthly: 50000,
-                yearlyMonthly: 37500,
-                yearlyTotal: 450000,
+                badge: planLevel === "special" ? "Commerce + Boutique en Ligne" : "Négoce & Retail",
+                baseMonthly: 50000,
                 icon: <ShoppingBag className="h-6 w-6 text-amber-400" />,
-                desc: "Pour magasins, grossistes et points de vente avec codes-barres, devis, livraisons et stocks multi-magasins.",
-                features: [
+                desc:
+                  planLevel === "special"
+                    ? "Commerce physique + Boutique en ligne vitrine de luxe connectée au stock en direct (décrémentation en temps réel)."
+                    : "Magasins physiques, grossistes et détaillants : codes-barres, devis, factures, BL, sessions de caisse et Ticket Z.",
+                normalFeatures: [
                   "Multi-magasins & stocks avec CMP automatique",
-                  "Devis, factures & bons de livraison (BL)",
+                  "Devis, proformas, factures & bons de livraison (BL)",
                   "Sessions de caisse, Ticket Z & règlements mixtes",
                   "Comptabilité SYSCOHADA & analyse Pareto ABC",
+                  "Gestion des clients & balances âgées",
+                ],
+                specialFeatures: [
+                  "Tout le pack Simple inclus",
+                  "Boutique en ligne vitrine de luxe connectée en direct au stock",
+                  "Décrémentation immédiate du stock physique lors des ventes en ligne",
+                  "Design vitrine e-commerce haut de gamme et responsive",
+                  "Session Comptabilité, Trésorerie et Immobilisations",
                 ],
               },
               {
                 code: "NIGHTCLUB_LOUNGE",
                 name: "Lounge et night-club",
-                badge: "Vie Nocturne & VIP",
-                monthly: 75000,
-                yearlyMonthly: 56250,
-                yearlyTotal: 675000,
+                badge: planLevel === "special" ? "Lounge Avancé (Formule Hôtel)" : "Vie Nocturne & VIP",
+                baseMonthly: 75000,
                 icon: <Sparkles className="h-6 w-6 text-purple-400" />,
-                desc: "Vente au verre et à la bouteille, gestion des salons VIP, service chicha et cadencement nuit intensif.",
-                features: [
-                  "Service VIP & gestion des salons / tables",
-                  "Vente bouteilles & contrôle de service",
-                  "Commandes ultra-rapides en ambiance festive",
+                desc:
+                  planLevel === "special"
+                    ? "Lounge d'élite : intègre le pack Hôtel & auberge Simple (Bar-Resto + suites/salons VIP/chambres + espaces privés). "
+                    : "Fonctionnalités Bar-Restaurant Simple, vente au verre et bouteille, salons VIP, chichas et cadencement de nuit.",
+                normalFeatures: [
+                  "Fonctionnalités complètes du Bar & restaurant Simple",
+                  "Commandes ultra-rapides au verre et à la bouteille",
+                  "Gestion des salons VIP et espaces réservés",
+                  "Cadencement nuit intensif & alertes anti-coulage nocturne",
                   "Clôture nocturne sécurisée et anti-fraude",
+                ],
+                specialFeatures: [
+                  "Tout le pack Hôtel & auberge Simple inclus",
+                  "Gestion des suites, salons VIP & chambres de repos",
+                  "Location d'espaces privés & réservations événementielles",
+                  "Commandes QR code table & gestion VIP prioritaire",
                 ],
               },
               {
                 code: "HOTEL_AUBERGE",
                 name: "Hôtel et auberge",
-                badge: "Hôtellerie & Séjours",
-                monthly: 80000,
-                yearlyMonthly: 60000,
-                yearlyTotal: 720000,
+                badge: planLevel === "special" ? "Hôtel Avancé (Temple du Plaisir)" : "Hôtellerie & Séjours",
+                baseMonthly: 80000,
                 icon: <Building2 className="h-6 w-6 text-sky-400" />,
-                desc: "Pour auberges, motels et complexes hôteliers avec planning des chambres, nuitées, passes et consommations.",
-                features: [
-                  "Planning d'occupation des chambres en direct",
-                  "Gestion des passes courts & nuitées complètes",
-                  "Facturation globale hébergement & restauration",
-                  "Statuts de ménage et gouvernance des étages",
+                desc:
+                  planLevel === "special"
+                    ? "Complexe hôtelier complet : Hôtel-Auberge Simple + Option Avancée Bar-Resto (QR code direct, illimité, compta, trésorerie, paie). "
+                    : "Bar-Resto Simple + gestion des chambres (passes courts, nuitées), location d'espaces (fêtes, conférences, véhicules).",
+                normalFeatures: [
+                  "Tout le pack Bar & restaurant Simple inclus",
+                  "Gestion des chambres : nuitées et passes selon choix",
+                  "Location d’espaces : fêtes, salles de conférence, véhicules",
+                  "Facturation liée hébergement & restauration",
+                  "Gouvernance, ménage et suivi des occupations en direct",
+                ],
+                specialFeatures: [
+                  "Tout le pack Hôtel et auberge Simple",
+                  "Option Avancée Bar & restaurant incluse à 100%",
+                  "Commandes QR Code sur table & en chambre direct client",
+                  "Serveuses, chambres, salles et magasins illimités",
+                  "Sessions Comptabilité, Trésorerie & Immobilisations",
+                  "Gestion complète du personnel & paie",
                 ],
               },
               {
                 code: "ATELIER_COUTURE",
                 name: "Atelier de couture",
-                badge: "Haute Couture & Confection",
-                monthly: 100000,
-                yearlyMonthly: 75000,
-                yearlyTotal: 900000,
+                badge: planLevel === "special" ? "Couture + Vitrine Créateur" : "Haute Couture & Confection",
+                baseMonthly: 100000,
                 icon: <Scissors className="h-6 w-6 text-pink-400" />,
-                desc: "Gestion complète multi-sites : fiches clients à 15 mensurations, circuit de fabrication et paie à la tâche.",
-                features: [
-                  "Clients & 15 mensurations avec bénéficiaires",
-                  "4 types de ventes & encaissement multidevise",
-                  "Fiches de fabrication (Coupe, Couture, Broderie, QC)",
-                  "Paie à la tâche des ouvriers & petite caisse",
+                desc:
+                  planLevel === "special"
+                    ? "Atelier complet + Boutique vitrine en ligne de haute couture connectée au stock physique en temps réel."
+                    : "Gestion multi-sites atelier & boutique : fiches 15 mensurations, circuit de fabrication et paie ouvriers à la tâche.",
+                normalFeatures: [
+                  "Prêt-à-porter et confection sur-mesure",
+                  "Fiches clients avec 15 mensurations morphologiques",
+                  "Workflow d’atelier (Coupe, Couture, Broderie, QC)",
+                  "Paie des ouvriers à la tâche avec majorations",
+                  "Multi-sites ateliers et boutiques physiques",
+                  "Stocks de tissus et fournitures avec métrages",
+                ],
+                specialFeatures: [
+                  "Tout le pack Simple inclus",
+                  "Boutique en ligne vitrine haute couture connectée au stock en direct",
+                  "Catalogue créateur avec décrémentation automatique des modèles",
+                  "Prise de commandes de modèles et sur-mesure en ligne",
+                  "Sessions Comptabilité, Trésorerie & Immobilisations",
                 ],
               },
             ].map((act) => {
-              const displayPrice = currencyPeriod === "yearly" ? act.yearlyMonthly : act.monthly;
+              const monthlyPrice = planLevel === "special" ? Math.round(act.baseMonthly * 1.5) : act.baseMonthly;
+              const yearlyMonthly = Math.round(monthlyPrice * 0.75);
+              const yearlyTotal = Math.round(monthlyPrice * 12 * 0.75);
+
+              const displayPrice = currencyPeriod === "yearly" ? yearlyMonthly : monthlyPrice;
               const formattedPrice = new Intl.NumberFormat("fr-FR").format(displayPrice);
-              const formattedYearly = new Intl.NumberFormat("fr-FR").format(act.yearlyTotal);
+              const formattedYearly = new Intl.NumberFormat("fr-FR").format(yearlyTotal);
+              const currentFeatures = planLevel === "special" ? act.specialFeatures : act.normalFeatures;
 
               return (
                 <div
@@ -714,7 +815,7 @@ export function LandingClient() {
                     </div>
 
                     <h3 className="mt-4 text-xl font-black text-white">{act.name}</h3>
-                    <p className="mt-2 text-xs leading-relaxed text-slate-400 min-h-[36px]">{act.desc}</p>
+                    <p className="mt-2 text-xs leading-relaxed text-slate-400 min-h-[48px]">{act.desc}</p>
 
                     <div className="mt-5 rounded-xl bg-slate-950/50 p-3.5 border border-slate-800/60">
                       <div className="flex items-baseline gap-1.5">
@@ -728,10 +829,13 @@ export function LandingClient() {
                           Facturé {formattedYearly} FCFA / an (-25%)
                         </p>
                       )}
+                      <div className="mt-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                        Formule {planLevel === "special" ? "Avancée (+50%)" : "Simple (Standard)"}
+                      </div>
                     </div>
 
                     <ul className="mt-6 space-y-2.5 text-xs text-slate-300">
-                      {act.features.map((feat, fIdx) => (
+                      {currentFeatures.map((feat, fIdx) => (
                         <li key={fIdx} className="flex items-start gap-2">
                           <Check className="h-4 w-4 shrink-0 text-emerald-400 mt-0.5" />
                           <span>{feat}</span>
@@ -742,14 +846,14 @@ export function LandingClient() {
 
                   <div className="mt-6 pt-4 border-t border-slate-800/60">
                     <Link
-                      href={`/inscription?activite=${act.code.toLowerCase()}`}
+                      href={`/inscription?activite=${act.code.toLowerCase()}&plan=${planLevel === "special" ? "avancee" : "simple"}`}
                       className={`block w-full rounded-xl py-3 text-center text-xs font-black transition ${
                         act.isPopular
                           ? "bg-gradient-to-r from-amber-500 to-amber-400 text-slate-950 shadow-lg shadow-amber-500/20 hover:from-amber-400 hover:to-amber-300"
                           : "border border-slate-700 bg-slate-800/90 text-white hover:bg-slate-700"
                       }`}
                     >
-                      Démarrer l’essai 30 jours
+                      Démarrer l’essai 30 jours ({planLevel === "special" ? "Avancée" : "Simple"})
                     </Link>
                   </div>
                 </div>

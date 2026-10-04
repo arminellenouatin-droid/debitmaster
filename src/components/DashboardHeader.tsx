@@ -169,6 +169,30 @@ export function DashboardHeader({
 
   useLiveRefresh(loadNotifications, 12000);
 
+  const [unreadMessages, setUnreadMessages] = useState<number>(0);
+
+  const loadUnreadMessages = useCallback(async () => {
+    if (!tenantId) return;
+    try {
+      const response = await fetch(`/api/messages/unread-count?tenantId=${encodeURIComponent(tenantId)}`, {
+        cache: "no-store",
+        credentials: "same-origin",
+      });
+      if (response.ok) {
+        const json = await response.json();
+        setUnreadMessages(Number(json.unreadCount) || 0);
+      }
+    } catch {
+      // Ignorer silencieusement
+    }
+  }, [tenantId]);
+
+  useEffect(() => {
+    void loadUnreadMessages();
+  }, [loadUnreadMessages]);
+
+  useLiveRefresh(loadUnreadMessages, 15000);
+
   // Close mobile drawer on route change
   useEffect(() => {
     setMobileMenuOpen(false);
@@ -267,6 +291,28 @@ export function DashboardHeader({
               </form>
             </div>
           </details>
+
+          {/* Internal Messaging Icon (Enveloppe) */}
+          <Link
+            href="/dashboard/messages"
+            aria-label={
+              unreadMessages > 0
+                ? `${unreadMessages} message${unreadMessages > 1 ? "s" : ""} non lu${unreadMessages > 1 ? "s" : ""}`
+                : "Messagerie interne"
+            }
+            title="Messagerie interne de l’établissement"
+            className="relative flex min-h-10 min-w-10 cursor-pointer items-center justify-center rounded-xl border border-[var(--line)] bg-[var(--surface)] text-[var(--primary)] shadow-sm transition hover:bg-[var(--surface-muted)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--secondary)]"
+          >
+            <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect width="20" height="16" x="2" y="4" rx="2" />
+              <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+            </svg>
+            {unreadMessages > 0 && (
+              <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-600 px-1 text-[10px] font-black leading-none text-white ring-2 ring-white">
+                {unreadMessages > 9 ? "9+" : unreadMessages}
+              </span>
+            )}
+          </Link>
 
           {/* Notifications Popover */}
           <details className="relative">
