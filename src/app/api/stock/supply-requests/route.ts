@@ -1,6 +1,7 @@
 // DebitManager supply requests: demandes stock limitées à l’établissement et au rôle autorisé.
 import { NextResponse } from "next/server";
 import { getAuthorizationContext, can } from "@/lib/authorization";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 const destinations = ["BAR", "CUISINE"] as const;
 
@@ -43,4 +44,48 @@ export async function POST(request: Request) {
     if (error) return NextResponse.json({ error: "Impossible d’enregistrer la demande d’approvisionnement." }, { status: 400 });
     return NextResponse.json({ request: data }, { status: 201 });
   } catch { return NextResponse.json({ error: "Requête invalide." }, { status: 400 }); }
+}
+
+export async function PATCH(request: Request) {
+  try {
+    const body = await request.json();
+    const tenantId = typeof body.tenantId === "string" ? body.tenantId : "";
+    const requestId = typeof body.requestId === "string" ? body.requestId : "";
+    const action = body.action === "approve" || body.action === "reject" ? body.action : "";
+    if (!tenantId || !requestId || !action) {
+      return NextResponse.json({ error: "Identifiant de demande, établissement et action (approve/reject) requis." }, { status: 400 });
+    }
+    const context = await getAuthorizationContext();
+    if (!context.user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
+    if (!context.tenantIds.includes(tenantId)) return NextResponse.json({ error: "Établissement non autorisé." }, { status: 403 });
+
+    const isOwner = Boolean(context.user && !context.employeeId && context.tenantIds.includes(tenantId));
+    const canReview = isOwner || context.role === "ADMINISTRATEUR" || context.role === "GERANT" || can(context, "purchases.approve") || can(context, "stock.issue") || can(context, "team.manage");
+    if (!canReview) {
+      return NextResponse.json({ error: "Permission insuffisante : la validation du bon d’approvisionnement requiert le visa du promoteur ou du gérant." }, { status: 403 });
+    }
+
+    const admin = createSupabaseAdminClient();
+    const nextStatus = action === "approve" ? "APPROVED" : "REJECTED";
+    const { data, error } = await admin
+      .from("supply_requests")
+      .update({
+        status: nextStatus,
+        reviewed_by: context.user.id,
+        reviewed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", requestId)
+      .eq("tenant_id", tenantId)
+      .eq("status", "REQUESTED")
+      .select("id,tenant_id,product_id,quantity,destination,status,notes,reviewed_at,reviewed_by,updated_at")
+      .maybeSingle();
+
+    if (error || !data) {
+      return NextResponse.json({ error: "Demande introuvable ou déjà traitée." }, { status: 404 });
+    }
+    return NextResponse.json({ request: data, status: nextStatus });
+  } catch {
+    return NextResponse.json({ error: "Requête invalide." }, { status: 400 });
+  }
 }

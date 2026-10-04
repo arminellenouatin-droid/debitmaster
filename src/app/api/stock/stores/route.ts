@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { getAuthorizationContext, can } from "@/lib/authorization";
 import { databaseDiagnostic, logDatabaseError } from "@/lib/database-error";
+import { getBuvetteLimits } from "@/lib/subscription-plans";
 
 export async function GET(request: Request) {
   try {
@@ -30,8 +31,26 @@ export async function POST(request: Request) {
     if (!context.user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
     if (!can(context, "products.manage")) return NextResponse.json({ error: "Permission insuffisante pour créer un magasin." }, { status: 403 });
     if (!context.tenantIds.includes(tenantId)) return NextResponse.json({ error: "Établissement non autorisé." }, { status: 403 });
+
+    const { data: company } = await context.supabase.from("companies").select("id,activity_type,subscription_plan").eq("id", tenantId).maybeSingle();
+    let effectiveStockFamily = stockFamily;
+    if (company?.activity_type === "BUVETTE") {
+      effectiveStockFamily = "BEVERAGE";
+      const limits = getBuvetteLimits(company);
+      if (limits.maxStores !== null) {
+        const { count } = await context.supabase.from("inventory_stores").select("id", { count: "exact", head: true })
+          .eq("tenant_id", tenantId)
+          .eq("is_active", true);
+        if ((count ?? 0) >= limits.maxStores) {
+          return NextResponse.json({
+            error: `La formule normale Buvette est limitée à un seul magasin de stock. Passez à l'option spéciale pour gérer plusieurs magasins.`,
+          }, { status: 403 });
+        }
+      }
+    }
+
     const storeType = isCounter ? "COUNTER" : "GENERAL";
-    const { data, error } = await context.supabase.from("inventory_stores").insert({ tenant_id: tenantId, name, store_type: storeType, stock_family: isCounter ? "BEVERAGE" : stockFamily, created_by: context.user.id }).select("id,tenant_id,name,store_type,stock_family,is_active,created_at").single();
+    const { data, error } = await context.supabase.from("inventory_stores").insert({ tenant_id: tenantId, name, store_type: storeType, stock_family: isCounter ? "BEVERAGE" : effectiveStockFamily, created_by: context.user.id }).select("id,tenant_id,name,store_type,stock_family,is_active,created_at").single();
     if (error) {
       logDatabaseError("stock.stores.POST", error);
       return NextResponse.json({ error: error.code === "23505" ? (isCounter ? "Un magasin comptoir existe déjà dans l’établissement." : "Ce magasin existe déjà dans l’établissement.") : "Impossible de créer le magasin.", diagnostic: databaseDiagnostic(error) }, { status: 400 });

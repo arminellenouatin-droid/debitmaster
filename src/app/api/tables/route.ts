@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getAuthorizationContext, can } from "@/lib/authorization";
 import { createPublicMenuToken } from "@/lib/public-menu-token";
 import { databaseErrorResponse, logDatabaseError } from "@/lib/database-error";
+import { getBuvetteLimits } from "@/lib/subscription-plans";
 
 const statuses = ["FREE", "OCCUPIED", "RESERVED"] as const;
 type TableStatus = (typeof statuses)[number];
@@ -29,7 +30,19 @@ export async function GET(request: Request) {
     const query = supabase.from("dining_tables").select("id,tenant_id,label,zone,zone_id,capacity,status,created_at,updated_at").is("deleted_at", null).order("zone").order("label").limit(100);
     const { data, error } = await (tenantId ? query.eq("tenant_id", tenantId) : query.in("tenant_id", tenantIds));
     if (error) return NextResponse.json({ error: "Impossible de charger le plan de salle." }, { status: 500 });
-    const tables = (data ?? []).map((table) => withPublicMenuLink(request, table));
+    const resolvedTenantIds = tenantId ? [tenantId] : tenantIds;
+    const { data: companies } = await supabase.from("companies").select("id,activity_type,subscription_plan").in("id", resolvedTenantIds);
+    const companyMap = new Map((companies ?? []).map((c) => [c.id, c]));
+    const tables = (data ?? []).map((table) => {
+      const company = companyMap.get(table.tenant_id);
+      if (company?.activity_type === "BUVETTE") {
+        const limits = getBuvetteLimits(company);
+        if (!limits.canUseQrCodeMenu) {
+          return { ...table, public_menu_token: null, public_menu_url: null };
+        }
+      }
+      return withPublicMenuLink(request, table);
+    });
     return NextResponse.json({ tables, statuses });
   } catch {
     return NextResponse.json({ error: "Service temporairement indisponible." }, { status: 500 });
@@ -50,6 +63,20 @@ export async function POST(request: Request) {
     if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
     if (!can(context, "tables.manage")) return NextResponse.json({ error: "Permission insuffisante pour gérer les tables." }, { status: 403 });
     if (!tenantIds.includes(tenantId)) return NextResponse.json({ error: "Établissement non autorisé." }, { status: 403 });
+    const { data: company } = await supabase.from("companies").select("id,activity_type,subscription_plan").eq("id", tenantId).maybeSingle();
+    if (company?.activity_type === "BUVETTE") {
+      const limits = getBuvetteLimits(company);
+      if (limits.maxTables !== null) {
+        const { count } = await supabase.from("dining_tables").select("id", { count: "exact", head: true })
+          .eq("tenant_id", tenantId)
+          .is("deleted_at", null);
+        if ((count ?? 0) >= limits.maxTables) {
+          return NextResponse.json({
+            error: `La formule normale Buvette est limitée à un maximum de ${limits.maxTables} tables. Passez à l'option spéciale pour des tables illimitées.`,
+          }, { status: 403 });
+        }
+      }
+    }
     if (zoneId) {
       const { data: zoneRow } = await supabase.from("work_zones").select("id,name").eq("id", zoneId).eq("tenant_id", tenantId).eq("is_active", true).maybeSingle();
       if (!zoneRow) return NextResponse.json({ error: "Zone introuvable ou inactive." }, { status: 400 });
@@ -59,7 +86,9 @@ export async function POST(request: Request) {
       logDatabaseError("tables.POST", error);
       return NextResponse.json(databaseErrorResponse(error, "Impossible de créer la table. Vérifiez le libellé et la zone."), { status: error.code === "23505" ? 409 : 400 });
     }
-    return NextResponse.json({ table: withPublicMenuLink(request, data) }, { status: 201 });
+    const canUseQr = company?.activity_type === "BUVETTE" ? getBuvetteLimits(company).canUseQrCodeMenu : true;
+    const tableWithMenu = canUseQr ? withPublicMenuLink(request, data) : { ...data, public_menu_token: null, public_menu_url: null };
+    return NextResponse.json({ table: tableWithMenu }, { status: 201 });
   } catch (error) {
     console.error("[tables.POST] Invalid request", error instanceof Error ? error.message : "unknown");
     return NextResponse.json({ error: "La requête de création de table est invalide. Vérifiez les champs saisis." }, { status: 400 });

@@ -12,7 +12,7 @@ export async function GET(request: Request) {
     if (!context.user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
     if (!tenantId || !context.tenantIds.includes(tenantId) || !can(context, "team.view")) return NextResponse.json({ error: "Permission insuffisante pour consulter les serveuses." }, { status: 403 });
     const admin = createSupabaseAdminClient();
-    const { data: employees, error } = await admin.from("employees").select("id,tenant_id,user_id,first_name,last_name,phone,position,status,service_start_time,service_end_time,rest_day").eq("tenant_id", tenantId).eq("position", "SERVEUR").is("deleted_at", null).order("first_name").limit(100);
+    const { data: employees, error } = await admin.from("employees").select("id,tenant_id,user_id,first_name,last_name,phone,position,status,service_start_time,service_end_time,rest_day").eq("tenant_id", tenantId).in("position", ["SERVEUR", "SERVEUSE"]).is("deleted_at", null).order("first_name").limit(100);
     if (error) {
       console.error("[team/serveuses.GET] employees query failed", { code: error.code, message: error.message });
       return NextResponse.json({ error: "Impossible de charger les serveuses.", diagnostic: "SERVEUSES_EMPLOYEES_QUERY_FAILED" }, { status: 500 });
@@ -54,7 +54,7 @@ export async function POST(request: Request) {
     if (!context.user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
     if (!context.tenantIds.includes(tenantId) || !can(context, "team.manage")) return NextResponse.json({ error: "Permission insuffisante pour affecter une table." }, { status: 403 });
     const [{ data: employee }, { data: table }, { data: zone }] = await Promise.all([
-      context.supabase.from("employees").select("id").eq("id", employeeId).eq("tenant_id", tenantId).eq("position", "SERVEUR").is("deleted_at", null).maybeSingle(),
+      context.supabase.from("employees").select("id").eq("id", employeeId).eq("tenant_id", tenantId).in("position", ["SERVEUR", "SERVEUSE"]).is("deleted_at", null).maybeSingle(),
       tableId ? context.supabase.from("dining_tables").select("id,zone_id").eq("id", tableId).eq("tenant_id", tenantId).is("deleted_at", null).maybeSingle() : Promise.resolve({ data: null }),
       zoneId ? context.supabase.from("work_zones").select("id").eq("id", zoneId).eq("tenant_id", tenantId).eq("is_active", true).maybeSingle() : Promise.resolve({ data: null }),
     ]);
@@ -98,7 +98,7 @@ export async function PATCH(request: Request) {
     const context = await getAuthorizationContext();
     if (!context.user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
     if (!context.tenantIds.includes(tenantId) || !can(context, "team.manage")) return NextResponse.json({ error: "Permission insuffisante pour gérer les horaires." }, { status: 403 });
-    const { data, error } = await context.supabase.from("employees").update({ service_start_time: serviceStartTime, service_end_time: serviceEndTime, rest_day: restDay, updated_at: new Date().toISOString() }).eq("id", employeeId).eq("tenant_id", tenantId).eq("position", "SERVEUR").is("deleted_at", null).select("id,tenant_id,first_name,last_name,position,service_start_time,service_end_time,rest_day").single();
+    const { data, error } = await context.supabase.from("employees").update({ service_start_time: serviceStartTime, service_end_time: serviceEndTime, rest_day: restDay, updated_at: new Date().toISOString() }).eq("id", employeeId).eq("tenant_id", tenantId).in("position", ["SERVEUR", "SERVEUSE"]).is("deleted_at", null).select("id,tenant_id,first_name,last_name,position,service_start_time,service_end_time,rest_day").single();
     if (error || !data) return NextResponse.json({ error: "Impossible de mettre à jour l’emploi du temps." }, { status: 400 });
     return NextResponse.json({ serveuse: data });
   } catch { return NextResponse.json({ error: "Requête invalide." }, { status: 400 }); }

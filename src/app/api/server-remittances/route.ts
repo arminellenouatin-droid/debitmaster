@@ -33,7 +33,7 @@ export async function GET(request: Request) {
     const isManager = can(context, "finance.view");
     const serverUserId = isManager ? (params.get("serverUserId") ?? "") : context.user.id;
     if (!serverUserId) {
-      const { data: employees } = await context.supabase.from("employees").select("id,user_id,first_name,last_name").eq("tenant_id", tenantId).eq("position", "SERVEUR").eq("status", "ACTIVE").limit(100);
+      const { data: employees } = await context.supabase.from("employees").select("id,user_id,first_name,last_name").eq("tenant_id", tenantId).in("position", ["SERVEUR", "SERVEUSE"]).eq("status", "ACTIVE").limit(100);
       const entries = await Promise.all((employees ?? []).filter((employee) => employee.user_id).map(async (employee) => ({ employee, snapshot: await financialSnapshot(context, tenantId, employee.user_id!) })));
       return NextResponse.json({ entries });
     }
@@ -52,7 +52,7 @@ export async function POST(request: Request) {
     const declaredCashAmount = Number(body.declaredCashAmount ?? 0);
     const context = await getAuthorizationContext();
     if (!context.user) return jsonError("Authentification requise.", 401);
-    if (!tenantId || !context.tenantIds.includes(tenantId) || context.role !== "SERVEUR" || !context.employeeId || !can(context, "orders.create")) return jsonError("Cette opération est réservée à la Serveuse de cet établissement.", 403);
+    if (!tenantId || !context.tenantIds.includes(tenantId) || (context.role !== "SERVEUR" && context.role !== "SERVEUSE") || !context.employeeId || !can(context, "orders.create")) return jsonError("Cette opération est réservée à la Serveuse de cet établissement.", 403);
     if (![declaredMobileAmount, declaredCashAmount].every((amount) => Number.isInteger(amount) && amount >= 0)) return jsonError("Les montants déclarés sont invalides.");
     const snapshot = await financialSnapshot(context, tenantId, context.user.id);
     if (snapshot.pending) return jsonError("Un reversement est déjà en attente de validation.", 409);

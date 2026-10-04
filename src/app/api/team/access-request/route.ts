@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { normalizePhoneIdentifier, syntheticEmailForPhone } from "@/lib/auth-identifiers";
 
-const positions = ["SERVEUR", "SUPERVISEUR", "MAGASINIER", "GERANT", "BARMAN", "SECRETAIRE", "COMPTABLE", "APPROVISIONNEMENT", "CUISINIER", "CHEF_CUISINE"] as const;
+const positions = ["SERVEUR", "SERVEUSE", "SUPERVISEUR", "MAGASINIER", "GERANT", "BARMAN", "SECRETAIRE", "COMPTABLE", "APPROVISIONNEMENT", "CUISINIER", "CHEF_CUISINE", "INVENTAIRE"] as const;
 
 function normalizePhone(value: string) { return normalizePhoneIdentifier(value); }
 

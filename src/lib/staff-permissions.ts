@@ -70,6 +70,7 @@ export const permissionCatalog = [
 
 export const defaultRolePermissions: Record<string, string[]> = {
   SERVEUR: ["orders.view", "orders.create", "orders.receive", "orders.deliver", "tables.view", "payments.create", "attendance.view", "notifications.view"],
+  SERVEUSE: ["orders.view", "orders.create", "orders.receive", "orders.deliver", "tables.view", "payments.create", "attendance.view", "notifications.view"],
   VENDEUR: ["orders.view", "orders.create", "quotes.view", "quotes.create", "quotes.convert", "invoices.view", "commissions.view", "attendance.view", "notifications.view"],
   SUPERVISEUR: permissionCatalog.map((permission) => permission.key),
   MAGASINIER: ["stock.view", "stock.receive", "stock.issue", "stock.handoff", "products.manage", "deliveries.view", "deliveries.confirm", "returns.manage", "purchases.receive", "stock.transfers", "inventory.view", "inventory.count", "attendance.view", "notifications.view"],
@@ -85,12 +86,12 @@ export const defaultRolePermissions: Record<string, string[]> = {
   LAVAGE: ["services.view", "payments.create", "power.view", "attendance.view", "notifications.view"],
   WIFI: ["services.view", "payments.create", "power.view", "attendance.view", "notifications.view"],
   SECURITE: ["power.view", "attendance.view", "notifications.view"],
-  INVENTAIRE: ["stock.view", "stock.audit", "inventory.view", "inventory.count", "reports.view", "attendance.view", "notifications.view"],
+  INVENTAIRE: ["stock.view", "stock.audit", "inventory.view", "inventory.count", "inventory.validate", "reports.view", "reports.daily_close", "attendance.view", "notifications.view"],
   GERANT_ADJOINT: ["orders.view", "orders.prepare", "orders.handoff", "quotes.view", "quotes.create", "quotes.convert", "invoices.view", "cash.view", "cash.manage", "cash.close", "stock.view", "stock.accept_counter", "team.view", "team.manage", "tables.view", "tables.manage", "finance.view", "reports.view", "reports.daily_close", "messages.view", "messages.send", "activities.view", "services.view", "power.view", "attendance.view", "attendance.manage", "commissions.view", "reports.analytics", "notifications.view"],
   CAISSIER: ["finance.view", "payments.create", "cash.view", "cash.manage", "cash.close", "reports.view", "invoices.view", "power.view", "attendance.view", "notifications.view"],
   ADMINISTRATEUR: permissionCatalog.map((permission) => permission.key),
 };
 
 export const roleLabels: Record<string, string> = {
-  SERVEUR: "Serveur", VENDEUR: "Vendeur / Commercial", SUPERVISEUR: "Superviseur", MAGASINIER: "Magasinier", GERANT: "Gérant", BARMAN: "Barman", SECRETAIRE: "Secrétaire", COMPTABLE: "Comptable", APPROVISIONNEMENT: "Approvisionnement", CUISINIER: "Cuisinier", CHEF_CUISINE: "Chef cuisine", SECURITE: "Sécurité", INVENTAIRE: "Chargé d’inventaire", GYM: "Équipe gym", AUBERGE: "Équipe auberge", LAVAGE: "Équipe lavage", WIFI: "Équipe Wi-Fi", GERANT_ADJOINT: "Gérant adjoint", CAISSIER: "Caissier", ADMINISTRATEUR: "Administrateur",
+  SERVEUR: "Serveur", SERVEUSE: "Serveuse", VENDEUR: "Vendeur / Commercial", SUPERVISEUR: "Superviseur", MAGASINIER: "Magasinier", GERANT: "Gérant", BARMAN: "Barman", SECRETAIRE: "Secrétaire", COMPTABLE: "Comptable", APPROVISIONNEMENT: "Approvisionnement", CUISINIER: "Cuisinier", CHEF_CUISINE: "Chef cuisine", SECURITE: "Sécurité", INVENTAIRE: "Chargé d’inventaire", GYM: "Équipe gym", AUBERGE: "Équipe auberge", LAVAGE: "Équipe lavage", WIFI: "Équipe Wi-Fi", GERANT_ADJOINT: "Gérant adjoint", CAISSIER: "Caissier", ADMINISTRATEUR: "Administrateur",
 };

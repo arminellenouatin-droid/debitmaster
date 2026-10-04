@@ -3,9 +3,11 @@ import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getAuthorizationContext, can } from "@/lib/authorization";
 import { normalizePhoneIdentifier, syntheticEmailForPhone } from "@/lib/auth-identifiers";
+import { getBuvetteLimits, companyHasSpecialOption } from "@/lib/subscription-plans";
 
 const positions = [
   "SERVEUR",
+  "SERVEUSE",
   "SUPERVISEUR",
   "MAGASINIER",
   "GERANT",
@@ -20,6 +22,7 @@ const positions = [
   "AUBERGE",
   "LAVAGE",
   "WIFI",
+  "INVENTAIRE",
   "GERANT_ADJOINT",
   "CAISSIER",
   "ADMINISTRATEUR",
@@ -32,8 +35,8 @@ function isOwner(context: Awaited<ReturnType<typeof getAuthorizationContext>>, t
 }
 
 async function isSpecialTenant(context: Awaited<ReturnType<typeof getAuthorizationContext>>, tenantId: string) {
-  const { data } = await context.supabase.from("companies").select("id").eq("id", tenantId).eq("subscription_plan", "SPECIAL").is("deleted_at", null).maybeSingle();
-  return Boolean(data);
+  const { data } = await context.supabase.from("companies").select("id,subscription_plan").eq("id", tenantId).is("deleted_at", null).maybeSingle();
+  return Boolean(data && companyHasSpecialOption(data));
 }
 
 export async function GET(request: Request) {
@@ -71,11 +74,33 @@ export async function POST(request: Request) {
     if (!tenantId || firstName.length < 2 || lastName.length < 2 || !phone || password.length < 8 || !positions.includes(position as (typeof positions)[number])) return NextResponse.json({ error: "Prénom, nom, téléphone international, rôle et mot de passe initial valides requis." }, { status: 400 });
     const context = await getAuthorizationContext();
     if (!context.user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
-    const allowedManager = isOwner(context, tenantId) || (context.role === "SUPERVISEUR" && await isSpecialTenant(context, tenantId) && can(context, "team.manage"));
+    const allowedManager = isOwner(context, tenantId) || (context.role === "ADMINISTRATEUR" && context.tenantIds.includes(tenantId)) || (context.role === "SUPERVISEUR" && await isSpecialTenant(context, tenantId) && can(context, "team.manage"));
     if (!allowedManager) return NextResponse.json({ error: "Seul le propriétaire ou le superviseur plan spécial autorisé peut créer directement un compte équipe." }, { status: 403 });
     if (!mustChangePassword && !await isSpecialTenant(context, tenantId)) return NextResponse.json({ error: "Le mot de passe initial sans changement obligatoire est réservé aux essais plan spécial." }, { status: 403 });
 
     const admin = createSupabaseAdminClient();
+    const { data: company } = await admin.from("companies").select("id,activity_type,subscription_plan").eq("id", tenantId).is("deleted_at", null).maybeSingle();
+    if (company?.activity_type === "BUVETTE") {
+      const buvetteAllowedPositions = ["SERVEUR", "SERVEUSE", "GERANT", "APPROVISIONNEMENT", "INVENTAIRE", "ADMINISTRATEUR"];
+      if (!buvetteAllowedPositions.includes(position)) {
+        return NextResponse.json({
+          error: "Les rôles autorisés pour l’activité Buvette sont : Serveuse, Gérant, Chargé des approvisionnements, Chargé des inventaires et Administrateur.",
+        }, { status: 400 });
+      }
+      const limits = getBuvetteLimits(company);
+      if (limits.maxServeuses !== null && (position === "SERVEUR" || position === "SERVEUSE")) {
+        const { count } = await admin.from("employees").select("id", { count: "exact", head: true })
+          .eq("tenant_id", tenantId)
+          .in("position", ["SERVEUR", "SERVEUSE"])
+          .is("deleted_at", null);
+        if ((count ?? 0) >= limits.maxServeuses) {
+          return NextResponse.json({
+            error: `La formule normale Buvette est limitée à un maximum de ${limits.maxServeuses} serveuses. Passez à l'option spéciale pour un nombre illimité.`,
+          }, { status: 403 });
+        }
+      }
+    }
+
     const { data: authData, error: authError } = await admin.auth.admin.createUser({ email: syntheticEmailForPhone(phone), phone, password, email_confirm: true, phone_confirm: true, user_metadata: { first_name: firstName, last_name: lastName, account_type: "STAFF" } });
     if (authError || !authData.user) return NextResponse.json({ error: "Impossible de créer le compte téléphone. Vérifiez que ce numéro n’est pas déjà utilisé." }, { status: 400 });
 
@@ -124,6 +149,28 @@ export async function PATCH(request: Request) {
       const { error } = await admin.from("employee_access_requests").update({ status: "REJECTED", reviewed_at: new Date().toISOString(), reviewed_by: context.user.id }).eq("id", requestId).eq("tenant_id", tenantId);
       if (error) return NextResponse.json({ error: "Impossible de refuser la demande." }, { status: 400 });
       return NextResponse.json({ status: "REJECTED" });
+    }
+
+    const { data: company } = await admin.from("companies").select("id,activity_type,subscription_plan").eq("id", tenantId).is("deleted_at", null).maybeSingle();
+    if (company?.activity_type === "BUVETTE") {
+      const buvetteAllowedPositions = ["SERVEUR", "SERVEUSE", "GERANT", "APPROVISIONNEMENT", "INVENTAIRE", "ADMINISTRATEUR"];
+      if (!buvetteAllowedPositions.includes(accessRequest.position)) {
+        return NextResponse.json({
+          error: "Ce rôle n'est pas autorisé pour l'activité Buvette.",
+        }, { status: 400 });
+      }
+      const limits = getBuvetteLimits(company);
+      if (limits.maxServeuses !== null && (accessRequest.position === "SERVEUR" || accessRequest.position === "SERVEUSE")) {
+        const { count } = await admin.from("employees").select("id", { count: "exact", head: true })
+          .eq("tenant_id", tenantId)
+          .in("position", ["SERVEUR", "SERVEUSE"])
+          .is("deleted_at", null);
+        if ((count ?? 0) >= limits.maxServeuses) {
+          return NextResponse.json({
+            error: `La formule normale Buvette est limitée à un maximum de ${limits.maxServeuses} serveuses. Passez à l'option spéciale pour un nombre illimité.`,
+          }, { status: 403 });
+        }
+      }
     }
 
     const profile = await admin.from("profiles").upsert({ id: accessRequest.user_id, tenant_id: tenantId, first_name: accessRequest.first_name, last_name: accessRequest.last_name, phone: accessRequest.phone, user_type: "TENANT_STAFF", role: accessRequest.position, status: "ACTIVE" }).select("id").single();

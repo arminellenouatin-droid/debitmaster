@@ -615,6 +615,51 @@ Ce document consigne toutes les décisions techniques, fonctionnelles et hypoth�
   - Typecheck : zéro erreur TypeScript (`npx tsc --noEmit`).
   - Build de production : compilation et génération statique de 169 routes réussies avec Turbopack (`npm run build`).
 
+---
+
+## 15. Activité « Buvette » (Vente de Boissons Uniquement) & Établissement de Test
+
+### 15.1. Périmètre Métier & Règles de l'Activité
+- **Code d'activité** : `BUVETTE`.
+- **Catalogue & Stocks** : Exclusivement des boissons (`BEVERAGE`). Toutes les fonctionnalités repas/cuisine, auberge, couture, gym et lavage sont strictement exclues et masquées.
+- **Circuit Opérationnel des Boissons** :
+  1. **Prise de commande** : Effectuée par la **Serveuse** sur mobile à la table du client.
+  2. **Transmission & Préparation** : Transmise en direct au **Gérant** qui apprête les boissons au comptoir.
+  3. **Livraison & Encaissement** : La serveuse livre les boissons fraîches à table et encaisse le règlement (Cash ou Mobile Money).
+  4. **Fin de journée & Points** : La serveuse soumet son point journalier et ses encaissements au gérant (`server-remittances`), qui valide la conformité des fonds.
+  5. **Approvisionnements** : Le **Chargé des approvisionnements** surveille les seuils d'alerte (bouteilles & casiers) et génère le bon d'approvisionnement (`supply_requests`) soumis au visa préalable du **Promoteur**.
+  6. **Inventaire Journalier** : Le **Chargé des inventaires** effectue le contrôle physique journalier et la réconciliation des stocks (mécanisme identique à BAR SANTÉ PLUS).
+  7. **Administration Promoteur** : Le **Promoteur (Propriétaire)** a les pleins droits d'administration : gestion de l'équipe, attribution des droits, validation des bons d'approvisionnement et supervision générale.
+
+### 15.2. Différenciation des Formules (Option Normale vs Option Avancée / Spéciale)
+- **Option Normale** (30 000 FCFA/mois — 270 000 FCFA/an) :
+  - Jusqu'à **5 serveuses maximum** (contrôlé côté serveur dans l'API `/api/employees`).
+  - **1 seul magasin de stockage** (contrôlé côté serveur dans l'API `/api/stock/stores`).
+  - Jusqu'à **15 tables maximum** (contrôlé côté serveur dans l'API `/api/tables`).
+  - Commande autonome QR code sur table **désactivée**.
+  - Sessions Comptabilité (SYSCOHADA) et Trésorerie/Immobilisations **masquées**.
+- **Option Avancée / Spéciale** (45 000 FCFA/mois — 405 000 FCFA/an) :
+  - Serveuses, tables et magasins de stockage **illimités**.
+  - Commande autonome par QR Code sur table **activée**.
+  - Sessions Comptabilité SYSCOHADA et Trésorerie / Immobilisations **activées**.
+
+### 15.3. Établissement Témoin Provisionné : « LA BUVETTE DU BON COIN »
+- **Identifiant Unique** : `BUVBONCOIN`
+- **Tenant ID** : `f3056be1-9180-49a9-84ce-1e216489df2a`
+- **Données initiales** : 1 Magasin central (`Dépôt Boissons Central`), 10 tables, 6 références de boissons en stock casiers/bouteilles, essai gratuit 30 jours actif.
+- **7 Comptes de Test Opérationnels** créés et vérifiés :
+  1. `promoteur@buvette-boncoin.com` (Mathieu HOUNGBO — `ADMINISTRATEUR`)
+  2. `gerant@buvette-boncoin.com` (Pascal AGBOSSOU — `GERANT`)
+  3. `serveuse1@buvette-boncoin.com` (Yvette TOSSOU — `SERVEUSE`)
+  4. `serveuse2@buvette-boncoin.com` (Justine AMOUZOU — `SERVEUSE`)
+  5. `serveuse3@buvette-boncoin.com` (Chantal DOSSOU — `SERVEUSE`)
+  6. `approvisionnement@buvette-boncoin.com` (Marcel LAWSON — `APPROVISIONNEMENT`)
+  7. `inventaire@buvette-boncoin.com` (Félix AMEGATSE — `INVENTAIRE`)
+- **Fichiers de données de test** enregistrés dans :
+  - `C:\Users\EliteBook\NOUVEAUX PROJETS\SAUVEGARDE 02102026\donnees_test\COMPTES_TEST_BUVETTE.md`
+  - `C:\Users\EliteBook\NOUVEAUX PROJETS\SAUVEGARDE 02102026\donnees_test\comptes_test_buvette.json`
+  - Miroir dans `debitmaster/donnees_test/`.
+
 
 
 

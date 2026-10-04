@@ -1,7 +1,7 @@
 // DebitManager Power navigation: owners and supervisors keep the management cockpit; service roles get focused, stock-free workspaces.
 import Link from "next/link";
 import { getActiveTenantContext } from "@/lib/active-tenant";
-import { subscriptionDisplayStatus, companyHasPowerFeatures } from "@/lib/subscription-plans";
+import { subscriptionDisplayStatus, companyHasPowerFeatures, getBuvetteLimits } from "@/lib/subscription-plans";
 import { DashboardHeader } from "@/components/DashboardHeader";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
@@ -116,11 +116,14 @@ export async function DashboardShell({ children, firstName }: { children: React.
       )
     : "Indisponible";
 
+  const isBuvette = activeContext.company?.activity_type === "BUVETTE";
+  const buvetteLimits = isBuvette ? getBuvetteLimits(activeContext.company) : null;
+
   const baseNavigation: ReadonlyArray<NavItem> = serviceRole
     ? serviceNavigation[serviceRole]
     : isPowerSupervisor
     ? navigation.filter(([, label]) => label !== "Ventes")
-    : activeContext.role === "SERVEUR"
+    : activeContext.role === "SERVEUR" || activeContext.role === "SERVEUSE"
     ? navigation.filter(([, label]) => ["Dashboard", "Commandes", "Profil"].includes(label))
     : activeContext.role === "VENDEUR"
     ? navigation.filter(([, label]) => ["Dashboard", "Devis & Ventes", "Produits et services", "Profil"].includes(label))
@@ -138,13 +141,30 @@ export async function DashboardShell({ children, firstName }: { children: React.
     ? navigation.filter(([, label]) => ["Dashboard", "Finance", "Comptabilité SYSCOHADA", "Rapports & KPI", "Produits et services", "Profil"].includes(label))
     : activeContext.role === "GERANT" || activeContext.role === "GERANT_ADJOINT"
     ? navigation.filter(
-        ([, label]) =>
-          ["Dashboard", "Devis & Ventes", "Caisse & Règlements", "Livraisons & Magasin", "Achats & Approvisionnement", "Inventaire Physique", "Finance", "Comptabilité SYSCOHADA", "Rapports & KPI", "Produits et services", "Commandes", "Profil"].includes(label) ||
-          (label === "Plan de salle" && activeContext.permissions.has("tables.view")) ||
-          (label === "Personnel" && activeContext.permissions.has("team.view")) ||
-          (label === "WIFI" && activeContext.permissions.has("services.view"))
+        ([, label]) => {
+          if (isBuvette) {
+            if (label === "Repas / Cuisine" || label === "WIFI" || label === "Gestion Power") return false;
+            if (label === "Comptabilité SYSCOHADA" && !buvetteLimits?.canUseAccounting) return false;
+            if (label === "Finance" && !buvetteLimits?.canUseTreasuryAssets) return false;
+          }
+          return (
+            ["Dashboard", "Devis & Ventes", "Caisse & Règlements", "Livraisons & Magasin", "Achats & Approvisionnement", "Inventaire Physique", "Finance", "Comptabilité SYSCOHADA", "Rapports & KPI", "Produits et services", "Commandes", "Profil"].includes(label) ||
+            (label === "Plan de salle" && activeContext.permissions.has("tables.view")) ||
+            (label === "Personnel" && activeContext.permissions.has("team.view")) ||
+            (label === "WIFI" && activeContext.permissions.has("services.view"))
+          );
+        }
       )
-    : navigation.filter(([, label]) => label !== "Ventes" && (label !== "Approvisionnement" || activeContext.company?.activity_type === "BOUTIQUE_COMMERCE"));
+    : navigation.filter(([, label]) => {
+        if (label === "Ventes") return false;
+        if (label === "Approvisionnement" && activeContext.company?.activity_type !== "BOUTIQUE_COMMERCE") return false;
+        if (isBuvette) {
+          if (label === "Repas / Cuisine" || label === "WIFI" || label === "Gestion Power") return false;
+          if (label === "Comptabilité SYSCOHADA" && !buvetteLimits?.canUseAccounting) return false;
+          if (label === "Finance" && !buvetteLimits?.canUseTreasuryAssets) return false;
+        }
+        return true;
+      });
 
   const visibleNavigation: ReadonlyArray<NavItem> =
     hasPowerFeatures &&

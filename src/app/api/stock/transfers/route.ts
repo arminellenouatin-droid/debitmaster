@@ -2,7 +2,7 @@
 import { NextResponse } from "next/server";
 import { getAuthorizationContext, can } from "@/lib/authorization";
 
-const recipientRoles = ["GERANT", "CHEF_CUISINE", "SERVEUR"] as const;
+const recipientRoles = ["GERANT", "CHEF_CUISINE", "SERVEUR", "SERVEUSE"] as const;
 const stockFamilies = ["BEVERAGE", "KITCHEN"] as const;
 
 type TransferItem = { productId: string; quantity: number };
@@ -35,7 +35,7 @@ export async function POST(request: Request) {
     if (!context.user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
     if (!context.tenantIds.includes(tenantId) || !can(context, "stock.handoff")) return NextResponse.json({ error: "Permission insuffisante pour préparer cette remise." }, { status: 403 });
     if (context.role === "MAGASINIER" && recipientRole !== "GERANT") return NextResponse.json({ error: "Le magasinier remet les stocks au gérant." }, { status: 403 });
-    if (context.role === "GERANT" && recipientRole !== "SERVEUR" && recipientRole !== "CHEF_CUISINE") return NextResponse.json({ error: "Le gérant distribue les stocks aux équipes opérationnelles." }, { status: 403 });
+    if (context.role === "GERANT" && recipientRole !== "SERVEUR" && recipientRole !== "SERVEUSE" && recipientRole !== "CHEF_CUISINE") return NextResponse.json({ error: "Le gérant distribue les stocks aux équipes opérationnelles." }, { status: 403 });
     const productIds = items.map((item) => item.productId);
     const { data: products, error: productsError } = await context.supabase.from("products").select("id,stock_family,current_stock").eq("tenant_id", tenantId).in("id", productIds).is("deleted_at", null).limit(100);
     if (productsError || !products || products.length !== productIds.length || products.some((product) => product.stock_family !== stockFamily)) return NextResponse.json({ error: "Un produit est absent ou appartient à une autre famille de stock." }, { status: 400 });

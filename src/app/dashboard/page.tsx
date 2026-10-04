@@ -30,7 +30,7 @@ export default async function DashboardPage() {
     }
     if (authorization.role === "COMMERCE_STAFF") redirect("/connexion?error=acces_commerce_requis");
   }
-  if (authorization.role === "SERVEUR") return <DashboardShell firstName={firstName}><ServeurClient tenantId={active.tenantId ?? ""} firstName={firstName} companyName={active.company?.name ?? "Établissement actif"} /></DashboardShell>;
+  if (authorization.role === "SERVEUR" || authorization.role === "SERVEUSE") return <DashboardShell firstName={firstName}><ServeurClient tenantId={active.tenantId ?? ""} firstName={firstName} companyName={active.company?.name ?? "Établissement actif"} /></DashboardShell>;
   if (authorization.role === "GERANT") return <DashboardShell firstName={firstName}><GerantClient tenantId={active.tenantId ?? ""} firstName={firstName} companyName={active.company?.name ?? "Établissement actif"} /></DashboardShell>;
   if (authorization.role === "MAGASINIER") {
     const { data: employee } = authorization.employeeId ? await authorization.supabase.from("employees").select("stock_scope").eq("id", authorization.employeeId).maybeSingle() : { data: null };

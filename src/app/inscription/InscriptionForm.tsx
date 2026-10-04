@@ -7,8 +7,8 @@ import { PhoneField } from "@/components/PhoneField";
 import { PasswordField } from "@/components/PasswordField";
 import { composePhone } from "@/lib/phone-countries";
 
-const positions = ["SERVEUR", "SUPERVISEUR", "MAGASINIER", "GERANT", "BARMAN", "SECRETAIRE", "COMPTABLE", "APPROVISIONNEMENT", "CUISINIER", "CHEF_CUISINE"];
-const positionLabels: Record<string, string> = { SERVEUR: "Serveur", SUPERVISEUR: "Superviseur", MAGASINIER: "Magasinier", GERANT: "Gérant", BARMAN: "Barman", SECRETAIRE: "Secrétaire", COMPTABLE: "Comptable", APPROVISIONNEMENT: "Approvisionnement", CUISINIER: "Cuisinier", CHEF_CUISINE: "Chef de cuisine" };
+const positions = ["SERVEUR", "SERVEUSE", "SUPERVISEUR", "MAGASINIER", "GERANT", "BARMAN", "SECRETAIRE", "COMPTABLE", "APPROVISIONNEMENT", "CUISINIER", "CHEF_CUISINE", "INVENTAIRE"];
+const positionLabels: Record<string, string> = { SERVEUR: "Serveur", SERVEUSE: "Serveuse", SUPERVISEUR: "Superviseur", MAGASINIER: "Magasinier", GERANT: "Gérant", BARMAN: "Barman", SECRETAIRE: "Secrétaire", COMPTABLE: "Comptable", APPROVISIONNEMENT: "Approvisionnement", CUISINIER: "Cuisinier", CHEF_CUISINE: "Chef de cuisine", INVENTAIRE: "Chargé d’inventaire" };
 type Mode = "OWNER" | "STAFF";
 
 export function InscriptionForm() {

@@ -6,7 +6,7 @@ export async function GET() {
   try {
     const context = await getAuthorizationContext();
     if (!context.user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
-    if (!context.employeeId || context.role !== "SERVEUR" || !can(context, "orders.view")) return NextResponse.json({ error: "Cet espace est réservé aux serveurs et serveuses." }, { status: 403 });
+    if (!context.employeeId || (context.role !== "SERVEUR" && context.role !== "SERVEUSE") || !can(context, "orders.view")) return NextResponse.json({ error: "Cet espace est réservé aux serveurs et serveuses." }, { status: 403 });
     const tenantId = context.tenantIds[0];
     if (!tenantId) return NextResponse.json({ error: "Aucun établissement actif." }, { status: 404 });
     const [{ data: company }, { data: employee }, { data: assignments, error: assignmentError }, { data: zoneAssignments, error: zoneAssignmentError }, { data: orders, error: orderError }, { data: commissions, error: commissionError }] = await Promise.all([

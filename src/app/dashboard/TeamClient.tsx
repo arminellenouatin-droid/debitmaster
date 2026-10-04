@@ -7,7 +7,7 @@ type Company = { id: string; name: string };
 type Employee = { id: string; first_name: string; last_name: string; position: string; status: string };
 
 const labels: Record<string, string> = {
-  SERVEUR: "Serveur", SUPERVISEUR: "Superviseur", MAGASINIER: "Magasinier", GERANT: "Gérant", BARMAN: "Barman", SECRETAIRE: "Secrétaire", COMPTABLE: "Comptable", APPROVISIONNEMENT: "Approvisionnement", CUISINIER: "Cuisinier", CHEF_CUISINE: "Chef cuisine", ADMINISTRATEUR: "Administrateur",
+  SERVEUR: "Serveur", SERVEUSE: "Serveuse", SUPERVISEUR: "Superviseur", MAGASINIER: "Magasinier", GERANT: "Gérant", BARMAN: "Barman", SECRETAIRE: "Secrétaire", COMPTABLE: "Comptable", APPROVISIONNEMENT: "Approvisionnement", CUISINIER: "Cuisinier", CHEF_CUISINE: "Chef cuisine", INVENTAIRE: "Chargé d’inventaire", ADMINISTRATEUR: "Administrateur",
 };
 
 export function TeamClient() {

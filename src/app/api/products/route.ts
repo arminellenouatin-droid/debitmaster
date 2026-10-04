@@ -21,7 +21,7 @@ export async function GET(request: Request) {
     const { data, error } = await (tenantId ? query.eq("tenant_id", tenantId) : query.in("tenant_id", tenantIds));
     if (error) return NextResponse.json({ error: "Impossible de charger les produits." }, { status: 500 });
     const products = data ?? [];
-    if (context.role === "SERVEUR") {
+    if (context.role === "SERVEUR" || context.role === "SERVEUSE") {
       return NextResponse.json({ products: products.map(({ id, category_id, name, product_type, unit, price, stock_family }) => ({ id, category_id, name, product_type, unit, price, stock_family })) });
     }
     return NextResponse.json({ products });
@@ -51,6 +51,10 @@ export async function POST(request: Request) {
     if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
     if (!can(context, "products.manage")) return NextResponse.json({ error: "Permission insuffisante pour gérer le catalogue." }, { status: 403 });
     if (!tenantIds.includes(tenantId)) return NextResponse.json({ error: "Établissement non autorisé." }, { status: 403 });
+    const { data: company } = await supabase.from("companies").select("activity_type").eq("id", tenantId).maybeSingle();
+    if (company?.activity_type === "BUVETTE" && stockFamily !== "BEVERAGE") {
+      return NextResponse.json({ error: "L’activité Buvette est strictement dédiée à la vente de boissons. Les produits de cuisine ne sont pas autorisés." }, { status: 400 });
+    }
     if (context.role === "CHEF_CUISINE" && stockFamily !== "KITCHEN") return NextResponse.json({ error: "Le Chef cuisine ne peut gérer que les produits de la cuisine." }, { status: 403 });
     if (context.role === "MAGASINIER" && context.employeeId) {
       const { data: employee } = await supabase.from("employees").select("stock_scope").eq("id", context.employeeId).maybeSingle();

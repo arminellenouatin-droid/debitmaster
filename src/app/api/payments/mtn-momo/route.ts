@@ -21,7 +21,7 @@ export async function POST(request: Request) {
 
     const { data: order, error: orderError } = await supabase.from("orders").select("id,tenant_id,server_user_id,order_number,total_amount,currency,status").eq("id", orderId).eq("tenant_id", tenantId).maybeSingle();
     if (orderError || !order) return NextResponse.json({ error: "Commande introuvable dans cet établissement." }, { status: 404 });
-    if (context.role === "SERVEUR" && order.server_user_id !== user.id) return NextResponse.json({ error: "Cette commande ne vous est pas attribuée." }, { status: 403 });
+    if ((context.role === "SERVEUR" || context.role === "SERVEUSE") && order.server_user_id !== user.id) return NextResponse.json({ error: "Cette commande ne vous est pas attribuée." }, { status: 403 });
     if (order.total_amount <= 0) return NextResponse.json({ error: "Le montant de la commande doit être positif." }, { status: 400 });
 
     const { data: existingPayments } = await supabase.from("payments").select("id,tenant_id,order_id,provider,status,amount,currency,provider_reference,paid_at,created_at").eq("order_id", order.id).eq("tenant_id", tenantId).in("status", ["SUCCEEDED", "PENDING", "PROCESSING"]);

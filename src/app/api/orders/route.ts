@@ -20,7 +20,7 @@ export async function GET(request: Request) {
     const readClient = createSupabaseAdminClient();
     let query = readClient.from("orders").select("id,tenant_id,order_number,table_label,location_label,customer_id,server_user_id,server_name,received_by_user_id,received_at,delivered_by_user_id,delivered_at,status,total_amount,currency,created_at,updated_at").order("created_at", { ascending: false }).limit(50);
     query = tenantId ? query.eq("tenant_id", tenantId) : query.in("tenant_id", tenantIds);
-    if (context.role === "SERVEUR") query = query.eq("server_user_id", user.id);
+    if (context.role === "SERVEUR" || context.role === "SERVEUSE") query = query.eq("server_user_id", user.id);
     const { data, error } = await query;
     if (error) { console.error("[orders.GET] orders query failed", { code: error.code, message: error.message }); return NextResponse.json({ error: "Impossible de charger les commandes.", diagnostic: "ORDERS_QUERY_FAILED" }, { status: 500 }); }
     const orderRows = data ?? [];
@@ -56,7 +56,7 @@ export async function POST(request: Request) {
     const effectiveTableLabel = zonesTablesEnabled ? tableLabel : null;
     const effectiveLocationLabel = zonesTablesEnabled ? (locationLabel || "Salle") : null;
     const effectiveZoneId = zonesTablesEnabled ? zoneId : null;
-    if (context.role === "SERVEUR" && zonesTablesEnabled) {
+    if ((context.role === "SERVEUR" || context.role === "SERVEUSE") && zonesTablesEnabled) {
       const [{ data: assignments }, { data: zoneAssignments }] = await Promise.all([
         supabase.from("employee_table_assignments").select("dining_tables(label,zone,zone_id)").eq("tenant_id", tenantId).eq("employee_id", context.employeeId).limit(100),
         effectiveZoneId ? supabase.from("employee_zone_assignments").select("zone_id,work_zones(name,is_active)").eq("tenant_id", tenantId).eq("employee_id", context.employeeId).eq("zone_id", effectiveZoneId).limit(1) : Promise.resolve({ data: [] }),
@@ -75,17 +75,20 @@ export async function POST(request: Request) {
     const normalizedLines = lines.map((line) => ({ productId: typeof line.productId === "string" ? line.productId : "", quantity: Number(line.quantity), fulfillmentUnit: line.fulfillmentUnit === "MEAL" || line.fulfillmentUnit === "BEVERAGE" ? line.fulfillmentUnit : undefined, accompaniment: typeof line.accompaniment === "string" && accompaniments.includes(line.accompaniment as Accompaniment) ? line.accompaniment as Accompaniment : "Aucun" })).filter((line) => line.productId && Number.isInteger(line.quantity) && line.quantity > 0 && line.quantity <= 999);
     if (normalizedLines.length !== lines.length) return NextResponse.json({ error: "Chaque ligne doit contenir un produit et une quantité valide." }, { status: 400 });
     const ids = [...new Set(normalizedLines.map((line) => line.productId))];
-    const { data: products, error: productError } = await supabase.from("products").select("id,name,price,product_type,tenant_id,deleted_at").in("id", ids).eq("tenant_id", tenantId).is("deleted_at", null).limit(50);
+    const { data: products, error: productError } = await supabase.from("products").select("id,name,price,product_type,stock_family,tenant_id,deleted_at").in("id", ids).eq("tenant_id", tenantId).is("deleted_at", null).limit(50);
     if (productError || !products || products.length !== ids.length) return NextResponse.json({ error: "Un ou plusieurs produits ne sont pas disponibles dans cet établissement." }, { status: 400 });
+    if (company.activity_type === "BUVETTE" && products.some((p) => p.stock_family === "KITCHEN")) {
+      return NextResponse.json({ error: "L'activité Buvette ne propose que des boissons. Les plats de cuisine ne sont pas disponibles." }, { status: 400 });
+    }
     if (customerId) {
       const { data: customer } = await supabase.from("customers").select("id").eq("id", customerId).eq("tenant_id", tenantId).maybeSingle();
       if (!customer) return NextResponse.json({ error: "Client non autorisé dans cet établissement." }, { status: 403 });
     }
     const productMap = new Map(products.map((product) => [product.id, product]));
-    const orderLines = normalizedLines.map((line) => { const product = productMap.get(line.productId)!; const inferredUnit = String(product.product_type ?? "").toUpperCase().includes("FOOD") || String(product.product_type ?? "").toUpperCase().includes("MEAL") ? "MEAL" : "BEVERAGE"; const fulfillmentUnit = line.fulfillmentUnit ?? inferredUnit; return { tenant_id: tenantId, product_id: product.id, product_name: product.name, quantity: line.quantity, unit_price: product.price, total_price: product.price * line.quantity, fulfillment_unit: fulfillmentUnit, accompaniment: fulfillmentUnit === "MEAL" ? line.accompaniment : "Aucun", preparation_status: "PENDING" }; });
+    const orderLines = normalizedLines.map((line) => { const product = productMap.get(line.productId)!; const inferredUnit = String(product.product_type ?? "").toUpperCase().includes("FOOD") || String(product.product_type ?? "").toUpperCase().includes("MEAL") ? "MEAL" : "BEVERAGE"; const fulfillmentUnit = company.activity_type === "BUVETTE" ? "BEVERAGE" : (line.fulfillmentUnit ?? inferredUnit); return { tenant_id: tenantId, product_id: product.id, product_name: product.name, quantity: line.quantity, unit_price: product.price, total_price: product.price * line.quantity, fulfillment_unit: fulfillmentUnit, accompaniment: fulfillmentUnit === "MEAL" ? line.accompaniment : "Aucun", preparation_status: "PENDING" }; });
     const totalAmount = orderLines.reduce((total, line) => total + line.total_price, 0);
     const orderNumber = `DM-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}-${randomUUID().slice(0, 8).toUpperCase()}`;
-    const { data: order, error: orderError } = await supabase.from("orders").insert({ tenant_id: tenantId, order_number: orderNumber, table_label: effectiveTableLabel, location_label: effectiveLocationLabel, customer_id: customerId, server_user_id: context.employeeId && context.role === "SERVEUR" ? user.id : null, server_name: user.user_metadata?.first_name ?? null, total_amount: totalAmount, currency: "XOF" }).select("id,tenant_id,order_number,table_label,location_label,customer_id,server_user_id,server_name,status,total_amount,currency,created_at").single();
+    const { data: order, error: orderError } = await supabase.from("orders").insert({ tenant_id: tenantId, order_number: orderNumber, table_label: effectiveTableLabel, location_label: effectiveLocationLabel, customer_id: customerId, server_user_id: context.employeeId && (context.role === "SERVEUR" || context.role === "SERVEUSE") ? user.id : null, server_name: user.user_metadata?.first_name ?? null, total_amount: totalAmount, currency: "XOF" }).select("id,tenant_id,order_number,table_label,location_label,customer_id,server_user_id,server_name,status,total_amount,currency,created_at").single();
     if (orderError || !order) return NextResponse.json({ error: "Impossible de créer la commande." }, { status: 400 });
     const { data: insertedLines, error: linesError } = await supabase.from("order_items").insert(orderLines.map((line) => ({ ...line, order_id: order.id }))).select("id,product_id,product_name,quantity,unit_price,total_price,fulfillment_unit,accompaniment");
     if (linesError) { await supabase.from("orders").delete().eq("id", order.id).eq("tenant_id", tenantId); return NextResponse.json({ error: "Impossible d’enregistrer les lignes de commande." }, { status: 400 }); }

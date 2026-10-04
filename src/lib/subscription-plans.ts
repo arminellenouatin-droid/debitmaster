@@ -77,16 +77,25 @@ export const referenceActivityConfigs: Record<SubscriptionActivityCode, Activity
     annualDiscountRate: 0.25,
     isAvailable: true,
     normalFeatures: [
-      "Prise de commande tactile mobile-first",
-      "Gestion stricte des stocks de boissons & casiers",
-      "Traçabilité anti-coulage en temps réel",
-      "Encaissement MTN MoMo & espèces sécurisé",
-      "Gestion des serveuses et clôtures de caisse",
+      "Vente de boissons uniquement (anti-coulage & casiers)",
+      "Jusqu'à 5 serveuses connectées",
+      "1 seul magasin de stock de boissons",
+      "Jusqu'à 15 tables de service",
+      "Commandes serveuse -> préparation gérant -> livraison",
+      "Points et versements journaliers des serveuses au gérant",
+      "Stocks d'alerte et bons d'approvisionnement (visa promoteur)",
+      "Contrôle journalier des stocks et inventaires physiques",
     ],
     specialFeatures: [
-      "Fonctionnalités avancées de gestion à définir",
+      "Serveuses illimitées",
+      "Tables de service illimitées",
+      "Magasins de stock illimités",
+      "Commandes autonomes par QR Code sur table",
+      "Module & sessions de Comptabilité",
+      "Module Trésorerie et Immobilisations",
     ],
-    specialDescription: "Option spéciale Buvette : fonctionnalités de gestion avancées.",
+    specialDescription:
+      "Option spéciale Buvette : serveuses, tables et magasins illimités, commande autonome par QR Code sur table, sessions de comptabilité et trésorerie/immobilisations.",
   },
   BAR_RESTAURANT: {
     code: "BAR_RESTAURANT",
@@ -468,4 +477,38 @@ export function companyHasPowerFeatures(
   if (activity === "BAR_RESTAURANT" && companyHasSpecialOption(company)) return true;
   return false;
 }
+
+export interface BuvetteLimits {
+  maxServeuses: number | null; // 5 pour option normale, null (illimité) pour option spéciale
+  maxTables: number | null; // 15 pour option normale, null (illimité) pour option spéciale
+  maxStores: number | null; // 1 pour option normale, null (illimité) pour option spéciale
+  canUseQrCodeMenu: boolean; // false pour normale, true pour spéciale
+  canUseAccounting: boolean; // false pour normale, true pour spéciale
+  canUseTreasuryAssets: boolean; // false pour normale, true pour spéciale
+}
+
+export function getBuvetteLimits(
+  company: { activity_type?: string | null; subscription_plan?: string | null; has_special_option?: boolean | null } | null | undefined
+): BuvetteLimits {
+  const isSpecial = companyHasSpecialOption(company);
+  if (isSpecial) {
+    return {
+      maxServeuses: null,
+      maxTables: null,
+      maxStores: null,
+      canUseQrCodeMenu: true,
+      canUseAccounting: true,
+      canUseTreasuryAssets: true,
+    };
+  }
+  return {
+    maxServeuses: 5,
+    maxTables: 15,
+    maxStores: 1,
+    canUseQrCodeMenu: false,
+    canUseAccounting: false,
+    canUseTreasuryAssets: false,
+  };
+}
+
 
