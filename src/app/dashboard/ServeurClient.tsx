@@ -170,6 +170,8 @@ export function ServeurClient({
   const [selectedType, setSelectedType] = useState<"BEVERAGE" | "MEAL">("BEVERAGE");
   const [productSearch, setProductSearch] = useState("");
   const [productPickerOpen, setProductPickerOpen] = useState(false);
+  const [pendingProduct, setPendingProduct] = useState<Product | null>(null);
+  const [pendingQty, setPendingQty] = useState(1);
   const [pendingMeal, setPendingMeal] = useState<Product | null>(null);
   const [pendingAccompaniment, setPendingAccompaniment] = useState<(typeof accompaniments)[number]>("Aucun");
   const [selectedProduct, setSelectedProduct] = useState("");
@@ -312,26 +314,49 @@ export function ServeurClient({
   }, [data, orderSearch]);
 
   // Fast direct quantity increment / decrement helper for staff on touch screens
-  const addProduct = (product: Product, mealAccompaniment = "Aucun") => {
+  const addProduct = (product: Product, qty = 1, mealAccompaniment = "Aucun") => {
+    const validQty = Math.max(1, Math.floor(qty));
     setCart((current) => {
       const existing = current.find((line) => line.product.id === product.id && line.accompaniment === mealAccompaniment);
       if (existing) {
-        return current.map((line) => line === existing ? { ...line, quantity: line.quantity + 1 } : line);
+        return current.map((line) => (line === existing ? { ...line, quantity: line.quantity + validQty } : line));
       }
-      return [...current, { product, quantity: 1, fulfillmentUnit: selectedType, accompaniment: selectedType === "MEAL" ? mealAccompaniment : "Aucun" }];
+      return [
+        ...current,
+        {
+          product,
+          quantity: validQty,
+          fulfillmentUnit: selectedType,
+          accompaniment: selectedType === "MEAL" ? mealAccompaniment : "Aucun",
+        },
+      ];
     });
+    setPendingProduct(null);
     setPendingMeal(null);
     setPendingAccompaniment("Aucun");
+    setPendingQty(1);
     setProductPickerOpen(false);
+    setNotice(`✓ ${validQty} × ${product.name} ajouté(s) au panier.`);
   };
 
   const selectProduct = (product: Product) => {
-    if (selectedType === "MEAL") {
-      setPendingMeal(product);
-      setPendingAccompaniment("Aucun");
+    setPendingProduct(product);
+    setPendingQty(1);
+    setPendingAccompaniment("Aucun");
+  };
+
+  const updateLineQty = (productId: string, mealAccompaniment = "Aucun", newQty: number) => {
+    if (newQty <= 0) {
+      removeLine(productId, mealAccompaniment);
       return;
     }
-    addProduct(product);
+    setCart((current) =>
+      current.map((line) =>
+        line.product.id === productId && (line.accompaniment ?? "Aucun") === mealAccompaniment
+          ? { ...line, quantity: newQty }
+          : line
+      )
+    );
   };
 
   const decProduct = (productId: string) => {
@@ -349,7 +374,8 @@ export function ServeurClient({
     return cart.filter((line) => line.product.id === productId).reduce((sum, line) => sum + line.quantity, 0);
   };
 
-  const removeLine = (productId: string, mealAccompaniment = "Aucun") => setCart((current) => current.filter((line) => line.product.id !== productId || line.accompaniment !== mealAccompaniment));
+  const removeLine = (productId: string, mealAccompaniment = "Aucun") =>
+    setCart((current) => current.filter((line) => line.product.id !== productId || line.accompaniment !== mealAccompaniment));
 
   const placeOrder = async () => {
     if (!cart.length) return setNotice("Ajoutez au moins un article à la commande.");
@@ -863,21 +889,161 @@ export function ServeurClient({
                   )}
                 </div>
 
-                {pendingMeal && (
-                  <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4" role="dialog" aria-label={`Accompagnement pour ${pendingMeal.name}`}>
-                    <p className="text-sm font-black text-slate-900">{pendingMeal.name}</p>
-                    <label className="mt-3 block text-xs font-black text-slate-700">Sélectionner un accompagnement ou aucun
-                      <select value={pendingAccompaniment} onChange={(event) => setPendingAccompaniment(event.target.value as (typeof accompaniments)[number])} className="mt-2 h-11 w-full rounded-lg border border-emerald-200 bg-white px-3 text-sm font-bold text-slate-800">
-                        {accompaniments.map((item) => <option key={item} value={item}>{item}</option>)}
-                      </select>
-                    </label>
-                    <button type="button" onClick={() => addProduct(pendingMeal, pendingAccompaniment)} className="mt-3 min-h-11 w-full rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-black text-white hover:bg-emerald-600">
-                      Ajouter le repas
-                    </button>
+                {/* Modal Tactile de Sélection de Quantité pour Boissons & Repas */}
+                {pendingProduct && (
+                  <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label={`Quantité pour ${pendingProduct.name}`}
+                  >
+                    <div className="w-full max-w-md rounded-2xl bg-white p-5 sm:p-6 shadow-2xl border border-slate-200">
+                      {/* En-tête : Nom du produit & Type */}
+                      <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-100 text-amber-700 shrink-0">
+                            {selectedType === "BEVERAGE" ? <Wine className="h-6 w-6" /> : <UtensilsCrossed className="h-6 w-6" />}
+                          </div>
+                          <div>
+                            <span className="text-[10px] font-black uppercase tracking-wider text-amber-600">
+                              {selectedType === "BEVERAGE" ? "Boisson / Bar" : "Plat Cuisine"}
+                            </span>
+                            <h3 className="text-lg font-black text-slate-900 leading-snug">{pendingProduct.name}</h3>
+                            <p className="text-xs font-bold text-slate-500">{money(pendingProduct.price)} l’unité</p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setPendingProduct(null)}
+                          className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
+                        >
+                          <X className="h-5 w-5" />
+                        </button>
+                      </div>
+
+                      {/* Si plat : Sélecteur d'accompagnement */}
+                      {selectedType === "MEAL" && (
+                        <div className="mt-4">
+                          <label className="block text-xs font-black text-slate-700">
+                            Accompagnement :
+                            <select
+                              value={pendingAccompaniment}
+                              onChange={(e) => setPendingAccompaniment(e.target.value as (typeof accompaniments)[number])}
+                              className="mt-1.5 h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-bold text-slate-800 focus:border-emerald-600 focus:bg-white focus:outline-none"
+                            >
+                              {accompaniments.map((acc) => (
+                                <option key={acc} value={acc}>
+                                  {acc}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        </div>
+                      )}
+
+                      {/* Sélecteur de Quantité Tactile */}
+                      <div className="mt-5 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <label className="text-xs font-black uppercase tracking-wider text-slate-700">
+                            Quantité à ajouter :
+                          </label>
+                          <span className="text-xs font-bold text-slate-400">
+                            {selectedType === "BEVERAGE" ? "Nombre de boissons" : "Nombre de portions"}
+                          </span>
+                        </div>
+
+                        {/* Stepper tactile + Saisie manuelle */}
+                        <div className="flex items-center justify-center gap-4 bg-slate-50 rounded-2xl p-3 border border-slate-100">
+                          <button
+                            type="button"
+                            onClick={() => setPendingQty((q) => Math.max(1, q - 1))}
+                            disabled={pendingQty <= 1}
+                            className="flex h-12 w-12 items-center justify-center rounded-xl bg-white text-xl font-black text-slate-800 shadow-sm border border-slate-200 active:scale-95 disabled:opacity-30 disabled:pointer-events-none transition"
+                            aria-label="Diminuer la quantité"
+                          >
+                            <Minus className="h-5 w-5" />
+                          </button>
+
+                          <div className="flex flex-col items-center">
+                            <input
+                              type="number"
+                              min="1"
+                              max="999"
+                              value={pendingQty}
+                              onChange={(e) => {
+                                const val = parseInt(e.target.value, 10);
+                                setPendingQty(isNaN(val) || val < 1 ? 1 : val);
+                              }}
+                              className="w-24 text-center text-3xl font-black text-slate-900 bg-transparent focus:outline-none"
+                              aria-label="Quantité"
+                            />
+                            <span className="text-[11px] font-bold text-slate-400">
+                              {selectedType === "BEVERAGE" ? "bouteille(s)" : "portion(s)"}
+                            </span>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => setPendingQty((q) => q + 1)}
+                            className="flex h-12 w-12 items-center justify-center rounded-xl bg-white text-xl font-black text-slate-800 shadow-sm border border-slate-200 active:scale-95 transition"
+                            aria-label="Augmenter la quantité"
+                          >
+                            <Plus className="h-5 w-5" />
+                          </button>
+                        </div>
+
+                        {/* Raccourcis de quantité rapide pour le service en buvette/bar */}
+                        <div>
+                          <p className="text-[11px] font-bold text-slate-500 mb-1.5">Raccourcis rapides :</p>
+                          <div className="grid grid-cols-4 sm:grid-cols-8 gap-1.5">
+                            {[1, 2, 3, 4, 5, 6, 10, 12, 24].map((preset) => (
+                              <button
+                                key={preset}
+                                type="button"
+                                onClick={() => setPendingQty(preset)}
+                                className={`py-2 rounded-xl text-xs font-black transition active:scale-95 ${
+                                  pendingQty === preset
+                                    ? "bg-emerald-700 text-white shadow-sm"
+                                    : "bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200/60"
+                                }`}
+                              >
+                                {preset}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Calcul du sous-total en direct */}
+                        <div className="rounded-xl bg-emerald-50/80 border border-emerald-100 p-3 flex items-center justify-between">
+                          <span className="text-xs font-bold text-emerald-900">Total pour cet article :</span>
+                          <span className="text-lg font-black text-emerald-700">
+                            {money(pendingProduct.price * pendingQty)}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Boutons d'Action */}
+                      <div className="mt-6 flex gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setPendingProduct(null)}
+                          className="flex-1 py-3 rounded-xl border border-slate-200 text-xs font-black text-slate-700 hover:bg-slate-50 active:scale-95 transition"
+                        >
+                          Annuler
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => addProduct(pendingProduct, pendingQty, pendingAccompaniment)}
+                          className="flex-2 py-3 px-4 rounded-xl bg-emerald-700 text-xs font-black text-white hover:bg-emerald-600 active:scale-95 transition shadow-md shadow-emerald-900/20"
+                        >
+                          Ajouter {pendingQty} au panier →
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 )}
 
-                {productPickerOpen && !pendingMeal && (
+                {productPickerOpen && (
                   <div className="mt-3 max-h-72 overflow-y-auto rounded-xl border border-slate-200 bg-white p-2 shadow-lg" role="listbox" aria-label={selectedType === "BEVERAGE" ? "Boissons disponibles" : "Repas disponibles"}>
                     {filteredProducts.map((product) => {
                       const qty = getProductQty(product.id);
@@ -907,21 +1073,54 @@ export function ServeurClient({
                   </span>
                 </div>
 
-                {/* Items in Cart */}
+                {/* Items in Cart avec ajustement direct de la quantité */}
                 <div className="mt-4 max-h-[300px] overflow-y-auto divide-y divide-slate-100">
                   {cart.map((line) => (
                     <div key={`${line.product.id}-${line.accompaniment ?? "Aucun"}`} className="flex items-center justify-between py-3 text-sm">
-                      <div className="pr-2">
-                        <p className="font-bold text-slate-900">{line.product.name}</p>
+                      <div className="pr-2 min-w-0 flex-1">
+                        <p className="font-bold text-slate-900 truncate">{line.product.name}</p>
                         <p className="text-xs text-slate-500">
-                          {line.quantity} × {money(line.product.price)} ·{" "}
+                          {money(line.product.price)} l’unité ·{" "}
                           <span className="text-amber-700 font-semibold">
                             {line.fulfillmentUnit === "MEAL" ? `Cuisine · ${line.accompaniment ?? "Aucun"}` : "Bar/Comptoir"}
                           </span>
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="font-black text-slate-900">{money(line.product.price * line.quantity)}</span>
+                        {/* Stepper tactile dans le panier */}
+                        <div className="flex items-center rounded-lg border border-slate-200 bg-slate-50 p-0.5">
+                          <button
+                            type="button"
+                            onClick={() => updateLineQty(line.product.id, line.accompaniment ?? "Aucun", line.quantity - 1)}
+                            className="flex h-7 w-7 items-center justify-center rounded text-xs font-black text-slate-700 hover:bg-white active:scale-95 transition"
+                            aria-label="Diminuer"
+                          >
+                            <Minus className="h-3.5 w-3.5" />
+                          </button>
+                          <input
+                            type="number"
+                            min="1"
+                            max="999"
+                            value={line.quantity}
+                            onChange={(e) => {
+                              const val = parseInt(e.target.value, 10);
+                              updateLineQty(line.product.id, line.accompaniment ?? "Aucun", isNaN(val) || val < 1 ? 1 : val);
+                            }}
+                            className="w-9 text-center text-xs font-black text-slate-900 bg-transparent focus:outline-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => updateLineQty(line.product.id, line.accompaniment ?? "Aucun", line.quantity + 1)}
+                            className="flex h-7 w-7 items-center justify-center rounded text-xs font-black text-slate-700 hover:bg-white active:scale-95 transition"
+                            aria-label="Augmenter"
+                          >
+                            <Plus className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+
+                        <span className="font-black text-slate-900 text-xs min-w-[70px] text-right">
+                          {money(line.product.price * line.quantity)}
+                        </span>
                         <button
                           type="button"
                           onClick={() => removeLine(line.product.id, line.accompaniment)}
