@@ -36,20 +36,33 @@ function playNotificationChime() {
     const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
     if (!AudioContextClass) return;
     const ctx = new AudioContextClass();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = "sine";
-    osc.connect(gain);
-    gain.connect(ctx.destination);
     const now = ctx.currentTime;
-    osc.frequency.setValueAtTime(587.33, now); // D5
-    osc.frequency.exponentialRampToValueAtTime(880, now + 0.12); // A5
-    gain.gain.setValueAtTime(0.12, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
-    osc.start(now);
-    osc.stop(now + 0.35);
+    // Harmonic melodic chime (D5 -> G5 -> B5) high-clarity notification
+    const notes = [587.33, 783.99, 987.77];
+    notes.forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+      gain.gain.setValueAtTime(0.18, now + idx * 0.08);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.35);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now + idx * 0.08);
+      osc.stop(now + idx * 0.08 + 0.38);
+    });
   } catch {
     // Audio autoplay restrictions or unsupported
+  }
+}
+
+function triggerNotificationVibration() {
+  try {
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+      navigator.vibrate([250, 100, 250, 100, 250]);
+    }
+  } catch {
+    // Unsupported
   }
 }
 
@@ -114,9 +127,30 @@ export function DashboardHeader({
       if (!response.ok) throw new Error(result.error ?? "Impossible de charger les notifications.");
       const list = result.notifications ?? [];
       
-      // Chime on new incoming notifications
+      // Chime, vibrate & desktop notify on new incoming notifications
       if (previousUnreadCount.current !== null && list.length > previousUnreadCount.current) {
         playNotificationChime();
+        triggerNotificationVibration();
+
+        const newest = list[0];
+        if (newest && typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
+          try {
+            const notif = new window.Notification(newest.subject || "Nouvelle notification", {
+              body: newest.body,
+              icon: "/favicon.ico",
+              badge: "/favicon.ico",
+              data: { actionPath: newest.action_path },
+            });
+            notif.onclick = () => {
+              window.focus();
+              if (newest.action_path) {
+                window.location.href = newest.action_path;
+              }
+            };
+          } catch {
+            // Ignored
+          }
+        }
       }
       previousUnreadCount.current = list.length;
       

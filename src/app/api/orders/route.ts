@@ -88,10 +88,28 @@ export async function POST(request: Request) {
     const orderLines = normalizedLines.map((line) => { const product = productMap.get(line.productId)!; const inferredUnit = String(product.product_type ?? "").toUpperCase().includes("FOOD") || String(product.product_type ?? "").toUpperCase().includes("MEAL") ? "MEAL" : "BEVERAGE"; const fulfillmentUnit = company.activity_type === "BUVETTE" ? "BEVERAGE" : (line.fulfillmentUnit ?? inferredUnit); return { tenant_id: tenantId, product_id: product.id, product_name: product.name, quantity: line.quantity, unit_price: product.price, total_price: product.price * line.quantity, fulfillment_unit: fulfillmentUnit, accompaniment: fulfillmentUnit === "MEAL" ? line.accompaniment : "Aucun", preparation_status: "PENDING" }; });
     const totalAmount = orderLines.reduce((total, line) => total + line.total_price, 0);
     const orderNumber = `DM-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}-${randomUUID().slice(0, 8).toUpperCase()}`;
-    const { data: order, error: orderError } = await supabase.from("orders").insert({ tenant_id: tenantId, order_number: orderNumber, table_label: effectiveTableLabel, location_label: effectiveLocationLabel, customer_id: customerId, server_user_id: context.employeeId && (context.role === "SERVEUR" || context.role === "SERVEUSE") ? user.id : null, server_name: user.user_metadata?.first_name ?? null, total_amount: totalAmount, currency: "XOF" }).select("id,tenant_id,order_number,table_label,location_label,customer_id,server_user_id,server_name,status,total_amount,currency,created_at").single();
-    if (orderError || !order) return NextResponse.json({ error: "Impossible de créer la commande." }, { status: 400 });
-    const { data: insertedLines, error: linesError } = await supabase.from("order_items").insert(orderLines.map((line) => ({ ...line, order_id: order.id }))).select("id,product_id,product_name,quantity,unit_price,total_price,fulfillment_unit,accompaniment");
-    if (linesError) { await supabase.from("orders").delete().eq("id", order.id).eq("tenant_id", tenantId); return NextResponse.json({ error: "Impossible d’enregistrer les lignes de commande." }, { status: 400 }); }
+    const writeClient = createSupabaseAdminClient();
+    const { data: order, error: orderError } = await writeClient.from("orders").insert({
+      tenant_id: tenantId,
+      order_number: orderNumber,
+      table_label: effectiveTableLabel,
+      location_label: effectiveLocationLabel,
+      customer_id: customerId,
+      server_user_id: context.employeeId && (context.role === "SERVEUR" || context.role === "SERVEUSE") ? user.id : null,
+      server_name: user.user_metadata?.first_name ?? null,
+      total_amount: totalAmount,
+      currency: "XOF",
+    }).select("id,tenant_id,order_number,table_label,location_label,customer_id,server_user_id,server_name,status,total_amount,currency,created_at").single();
+    if (orderError || !order) {
+      console.error("[orders.POST] insert failed:", orderError?.message);
+      return NextResponse.json({ error: "Impossible de créer la commande." }, { status: 400 });
+    }
+    const { data: insertedLines, error: linesError } = await writeClient.from("order_items").insert(orderLines.map((line) => ({ ...line, order_id: order.id }))).select("id,product_id,product_name,quantity,unit_price,total_price,fulfillment_unit,accompaniment");
+    if (linesError) {
+      console.error("[orders.POST] items insert failed:", linesError.message);
+      await writeClient.from("orders").delete().eq("id", order.id).eq("tenant_id", tenantId);
+      return NextResponse.json({ error: "Impossible d’enregistrer les lignes de commande." }, { status: 400 });
+    }
     const units = new Set((orderLines.map((line) => line.fulfillment_unit)));
     const operatorPositions = [...units].flatMap((unit) => unit === "MEAL" ? ["CHEF_CUISINE", "CUISINIER"] : ["GERANT"]);
     await emitTenantNotification({
@@ -138,10 +156,11 @@ export async function PATCH(request: Request) {
     if (!permission) return NextResponse.json({ error: "Transition de commande non autorisée." }, { status: 400 });
     const canTransition = permission === "orders.receive" ? can(context, "orders.receive") || can(context, "orders.handoff") : can(context, permission);
     if (!canTransition) return NextResponse.json({ error: "Permission insuffisante pour modifier cette étape de commande." }, { status: 403 });
+    const writeClient = createSupabaseAdminClient();
     const orderItemId = typeof body.orderItemId === "string" ? body.orderItemId : "";
     if (!orderItemId && (status === "IN_PREPARATION" || status === "READY")) {
       const fromStatuses = status === "READY" ? ["PENDING", "IN_PREPARATION"] : ["PENDING"];
-      const { data: preparedItems, error: preparationError } = await supabase.from("order_items").update({ preparation_status: status, prepared_at: status === "READY" ? new Date().toISOString() : null }).eq("order_id", orderId).eq("tenant_id", tenantId).in("preparation_status", fromStatuses).select("id");
+      const { data: preparedItems, error: preparationError } = await writeClient.from("order_items").update({ preparation_status: status, prepared_at: status === "READY" ? new Date().toISOString() : null }).eq("order_id", orderId).eq("tenant_id", tenantId).in("preparation_status", fromStatuses).select("id");
       if (preparationError || !preparedItems?.length) return NextResponse.json({ error: "Impossible de synchroniser la préparation des articles. Vérifiez les permissions de préparation et l’état actuel de la commande." }, { status: 409 });
     }
     if (status === "HANDED_OFF" && !orderItemId) {
@@ -158,19 +177,19 @@ export async function PATCH(request: Request) {
     }
     if (orderItemId && (status === "IN_PREPARATION" || status === "READY")) {
       if (!can(context, "orders.prepare")) return NextResponse.json({ error: "Seul le Gérant ou la cuisine peut préparer cet article." }, { status: 403 });
-      const { data: item, error: itemError } = await supabase.from("order_items").update({ preparation_status: status, prepared_at: status === "READY" ? new Date().toISOString() : null }).eq("id", orderItemId).eq("order_id", orderId).eq("tenant_id", tenantId).in("preparation_status", status === "IN_PREPARATION" ? ["PENDING"] : ["IN_PREPARATION"]).select("id,order_id,preparation_status,fulfillment_unit,prepared_at").single();
+      const { data: item, error: itemError } = await writeClient.from("order_items").update({ preparation_status: status, prepared_at: status === "READY" ? new Date().toISOString() : null }).eq("id", orderItemId).eq("order_id", orderId).eq("tenant_id", tenantId).in("preparation_status", status === "IN_PREPARATION" ? ["PENDING"] : ["IN_PREPARATION"]).select("id,order_id,preparation_status,fulfillment_unit,prepared_at").single();
       if (itemError || !item) return NextResponse.json({ error: "Cet article a déjà changé d’état ou n’existe pas." }, { status: 409 });
       return NextResponse.json({ item });
     }
     if (orderItemId && status === "DELIVERED") {
       if (current.server_user_id !== user.id) return NextResponse.json({ error: "Cette commande n’est pas attribuée à votre service." }, { status: 403 });
-      const { data: item, error: itemError } = await supabase.from("order_items").update({ preparation_status: "DELIVERED", delivered_at: new Date().toISOString() }).eq("id", orderItemId).eq("order_id", orderId).eq("tenant_id", tenantId).eq("preparation_status", "RECEIVED").select("id,order_id,preparation_status,delivered_at").single();
+      const { data: item, error: itemError } = await writeClient.from("order_items").update({ preparation_status: "DELIVERED", delivered_at: new Date().toISOString() }).eq("id", orderItemId).eq("order_id", orderId).eq("tenant_id", tenantId).eq("preparation_status", "RECEIVED").select("id,order_id,preparation_status,delivered_at").single();
       if (itemError || !item) return NextResponse.json({ error: "Cet article n’est pas encore reçu ou a déjà été livré." }, { status: 409 });
       const { data: refreshed } = await supabase.rpc("refresh_order_status_from_items", { p_order_id: orderId });
       return NextResponse.json({ item, order: refreshed });
     }
     const auditFields = status === "DELIVERED" ? { delivered_by_user_id: user.id, delivered_at: new Date().toISOString() } : {};
-    const { data, error } = await supabase.from("orders").update({ status, ...auditFields, updated_at: new Date().toISOString() }).eq("id", orderId).eq("tenant_id", tenantId).eq("status", current.status).select("id,tenant_id,order_number,table_label,customer_id,server_user_id,server_name,received_by_user_id,received_at,delivered_by_user_id,delivered_at,status,total_amount,currency,created_at,updated_at").single();
+    const { data, error } = await writeClient.from("orders").update({ status, ...auditFields, updated_at: new Date().toISOString() }).eq("id", orderId).eq("tenant_id", tenantId).eq("status", current.status).select("id,tenant_id,order_number,table_label,customer_id,server_user_id,server_name,received_by_user_id,received_at,delivered_by_user_id,delivered_at,status,total_amount,currency,created_at,updated_at").single();
     if (error || !data) return NextResponse.json({ error: "La commande a changé entre-temps. Actualisez la file cuisine." }, { status: 409 });
     if (data.server_user_id && ["READY", "HANDED_OFF", "DELIVERED"].includes(status)) {
       const nextAction = status === "READY" ? "orders.receive" : status === "HANDED_OFF" ? "orders.deliver" : null;

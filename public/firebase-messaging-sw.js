@@ -25,8 +25,9 @@ messaging.onBackgroundMessage((payload) => {
     data: {
       actionPath: payload.data?.actionPath || payload.data?.url || "/dashboard",
     },
-    vibrate: [200, 100, 200],
+    vibrate: [300, 150, 300, 150, 300],
     requireInteraction: true,
+    silent: false,
   };
 
   return self.registration.showNotification(notificationTitle, notificationOptions);

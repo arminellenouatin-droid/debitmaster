@@ -1,6 +1,6 @@
-// DebitManager notifications: badge, destinations profondes et action_allowed calculé côté serveur.
 import { NextResponse } from "next/server";
 import { getAuthorizationContext, can } from "@/lib/authorization";
+import { emitTenantNotification } from "@/lib/notifications";
 
 export async function GET(request: Request) {
   try {
@@ -8,6 +8,42 @@ export async function GET(request: Request) {
     if (!context.user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
     const tenantId = new URL(request.url).searchParams.get("tenantId") ?? "";
     if (!tenantId || !context.tenantIds.includes(tenantId)) return NextResponse.json({ error: "Établissement non autorisé." }, { status: 403 });
+
+    // Rappel quotidien d'échéance si <= 10 jours restants pour le promoteur
+    const { data: company } = await context.supabase
+      .from("companies")
+      .select("id, name, owner_user_id, status, trial_ends_at, subscription_expires_at")
+      .eq("id", tenantId)
+      .is("deleted_at", null)
+      .maybeSingle();
+
+    if (company?.owner_user_id) {
+      const cutoff = company.subscription_expires_at || company.trial_ends_at;
+      if (cutoff) {
+        const diffMs = new Date(cutoff).getTime() - Date.now();
+        const daysRemaining = Math.ceil(diffMs / (1000 * 3600 * 24));
+        if (daysRemaining <= 10 && daysRemaining >= 0 && !["SUSPENDED", "CANCELLED", "EXPIRED"].includes(String(company.status).toUpperCase())) {
+          const todayDate = new Date().toISOString().slice(0, 10);
+          const expiryDateFormatted = new Date(cutoff).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+          const subject = daysRemaining === 0
+            ? "⚠️ Votre abonnement expire aujourd'hui"
+            : `⚠️ Échéance abonnement : reste ${daysRemaining} jour${daysRemaining > 1 ? "s" : ""}`;
+          const body = `Rappel : L’abonnement de votre établissement « ${company.name} » arrive à expiration le ${expiryDateFormatted}. Renouvelez-le dès maintenant pour éviter toute coupure d'activité.`;
+
+          await emitTenantNotification({
+            tenantId,
+            actorUserId: null,
+            operatorUserIds: [company.owner_user_id],
+            subject,
+            body,
+            eventType: "SUBSCRIPTION_EXPIRY_WARNING",
+            actionPath: "/dashboard/subscription",
+            dedupeKey: `sub-exp-warning:${tenantId}:${todayDate}`,
+            metadata: { daysRemaining, cutoff },
+          });
+        }
+      }
+    }
     const { data, error } = await context.supabase
       .from("internal_messages")
       .select("id,subject,body,created_at,read_at,event_type,entity_id,action_path,action_permission,operator_user_id,metadata")

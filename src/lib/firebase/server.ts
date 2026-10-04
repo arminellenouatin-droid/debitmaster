@@ -120,6 +120,7 @@ async function sendFcmV1Message(projectId: string, accessToken: string, token: s
           badge: "/favicon.ico",
           requireInteraction: true,
           tag: payload.tag || undefined,
+          vibrate: [250, 100, 250, 100, 250],
           data: {
             actionPath: payload.actionPath,
             url: payload.actionPath,
