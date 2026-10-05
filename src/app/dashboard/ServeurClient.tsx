@@ -1037,26 +1037,6 @@ export function ServeurClient({
                         </button>
                       </div>
 
-                      {/* Si plat : Sélecteur d'accompagnement */}
-                      {selectedType === "MEAL" && (
-                        <div className="mt-4">
-                          <label className="block text-xs font-black text-slate-700">
-                            Accompagnement :
-                            <select
-                              value={pendingAccompaniment}
-                              onChange={(e) => setPendingAccompaniment(e.target.value as (typeof accompaniments)[number])}
-                              className="mt-1.5 h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-bold text-slate-800 focus:border-emerald-600 focus:bg-white focus:outline-none"
-                            >
-                              {accompaniments.map((acc) => (
-                                <option key={acc} value={acc}>
-                                  {acc}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-                        </div>
-                      )}
-
                       {/* Sélecteur de Quantité Tactile */}
                       <div className="mt-5 space-y-3">
                         <div className="flex items-center justify-between">
@@ -1128,6 +1108,26 @@ export function ServeurClient({
                             ))}
                           </div>
                         </div>
+
+                        {/* Si plat : Sélecteur d'accompagnement */}
+                        {selectedType === "MEAL" && (
+                          <div>
+                            <label className="block text-xs font-black text-slate-700">
+                              Accompagnement :
+                              <select
+                                value={pendingAccompaniment}
+                                onChange={(e) => setPendingAccompaniment(e.target.value as (typeof accompaniments)[number])}
+                                className="mt-1.5 h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-bold text-slate-800 focus:border-emerald-600 focus:bg-white focus:outline-none"
+                              >
+                                {accompaniments.map((acc) => (
+                                  <option key={acc} value={acc}>
+                                    {acc}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                          </div>
+                        )}
 
                         {/* Calcul du sous-total en direct */}
                         <div className="rounded-xl bg-emerald-50/80 border border-emerald-100 p-3 flex items-center justify-between">
