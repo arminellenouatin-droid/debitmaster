@@ -409,11 +409,10 @@ export function CaissierClient({ tenantId, userId }: { tenantId: string; userId:
               <div className="grid grid-cols-3 gap-2">
                 {[
                   ["CASH", "💵 Espèces"],
-                  ["MTN_MOMO", "🟡 MTN MoMo"],
-                  ["MOOV_MONEY", "🔵 Moov Money"],
-                  ["ORANGE_MONEY", "🟠 Orange Money"],
+                  ["MTN_MOMO", "🟡 MTN MoMo (PawaPay)"],
+                  ["MOOV_MONEY", "🔵 Moov Money (PawaPay)"],
+                  ["ORANGE_MONEY", "🟠 Orange Money (PawaPay)"],
                   ["WAVE", "🐧 Wave"],
-                  ["CARD", "💳 Carte bancaire"],
                   ["CHECK", "📄 Chèque"],
                   ["TRANSFER", "🏦 Virement"],
                   ["CREDIT", "⏳ Crédit autorisé"],

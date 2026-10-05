@@ -152,22 +152,22 @@ export function AdminClient({ firstName }: { firstName: string }) {
   }
 
   async function initiatePayout(id: string) {
-    if (!window.confirm("Confirmez-vous l’envoi de ce reversement par MTN MoMo ?")) return;
+    if (!window.confirm("Confirmez-vous l’envoi de ce reversement Mobile Money via PawaPay ?")) return;
     setBusy(true);
     setError("");
     setSuccessMsg("");
     try {
-      const response = await fetch(`/api/admin/payouts/${id}/mtn-momo`, {
+      const response = await fetch(`/api/admin/payouts/${id}/pawapay`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ confirm: true }),
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error);
-      setSuccessMsg("Reversement MTN MoMo initié avec succès.");
+      setSuccessMsg("Reversement Mobile Money (PawaPay) initié avec succès.");
       await load();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Reversement MTN MoMo impossible");
+      setError(cause instanceof Error ? cause.message : "Reversement Mobile Money impossible");
     } finally {
       setBusy(false);
     }
@@ -177,17 +177,17 @@ export function AdminClient({ firstName }: { firstName: string }) {
     setBusy(true);
     setError("");
     try {
-      const response = await fetch(`/api/admin/payouts/${id}/mtn-momo/status`, { cache: "no-store" });
+      const response = await fetch(`/api/admin/payouts/${id}/pawapay/status`, { cache: "no-store" });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error);
       await load();
       if (result.providerStatus === "FAILED" || result.providerStatus === "REJECTED") {
-        setError("Le reversement MTN MoMo a échoué ou a été refusé par le fournisseur.");
+        setError("Le reversement PawaPay a échoué ou a été refusé par le fournisseur.");
       } else {
-        setSuccessMsg(`Statut MTN MoMo : ${result.providerStatus ?? "Vérifié"}`);
+        setSuccessMsg(`Statut PawaPay : ${result.providerStatus ?? "Vérifié"}`);
       }
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Vérification MTN MoMo impossible");
+      setError(cause instanceof Error ? cause.message : "Vérification PawaPay impossible");
     } finally {
       setBusy(false);
     }
@@ -965,7 +965,7 @@ export function AdminClient({ firstName }: { firstName: string }) {
                         onClick={() => void initiatePayout(payout.id)}
                         className="rounded-full bg-[var(--secondary)] px-3 py-2 text-xs font-black text-white"
                       >
-                        Verser via MTN MoMo
+                        Verser via PawaPay
                       </button>
                     )}
                     {payout.status === "APPROVED" && payout.payout_reference && (
@@ -974,7 +974,7 @@ export function AdminClient({ firstName }: { firstName: string }) {
                         onClick={() => void checkPayout(payout.id)}
                         className="rounded-full border border-[var(--line)] px-3 py-2 text-xs font-black text-[var(--primary)]"
                       >
-                        Vérifier MTN MoMo
+                        Vérifier PawaPay
                       </button>
                     )}
                   </div>

@@ -474,24 +474,24 @@ export function ServeurClient({
         if (!cashResponse.ok) throw new Error(cashResult.error ?? "Impossible d’enregistrer la partie espèces.");
       }
       if (mobile > 0) {
-        const mobileResponse = await fetch("/api/payments/mtn-momo", {
+        const mobileResponse = await fetch("/api/payments/pawapay", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ tenantId, orderId: paymentOrder.id, amount: mobile, mobileNumber: mobileNumber.trim() }),
         });
         const mobileResult = await mobileResponse.json();
         if (!mobileResponse.ok) throw new Error(mobileResult.error ?? "Impossible de lancer Mobile Money.");
-        if (!mobileResult.payment?.id) throw new Error("Référence de paiement MTN MoMo absente.");
-        setNotice("Demande MTN MoMo envoyée. Le client doit confirmer sur son téléphone.");
+        if (!mobileResult.payment?.id) throw new Error("Référence de paiement Mobile Money absente.");
+        setNotice("Demande Mobile Money envoyée. Le client doit confirmer sur son téléphone.");
         for (let attempt = 0; attempt < 40; attempt += 1) {
           await new Promise((resolve) => window.setTimeout(resolve, 3000));
-          const statusResponse = await fetch(`/api/payments/mtn-momo/status?paymentId=${encodeURIComponent(mobileResult.payment.id)}`, {
+          const statusResponse = await fetch(`/api/payments/pawapay/status?paymentId=${encodeURIComponent(mobileResult.payment.id)}`, {
             cache: "no-store",
           });
           const statusResult = await statusResponse.json();
-          if (!statusResponse.ok) throw new Error(statusResult.error ?? "Impossible de vérifier MTN MoMo.");
+          if (!statusResponse.ok) throw new Error(statusResult.error ?? "Impossible de vérifier le paiement Mobile Money.");
           if (statusResult.payment?.status === "SUCCEEDED") {
-            setNotice("✓ Paiement MTN MoMo confirmé ! La commande est soldée.");
+            setNotice("✓ Paiement Mobile Money confirmé ! La commande est soldée.");
             setPaymentOrder(null);
             setCashAmount("");
             setMobileAmount("");
@@ -499,9 +499,9 @@ export function ServeurClient({
             await refresh();
             return;
           }
-          if (statusResult.payment?.status === "FAILED") throw new Error("Le paiement MTN MoMo a échoué ou a été refusé.");
+          if (statusResult.payment?.status === "FAILED") throw new Error("Le paiement Mobile Money a échoué ou a été refusé.");
         }
-        setNotice("Le paiement MTN MoMo est toujours en attente. Vérifiez le téléphone du client.");
+        setNotice("Le paiement Mobile Money est en attente. Vérifiez le téléphone du client ou actualisez.");
         return;
       }
       setNotice("✓ Paiement espèces enregistré. La commande est soldée.");
@@ -1516,7 +1516,7 @@ export function ServeurClient({
 
                 {Number(mobileAmount || 0) > 0 && (
                   <div className="mt-4">
-                    <label className="block text-xs font-bold text-slate-700">Numéro MTN MoMo du client</label>
+                    <label className="block text-xs font-bold text-slate-700">Numéro Mobile Money du client (MTN, Moov, Orange...)</label>
                     <input
                       value={mobileNumber}
                       onChange={(e) => setMobileNumber(e.target.value)}

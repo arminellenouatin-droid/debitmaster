@@ -66,7 +66,7 @@ export async function POST(
     let incomingPaymentTotal = 0;
     const recordsToInsert = [];
 
-    const allowedMethods = ["CASH", "MTN_MOMO", "MOOV_MONEY", "ORANGE_MONEY", "WAVE", "CARD", "CHECK", "TRANSFER", "CREDIT"];
+    const allowedMethods = ["CASH", "PAWAPAY", "MTN_MOMO", "MOOV_MONEY", "ORANGE_MONEY", "WAVE", "CHECK", "TRANSFER", "CREDIT"];
 
     for (const p of paymentsInput) {
       const method = String(p.method || "").toUpperCase();
