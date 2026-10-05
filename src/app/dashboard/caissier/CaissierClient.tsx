@@ -24,6 +24,7 @@ type CashSession = {
 
 type InvoiceItem = {
   id: string;
+  tenant_id?: string;
   invoice_number?: string;
   total_amount: number;
   amount_paid?: number;
@@ -79,7 +80,19 @@ export function CaissierClient({ tenantId, userId }: { tenantId: string; userId:
   const [ticketZ, setTicketZ] = useState<TicketZ | null>(null);
 
   const [lastReceipt, setLastReceipt] = useState<any | null>(null);
+  const [dgiCert, setDgiCert] = useState<any | null>(null);
+  const [isDgiActive, setIsDgiActive] = useState(false);
   const [message, setMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
+
+  useEffect(() => {
+    if (!tenantId) return;
+    fetch(`/api/companies/normalized-invoicing?tenantId=${encodeURIComponent(tenantId)}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success && d.settings?.isNormalizedInvoiceEnabled) setIsDgiActive(true);
+      })
+      .catch(() => {});
+  }, [tenantId]);
 
   async function loadData() {
     setLoading(true);
@@ -154,6 +167,24 @@ export function CaissierClient({ tenantId, userId }: { tenantId: string; userId:
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Paiement échoué.");
+
+      if (isDgiActive && payingInvoice) {
+        try {
+          const certRes = await fetch("/api/dgi/certify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ tenantId: payingInvoice.tenant_id || tenantId, orderId: payingInvoice.id }),
+          });
+          const certData = await certRes.json();
+          if (certData.isNormalized && certData.certification) {
+            setDgiCert(certData.certification);
+          } else {
+            setDgiCert(null);
+          }
+        } catch {
+          setDgiCert(null);
+        }
+      }
 
       setLastReceipt(data.receipt);
       setPayingInvoice(null);
@@ -748,8 +779,20 @@ export function CaissierClient({ tenantId, userId }: { tenantId: string; userId:
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
           <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl space-y-4 text-center font-mono">
             <div className="text-3xl">✅</div>
-            <h3 className="text-base font-black uppercase text-slate-900">Reçu d'encaissement</h3>
+            <h3 className="text-base font-black uppercase text-slate-900">
+              {isDgiActive && dgiCert ? "FACTURE NORMALISÉE (DGI)" : "Reçu d'encaissement"}
+            </h3>
             <p className="text-xs text-slate-500 font-bold">{lastReceipt.invoiceNumber}</p>
+
+            {isDgiActive && dgiCert && (
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-3 text-left text-[10px] space-y-1 text-emerald-950">
+                <p className="font-black uppercase tracking-wider text-emerald-800">e-MECeF Bénin · Certifié</p>
+                <p><b>IFU Vendeur :</b> {dgiCert.ifu}</p>
+                <p><b>NIM :</b> {dgiCert.nim}</p>
+                <p><b>Code MECeF :</b> {dgiCert.codeMECeFDGI}</p>
+                <p><b>Date/Heure :</b> {dgiCert.dateTime}</p>
+              </div>
+            )}
 
             <div className="border-t border-b border-dashed border-slate-300 py-3 text-left text-xs space-y-1.5">
               <div className="flex justify-between">
@@ -765,6 +808,19 @@ export function CaissierClient({ tenantId, userId }: { tenantId: string; userId:
               </div>
             </div>
 
+            {isDgiActive && dgiCert?.qrCodeDataUrl && (
+              <div className="my-2 flex flex-col items-center justify-center space-y-1">
+                <img
+                  src={dgiCert.qrCodeDataUrl}
+                  alt="QR Code DGI"
+                  className="w-28 h-28 object-contain"
+                />
+                <p className="text-[9px] font-bold text-slate-500">
+                  Facture certifiée par la DGI Bénin (e-MECeF).
+                </p>
+              </div>
+            )}
+
             <div className="flex items-center gap-2">
               <button
                 onClick={() => window.print()}
@@ -773,7 +829,10 @@ export function CaissierClient({ tenantId, userId }: { tenantId: string; userId:
                 🖨 Imprimer reçu (58/80mm)
               </button>
               <button
-                onClick={() => setLastReceipt(null)}
+                onClick={() => {
+                  setLastReceipt(null);
+                  setDgiCert(null);
+                }}
                 className="flex-1 py-2.5 rounded-xl bg-emerald-700 text-white font-sans text-xs font-black hover:bg-emerald-800"
               >
                 Terminer

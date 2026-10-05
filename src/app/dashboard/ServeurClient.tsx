@@ -2,6 +2,7 @@
 /* Design DebitManager Serveur : Expérience Mobile-First Tactile & Accessible pour le personnel terrain. */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLiveRefresh } from "@/hooks/useLiveRefresh";
+import type { DgiCertificationResult } from "@/lib/dgi-benin";
 import {
   Wine,
   UtensilsCrossed,
@@ -188,10 +189,32 @@ export function ServeurClient({
   const [cashAmount, setCashAmount] = useState("");
   const [mobileAmount, setMobileAmount] = useState("");
   const [mobileNumber, setMobileNumber] = useState("");
+  const [settlementMode, setSettlementMode] = useState<"CASH" | "MOMO" | "MIXED">("CASH");
+  const [momoOperator, setMomoOperator] = useState<"MTN" | "MOOV" | "ORANGE" | "WAVE">("MTN");
+  const [momoPolling, setMomoPolling] = useState<{
+    active: boolean;
+    attempt: number;
+    operatorName: string;
+    phone: string;
+  } | null>(null);
+  const [ticketDgi, setTicketDgi] = useState<DgiCertificationResult | null>(null);
+  const [isDgiEnabled, setIsDgiEnabled] = useState(false);
   const [declaredCashAmount, setDeclaredCashAmount] = useState("");
   const [declaredMobileAmount, setDeclaredMobileAmount] = useState("");
   const [printingOrder, setPrintingOrder] = useState<Order | null>(null);
   const [orderSearch, setOrderSearch] = useState("");
+
+  useEffect(() => {
+    if (!tenantId) return;
+    fetch(`/api/companies/normalized-invoicing?tenantId=${encodeURIComponent(tenantId)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.settings?.isNormalizedInvoiceEnabled) {
+          setIsDgiEnabled(true);
+        }
+      })
+      .catch(() => {});
+  }, [tenantId]);
 
   const refresh = useCallback(async () => {
     const [response, financeResponse] = await Promise.all([
@@ -455,12 +478,29 @@ export function ServeurClient({
   const pay = async () => {
     if (!paymentOrder) return;
     const total = orderRemaining(paymentOrder);
-    const cash = Number(cashAmount || 0);
-    const mobile = Number(mobileAmount || 0);
-    if (![cash, mobile].every((amount) => Number.isInteger(amount) && amount >= 0) || cash + mobile !== total || (cash === 0 && mobile === 0)) {
+    let cash = Number(cashAmount || 0);
+    let mobile = Number(mobileAmount || 0);
+
+    if (settlementMode === "CASH") {
+      cash = total;
+      mobile = 0;
+    } else if (settlementMode === "MOMO") {
+      cash = 0;
+      mobile = total;
+    }
+
+    if (
+      ![cash, mobile].every((amount) => Number.isInteger(amount) && amount >= 0) ||
+      cash + mobile !== total ||
+      (cash === 0 && mobile === 0)
+    ) {
       return setNotice(`La ventilation doit correspondre exactement au reste : ${money(total)}.`);
     }
-    if (mobile > 0 && !mobileNumber.trim()) return setNotice("Le numéro Mobile Money est obligatoire pour la partie Mobile Money.");
+
+    if (mobile > 0 && !mobileNumber.trim()) {
+      return setNotice("Le numéro Mobile Money est obligatoire pour le paiement Mobile Money (PawaPay).");
+    }
+
     setBusy(true);
     setNotice("");
     try {
@@ -473,44 +513,105 @@ export function ServeurClient({
         const cashResult = await cashResponse.json();
         if (!cashResponse.ok) throw new Error(cashResult.error ?? "Impossible d’enregistrer la partie espèces.");
       }
+
       if (mobile > 0) {
+        setMomoPolling({
+          active: true,
+          attempt: 1,
+          operatorName: momoOperator,
+          phone: mobileNumber.trim(),
+        });
         const mobileResponse = await fetch("/api/payments/pawapay", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ tenantId, orderId: paymentOrder.id, amount: mobile, mobileNumber: mobileNumber.trim() }),
+          body: JSON.stringify({
+            tenantId,
+            orderId: paymentOrder.id,
+            amount: mobile,
+            mobileNumber: mobileNumber.trim(),
+            operator: momoOperator,
+          }),
         });
         const mobileResult = await mobileResponse.json();
-        if (!mobileResponse.ok) throw new Error(mobileResult.error ?? "Impossible de lancer Mobile Money.");
-        if (!mobileResult.payment?.id) throw new Error("Référence de paiement Mobile Money absente.");
-        setNotice("Demande Mobile Money envoyée. Le client doit confirmer sur son téléphone.");
-        for (let attempt = 0; attempt < 40; attempt += 1) {
-          await new Promise((resolve) => window.setTimeout(resolve, 3000));
-          const statusResponse = await fetch(`/api/payments/pawapay/status?paymentId=${encodeURIComponent(mobileResult.payment.id)}`, {
-            cache: "no-store",
-          });
-          const statusResult = await statusResponse.json();
-          if (!statusResponse.ok) throw new Error(statusResult.error ?? "Impossible de vérifier le paiement Mobile Money.");
-          if (statusResult.payment?.status === "SUCCEEDED") {
-            setNotice("✓ Paiement Mobile Money confirmé ! La commande est soldée.");
-            setPaymentOrder(null);
-            setCashAmount("");
-            setMobileAmount("");
-            setMobileNumber("");
-            await refresh();
-            return;
-          }
-          if (statusResult.payment?.status === "FAILED") throw new Error("Le paiement Mobile Money a échoué ou a été refusé.");
+        if (!mobileResponse.ok) {
+          setMomoPolling(null);
+          throw new Error(mobileResult.error ?? "Impossible de lancer Mobile Money.");
         }
-        setNotice("Le paiement Mobile Money est en attente. Vérifiez le téléphone du client ou actualisez.");
-        return;
+        if (!mobileResult.payment?.id) {
+          setMomoPolling(null);
+          throw new Error("Référence de paiement Mobile Money absente.");
+        }
+
+        setNotice(`Demande PawaPay (${momoOperator}) envoyée au ${mobileNumber.trim()}. En attente de validation sur le mobile du client…`);
+        let succeeded = false;
+        for (let attempt = 1; attempt <= 40; attempt += 1) {
+          setMomoPolling({
+            active: true,
+            attempt,
+            operatorName: momoOperator,
+            phone: mobileNumber.trim(),
+          });
+          await new Promise((resolve) => window.setTimeout(resolve, 3000));
+          const statusResponse = await fetch(
+            `/api/payments/pawapay/status?paymentId=${encodeURIComponent(mobileResult.payment.id)}`,
+            { cache: "no-store" }
+          );
+          const statusResult = await statusResponse.json();
+          if (!statusResponse.ok) {
+            setMomoPolling(null);
+            throw new Error(statusResult.error ?? "Impossible de vérifier le paiement Mobile Money.");
+          }
+          if (statusResult.payment?.status === "SUCCEEDED") {
+            succeeded = true;
+            break;
+          }
+          if (statusResult.payment?.status === "FAILED") {
+            setMomoPolling(null);
+            throw new Error("Le paiement Mobile Money a été rejeté ou annulé.");
+          }
+        }
+
+        setMomoPolling(null);
+        if (!succeeded) {
+          setNotice("Le paiement Mobile Money est en attente. Vérifiez le téléphone du client ou actualisez.");
+          return;
+        }
       }
-      setNotice("✓ Paiement espèces enregistré. La commande est soldée.");
+
+      // Tentative de certification DGI si activée
+      let dgiRes: DgiCertificationResult | null = null;
+      try {
+        const certResp = await fetch("/api/dgi/certify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tenantId, orderId: paymentOrder.id }),
+        });
+        const certData = await certResp.json();
+        if (certData.isNormalized && certData.certification) {
+          dgiRes = certData.certification;
+          setTicketDgi(dgiRes);
+        }
+      } catch {
+        // Le paiement reste validé
+      }
+
+      setNotice(
+        dgiRes
+          ? "✓ Règlement confirmé avec Facture Normalisée DGI (e-MECeF) !"
+          : "✓ Règlement enregistré avec succès ! La commande est soldée."
+      );
+      const paidOrder = paymentOrder;
       setPaymentOrder(null);
       setCashAmount("");
       setMobileAmount("");
       setMobileNumber("");
       await refresh();
+
+      if (paidOrder) {
+        setPrintingOrder(paidOrder);
+      }
     } catch (cause) {
+      setMomoPolling(null);
       setNotice(cause instanceof Error ? cause.message : "Impossible de préparer le règlement.");
     } finally {
       setBusy(false);
@@ -539,9 +640,24 @@ export function ServeurClient({
     await refresh();
   };
 
-  const printTicket = (order: Order) => {
+  const printTicket = async (order: Order) => {
     setPrintingOrder(order);
-    window.setTimeout(() => window.print(), 80);
+    try {
+      const resp = await fetch("/api/dgi/certify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tenantId, orderId: order.id }),
+      });
+      const res = await resp.json();
+      if (res.isNormalized && res.certification) {
+        setTicketDgi(res.certification);
+      } else {
+        setTicketDgi(null);
+      }
+    } catch {
+      setTicketDgi(null);
+    }
+    window.setTimeout(() => window.print(), 120);
   };
 
   if (!data) {
@@ -1422,129 +1538,278 @@ export function ServeurClient({
           </div>
         )}
 
-        {/* POPUP MODAL: PAIEMENT & ENCAISSEMENT AVEC TOUCHES BILLETS RAPIDES */}
+        {/* POPUP MODAL: PAIEMENT & ENCAISSEMENT AVEC PAWAPAY ET ESPÈCES */}
         {paymentOrder && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-            <div className="w-full max-w-2xl overflow-hidden rounded-3xl bg-white shadow-2xl">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4 backdrop-blur-sm">
+            <div className="w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden rounded-3xl bg-white shadow-2xl">
               <div className="flex items-center justify-between border-b border-slate-100 bg-slate-900 p-5 text-white">
                 <div>
-                  <span className="text-[11px] font-black uppercase tracking-wider text-amber-400">
-                    Règlement Facture · Table {paymentOrder.table_label || "Libre"}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-black uppercase tracking-wider text-amber-400">
+                      Règlement Facture · Table {paymentOrder.table_label || "Libre"}
+                    </span>
+                    {isDgiEnabled && (
+                      <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] font-black text-emerald-300 border border-emerald-500/30">
+                        🇧🇯 DGI e-MECeF
+                      </span>
+                    )}
+                  </div>
                   <h3 className="text-xl font-black">{customerName(paymentOrder)}</h3>
                 </div>
                 <button
                   type="button"
-                  onClick={() => setPaymentOrder(null)}
+                  onClick={() => {
+                    setPaymentOrder(null);
+                    setMomoPolling(null);
+                  }}
                   className="rounded-full bg-slate-800 p-2 text-slate-400 hover:text-white"
                 >
                   <X className="h-5 w-5" />
                 </button>
               </div>
 
-              <div className="p-6">
-                {/* Amount to pay banner */}
+              <div className="overflow-y-auto p-6 space-y-5">
+                {/* Montant total restant à régler */}
                 <div className="rounded-2xl bg-emerald-50 p-4 text-center border border-emerald-200">
                   <p className="text-xs font-bold uppercase text-emerald-800">Montant total restant à régler</p>
                   <p className="mt-1 text-3xl font-black text-emerald-900">{money(orderRemaining(paymentOrder))}</p>
                 </div>
 
-                {/* Quick Banknotes Presets */}
-                <div className="mt-5">
-                  <p className="text-xs font-bold uppercase text-slate-500 mb-2">Touches billets rapides :</p>
-                  <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
-                    {[
-                      { label: "Montant Exact", val: orderRemaining(paymentOrder) },
-                      { label: "1 000 F", val: 1000 },
-                      { label: "2 000 F", val: 2000 },
-                      { label: "5 000 F", val: 5000 },
-                      { label: "10 000 F", val: 10000 },
-                      { label: "20 000 F", val: 20000 },
-                    ].map((btn) => (
-                      <button
-                        key={btn.label}
-                        type="button"
-                        onClick={() => {
-                          setCashAmount(String(btn.val));
-                          setMobileAmount("");
-                        }}
-                        className="rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-1 text-center font-black text-xs text-slate-800 hover:border-emerald-500 hover:bg-emerald-50 hover:text-emerald-900"
-                      >
-                        {btn.label}
-                      </button>
-                    ))}
+                {/* SÉLECTEUR DE MODE DE RÈGLEMENT */}
+                <div>
+                  <p className="text-xs font-bold uppercase text-slate-500 mb-2">Choisir le mode de paiement :</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSettlementMode("CASH");
+                        setCashAmount(String(orderRemaining(paymentOrder)));
+                        setMobileAmount("");
+                      }}
+                      className={`rounded-xl border p-3 text-center transition font-black text-xs ${
+                        settlementMode === "CASH"
+                          ? "border-emerald-600 bg-emerald-50 text-emerald-900 shadow-sm ring-2 ring-emerald-600"
+                          : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                      }`}
+                    >
+                      <span className="text-base block mb-0.5">💵</span>
+                      <span>100% Espèces</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSettlementMode("MOMO");
+                        setMobileAmount(String(orderRemaining(paymentOrder)));
+                        setCashAmount("");
+                      }}
+                      className={`rounded-xl border p-3 text-center transition font-black text-xs ${
+                        settlementMode === "MOMO"
+                          ? "border-amber-600 bg-amber-50 text-amber-900 shadow-sm ring-2 ring-amber-600"
+                          : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                      }`}
+                    >
+                      <span className="text-base block mb-0.5">📱</span>
+                      <span>Mobile Money</span>
+                      <span className="block text-[9px] font-bold text-amber-700">via PawaPay</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSettlementMode("MIXED");
+                        setCashAmount("");
+                        setMobileAmount("");
+                      }}
+                      className={`rounded-xl border p-3 text-center transition font-black text-xs ${
+                        settlementMode === "MIXED"
+                          ? "border-blue-600 bg-blue-50 text-blue-900 shadow-sm ring-2 ring-blue-600"
+                          : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                      }`}
+                    >
+                      <span className="text-base block mb-0.5">🔀</span>
+                      <span>Règlement Mixte</span>
+                      <span className="block text-[9px] font-bold text-blue-700">Espèces + MoMo</span>
+                    </button>
                   </div>
                 </div>
 
-                {/* Change Helper */}
-                {Number(cashAmount || 0) > orderRemaining(paymentOrder) && (
-                  <div className="mt-4 rounded-xl bg-amber-50 p-3.5 text-center border border-amber-200">
-                    <span className="text-xs font-bold text-amber-800">Monnaie à rendre au client :</span>
-                    <p className="text-2xl font-black text-amber-900">
-                      {money(Number(cashAmount) - orderRemaining(paymentOrder))}
-                    </p>
+                {/* MODE 100% ESPÈCES */}
+                {settlementMode === "CASH" && (
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-xs font-bold uppercase text-slate-500 mb-2">Touches billets rapides :</p>
+                      <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+                        {[
+                          { label: "Montant Exact", val: orderRemaining(paymentOrder) },
+                          { label: "1 000 F", val: 1000 },
+                          { label: "2 000 F", val: 2000 },
+                          { label: "5 000 F", val: 5000 },
+                          { label: "10 000 F", val: 10000 },
+                          { label: "20 000 F", val: 20000 },
+                        ].map((btn) => (
+                          <button
+                            key={btn.label}
+                            type="button"
+                            onClick={() => setCashAmount(String(btn.val))}
+                            className="rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-1 text-center font-black text-xs text-slate-800 hover:border-emerald-500 hover:bg-emerald-50 hover:text-emerald-900"
+                          >
+                            {btn.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700">Espèces reçues du client (XOF)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        inputMode="numeric"
+                        value={cashAmount}
+                        onChange={(e) => setCashAmount(e.target.value)}
+                        placeholder={String(orderRemaining(paymentOrder))}
+                        className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-lg font-black text-slate-900 focus:outline-none focus:border-emerald-600"
+                      />
+                    </div>
+
+                    {Number(cashAmount || 0) > orderRemaining(paymentOrder) && (
+                      <div className="rounded-xl bg-amber-50 p-3.5 text-center border border-amber-200">
+                        <span className="text-xs font-bold text-amber-800">Monnaie à rendre au client :</span>
+                        <p className="text-2xl font-black text-amber-900">
+                          {money(Number(cashAmount) - orderRemaining(paymentOrder))}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
 
-                {/* Direct Numeric Inputs */}
-                <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700">Part en Espèces (XOF)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      inputMode="numeric"
-                      value={cashAmount}
-                      onChange={(e) => setCashAmount(e.target.value)}
-                      placeholder="0"
-                      className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-lg font-black text-slate-900 focus:outline-none focus:border-emerald-600"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700">Part Mobile Money (XOF)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      inputMode="numeric"
-                      value={mobileAmount}
-                      onChange={(e) => setMobileAmount(e.target.value)}
-                      placeholder="0"
-                      className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-lg font-black text-slate-900 focus:outline-none focus:border-emerald-600"
-                    />
-                  </div>
-                </div>
+                {/* MODE MOBILE MONEY (PAWAPAY) */}
+                {(settlementMode === "MOMO" || settlementMode === "MIXED") && (
+                  <div className="rounded-2xl border border-amber-200 bg-amber-50/50 p-4 space-y-4">
+                    <div>
+                      <p className="text-xs font-black uppercase text-amber-900 mb-2">
+                        Opérateur Mobile Money (API PawaPay) :
+                      </p>
+                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                        {[
+                          { id: "MTN", label: "MTN MoMo", color: "bg-yellow-400 text-yellow-950 border-yellow-500", icon: "🟡" },
+                          { id: "MOOV", label: "Moov Money", color: "bg-blue-600 text-white border-blue-700", icon: "🔵" },
+                          { id: "ORANGE", label: "Orange Money", color: "bg-orange-500 text-white border-orange-600", icon: "🟠" },
+                          { id: "WAVE", label: "Wave / Free", color: "bg-sky-400 text-sky-950 border-sky-500", icon: "🌊" },
+                        ].map((op) => (
+                          <button
+                            key={op.id}
+                            type="button"
+                            onClick={() => setMomoOperator(op.id as any)}
+                            className={`rounded-xl border p-2.5 text-center font-black text-xs transition ${
+                              momoOperator === op.id
+                                ? `${op.color} shadow-md ring-2 ring-amber-500`
+                                : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                            }`}
+                          >
+                            <span className="text-sm block">{op.icon}</span>
+                            <span>{op.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
 
-                {Number(mobileAmount || 0) > 0 && (
-                  <div className="mt-4">
-                    <label className="block text-xs font-bold text-slate-700">Numéro Mobile Money du client (MTN, Moov, Orange...)</label>
-                    <input
-                      value={mobileNumber}
-                      onChange={(e) => setMobileNumber(e.target.value)}
-                      placeholder="Ex: 97000000"
-                      className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-sm font-bold text-slate-900 focus:outline-none focus:border-emerald-600"
-                    />
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700">
+                        Numéro Mobile Money du client (MTN, Moov, Orange, Wave...)
+                      </label>
+                      <input
+                        type="tel"
+                        inputMode="tel"
+                        value={mobileNumber}
+                        onChange={(e) => setMobileNumber(e.target.value)}
+                        placeholder="Ex: 97000000 ou 22997000000"
+                        className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white p-3 text-base font-black text-slate-900 focus:outline-none focus:border-amber-600"
+                      />
+                      <span className="mt-1 block text-[10px] text-amber-800">
+                        ⚡ Une demande de validation instantanée sera envoyée sur ce téléphone via l'API PawaPay.
+                      </span>
+                    </div>
+
+                    {settlementMode === "MIXED" && (
+                      <div className="grid gap-3 sm:grid-cols-2 pt-1 border-t border-amber-200">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700">Part en Espèces (XOF)</label>
+                          <input
+                            type="number"
+                            min="0"
+                            inputMode="numeric"
+                            value={cashAmount}
+                            onChange={(e) => setCashAmount(e.target.value)}
+                            placeholder="0"
+                            className="mt-1 w-full rounded-xl border border-slate-300 bg-white p-2.5 text-base font-black text-slate-900 focus:outline-none focus:border-emerald-600"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700">Part Mobile Money (XOF)</label>
+                          <input
+                            type="number"
+                            min="0"
+                            inputMode="numeric"
+                            value={mobileAmount}
+                            onChange={(e) => setMobileAmount(e.target.value)}
+                            placeholder="0"
+                            className="mt-1 w-full rounded-xl border border-slate-300 bg-white p-2.5 text-base font-black text-slate-900 focus:outline-none focus:border-amber-600"
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
-                <div className="mt-6 flex items-center justify-end gap-3">
+                {/* POLLING EN COURS D'ATTENTE PAWAPAY */}
+                {momoPolling?.active && (
+                  <div className="rounded-2xl border-2 border-amber-500 bg-amber-50 p-5 text-center space-y-3 animate-pulse">
+                    <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-amber-600 border-t-transparent" />
+                    <div>
+                      <p className="text-sm font-black text-amber-900">
+                        Demande Mobile Money en cours ({momoPolling.operatorName})
+                      </p>
+                      <p className="text-xs text-amber-800 mt-1">
+                        Numéro : <b>{momoPolling.phone}</b> · En attente de validation du code secret par le client sur son mobile.
+                      </p>
+                      <p className="text-[11px] font-bold text-amber-700 mt-2">
+                        Vérification automatique : {momoPolling.attempt}/40
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Boutons d'action */}
+                <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
                   <button
                     type="button"
-                    onClick={() => setPaymentOrder(null)}
+                    onClick={() => {
+                      setPaymentOrder(null);
+                      setMomoPolling(null);
+                    }}
                     className="rounded-xl px-5 py-3 text-sm font-bold text-slate-600 hover:bg-slate-100"
                   >
                     Annuler
                   </button>
                   <button
                     type="button"
-                    disabled={busy}
+                    disabled={busy || momoPolling?.active}
                     onClick={() => void pay()}
                     className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 px-6 py-3.5 text-sm font-black text-white shadow-lg hover:from-emerald-500 hover:to-emerald-600 disabled:opacity-50"
                   >
                     {busy ? (
-                      <span>Validation en cours…</span>
+                      <span>Traitement en cours…</span>
                     ) : (
                       <>
-                        <span>Confirmer le règlement</span>
+                        <span>
+                          {settlementMode === "CASH"
+                            ? "Confirmer encaissement Espèces"
+                            : settlementMode === "MOMO"
+                            ? `Payer via PawaPay (${momoOperator})`
+                            : "Confirmer règlement mixte"}
+                        </span>
                         <Check className="h-4 w-4" />
                       </>
                     )}
@@ -1556,33 +1821,109 @@ export function ServeurClient({
         )}
       </div>
 
-      {printingOrder && <ServeurTicket order={printingOrder} />}
+      {printingOrder && <ServeurTicket order={printingOrder} dgi={ticketDgi} />}
     </>
   );
 }
 
-export function ServeurTicket({ order }: { order: Order }) {
+export function ServeurTicket({ order, dgi }: { order: Order; dgi?: DgiCertificationResult | null }) {
   return (
-    <div className="mx-auto hidden w-[80mm] bg-white p-4 text-black print:block">
-      <h1 className="text-center text-lg font-black">DebitManager</h1>
-      <p className="text-center text-xs">{order.order_number}</p>
-      <p className="mt-3 text-xs">Table : {order.table_label ?? "—"}</p>
-      <div className="my-3 border-t border-dashed border-black" />
-      {(order.order_items ?? []).map((item) => (
-        <div key={item.id} className="flex justify-between gap-2 text-xs">
-          <span>
-            {item.quantity} × {item.product_name}
-            {item.fulfillment_unit === "MEAL" ? ` · ${item.accompaniment ?? "Aucun"}` : ""}
-          </span>
-          <span>{money(item.total_price)}</span>
-        </div>
-      ))}
-      <div className="my-3 border-t border-dashed border-black" />
-      <div className="flex justify-between text-sm font-black">
-        <span>Total</span>
-        <span>{money(order.total_amount)}</span>
-      </div>
-      <p className="mt-5 text-center text-[10px]">Merci pour votre visite.</p>
+    <div className="mx-auto hidden w-[80mm] bg-white p-4 text-black print:block font-mono text-xs">
+      {dgi ? (
+        <>
+          <div className="text-center mb-2">
+            <p className="text-[10px] font-black tracking-widest uppercase">RÉPUBLIQUE DU BÉNIN</p>
+            <p className="text-[10px] text-slate-600">Direction Générale des Impôts</p>
+            <h1 className="text-sm font-black mt-1">FACTURE NORMALISÉE</h1>
+            <p className="text-[10px] font-bold">e-MECeF Bénin</p>
+          </div>
+
+          <div className="text-[10px] space-y-0.5 border-t border-b border-dashed border-black py-1.5 my-2">
+            <p><b>IFU Vendeur :</b> {dgi.ifu}</p>
+            <p><b>NIM :</b> {dgi.nim}</p>
+            <p><b>Facture N° :</b> {order.order_number}</p>
+            <p><b>Date/Heure :</b> {dgi.dateTime}</p>
+            <p><b>Table :</b> {order.table_label ?? "Comptoir / Libre"}</p>
+          </div>
+
+          <div className="my-2">
+            <div className="flex justify-between font-black text-[10px] border-b border-black pb-0.5">
+              <span>Désignation</span>
+              <span>Qté × PU</span>
+              <span>Total [Grp]</span>
+            </div>
+            {(order.order_items ?? []).map((item) => (
+              <div key={item.id} className="flex justify-between items-center py-1 border-b border-dotted border-slate-300 text-[10px]">
+                <div className="max-w-[45%] truncate font-bold">
+                  {item.product_name}
+                  {item.fulfillment_unit === "MEAL" ? ` (${item.accompaniment ?? "Standard"})` : ""}
+                </div>
+                <span>{item.quantity} × {money(item.unit_price)}</span>
+                <span className="font-bold">{money(item.total_price)} [B]</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="border-t border-black pt-1.5 space-y-1 text-[11px]">
+            <div className="flex justify-between">
+              <span>Total HT :</span>
+              <span>{money(dgi.totalHt)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>TVA (18%) [B] :</span>
+              <span>{money(dgi.totalTva)}</span>
+            </div>
+            <div className="flex justify-between text-xs font-black border-t border-dashed border-black pt-1">
+              <span>TOTAL TTC :</span>
+              <span>{money(dgi.totalTtc)}</span>
+            </div>
+          </div>
+
+          {/* Code MECeF et QR Code Officiel */}
+          <div className="my-3 text-center border-t border-dashed border-black pt-2">
+            <p className="text-[9px] font-bold uppercase tracking-wider">Code MECeF / DGI :</p>
+            <p className="text-[11px] font-black font-mono tracking-wider">{dgi.codeMECeFDGI}</p>
+
+            {dgi.qrCodeDataUrl && (
+              <div className="my-2 flex justify-center">
+                <img
+                  src={dgi.qrCodeDataUrl}
+                  alt="QR Code DGI"
+                  className="w-32 h-32 object-contain mx-auto"
+                />
+              </div>
+            )}
+
+            <p className="text-[8px] font-bold mt-1 text-center">
+              Facture certifiée par la DGI Bénin (e-MECeF).
+            </p>
+          </div>
+
+          <p className="text-center text-[9px] text-slate-600 mt-2">Merci pour votre confiance !</p>
+        </>
+      ) : (
+        <>
+          <h1 className="text-center text-lg font-black">DebitManager</h1>
+          <p className="text-center text-xs">{order.order_number}</p>
+          <p className="mt-3 text-xs">Table : {order.table_label ?? "—"}</p>
+          <div className="my-3 border-t border-dashed border-black" />
+          {(order.order_items ?? []).map((item) => (
+            <div key={item.id} className="flex justify-between gap-2 text-xs">
+              <span>
+                {item.quantity} × {item.product_name}
+                {item.fulfillment_unit === "MEAL" ? ` · ${item.accompaniment ?? "Aucun"}` : ""}
+              </span>
+              <span>{money(item.total_price)}</span>
+            </div>
+          ))}
+          <div className="my-3 border-t border-dashed border-black" />
+          <div className="flex justify-between text-sm font-black">
+            <span>Total</span>
+            <span>{money(order.total_amount)}</span>
+          </div>
+          <p className="mt-5 text-center text-[10px]">Merci pour votre visite.</p>
+        </>
+      )}
     </div>
   );
 }

@@ -1,13 +1,14 @@
 // DebitManager account settings: clear profile editing, private avatar upload, promoter documents and explicit security states.
 "use client";
 
-import { FormEvent, ChangeEvent, useState } from "react";
+import { FormEvent, ChangeEvent, useState, useEffect } from "react";
 import Link from "next/link";
 import { PasswordField } from "@/components/PasswordField";
 
 export type PromoterCompany = {
   id: string;
   name: string;
+  country?: string | null;
   ifu_number: string | null;
   trade_register: string | null;
   promoter_photo_path: string | null;
@@ -57,6 +58,68 @@ export function SettingsClient({
   const [hasPhoto, setHasPhoto] = useState(Boolean(activeCompany?.promoter_photo_path));
   const [hasIdentity, setHasIdentity] = useState(Boolean(activeCompany?.identity_card_path));
   const [promoterPending, setPromoterPending] = useState(false);
+
+  // Facturation normalisée DGI Bénin (e-MECeF)
+  const [isNormalizedInvoiceEnabled, setIsNormalizedInvoiceEnabled] = useState(false);
+  const [dgiNim, setDgiNim] = useState("SF00000001");
+  const [dgiEnv, setDgiEnv] = useState<"sandbox" | "production">("sandbox");
+  const [dgiApiToken, setDgiApiToken] = useState("");
+  const [dgiPending, setDgiPending] = useState(false);
+  const [dgiFeedback, setDgiFeedback] = useState<{ text: string; isError?: boolean } | null>(null);
+
+  useEffect(() => {
+    if (!activeCompany?.id) return;
+    let active = true;
+    fetch(`/api/companies/normalized-invoicing?tenantId=${encodeURIComponent(activeCompany.id)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!active || !data.success) return;
+        setIsNormalizedInvoiceEnabled(Boolean(data.settings?.isNormalizedInvoiceEnabled));
+        if (data.settings?.ifuNumber && !ifuNumber) setIfuNumber(data.settings.ifuNumber);
+        if (data.settings?.dgiNim) setDgiNim(data.settings.dgiNim);
+        if (data.settings?.dgiEnv) setDgiEnv(data.settings.dgiEnv);
+        if (data.settings?.dgiApiToken) setDgiApiToken(data.settings.dgiApiToken);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [activeCompany?.id]);
+
+  async function handleToggleDgi(targetState: boolean) {
+    if (!activeCompany?.id) return;
+    setDgiPending(true);
+    setDgiFeedback(null);
+    try {
+      const response = await fetch("/api/companies/normalized-invoicing", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tenantId: activeCompany.id,
+          isNormalizedInvoiceEnabled: targetState,
+          ifuNumber: ifuNumber.trim(),
+          dgiNim: dgiNim.trim(),
+          dgiEnv,
+          dgiApiToken: dgiApiToken.trim(),
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error ?? "Impossible de modifier la facturation normalisée.");
+      setIsNormalizedInvoiceEnabled(targetState);
+      setDgiFeedback({
+        text: targetState
+          ? "✓ Facturation normalisée DGI Bénin (e-MECeF) activée sur cet établissement !"
+          : "Facturation simple réactivée (sans e-MECeF).",
+      });
+    } catch (err) {
+      setDgiFeedback({
+        text: err instanceof Error ? err.message : "Erreur lors de la mise à jour.",
+        isError: true,
+      });
+    } finally {
+      setDgiPending(false);
+    }
+  }
 
   function resetFeedback() {
     setError("");
@@ -368,6 +431,152 @@ export function SettingsClient({
                 {promoterPending ? "Enregistrement en cours…" : "Mettre à jour les informations du promoteur"}
               </button>
             </form>
+          </section>
+        )}
+
+        {/* Section Facturation Normalisée DGI Bénin (e-MECeF) */}
+        {promoterCompanies.length > 0 && activeCompany && (
+          <section className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-6 lg:col-span-2">
+            <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-base">🇧🇯</span>
+                  <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-700">
+                    DGI Bénin · e-MECeF
+                  </p>
+                </div>
+                <h2 className="mt-1 text-xl font-black text-[var(--primary)]">
+                  Facture normalisée ({activeCompany.name})
+                </h2>
+                <p className="mt-1 text-xs text-[var(--muted)]">
+                  Activez la certification officielle des ventes conformément à la réglementation de la Direction Générale des Impôts du Bénin.
+                </p>
+              </div>
+
+              {/* Bouton Toggle Facture Normalisée */}
+              <button
+                type="button"
+                disabled={dgiPending}
+                onClick={() => handleToggleDgi(!isNormalizedInvoiceEnabled)}
+                className={`flex items-center gap-2.5 rounded-xl px-4 py-2.5 text-xs font-black transition ${
+                  isNormalizedInvoiceEnabled
+                    ? "bg-emerald-600 text-white shadow-md hover:bg-emerald-700"
+                    : "bg-slate-100 text-slate-700 border border-slate-300 hover:bg-slate-200"
+                }`}
+              >
+                <span
+                  className={`inline-block h-3 w-3 rounded-full ${
+                    isNormalizedInvoiceEnabled ? "bg-white animate-pulse" : "bg-slate-400"
+                  }`}
+                />
+                {dgiPending
+                  ? "Enregistrement…"
+                  : isNormalizedInvoiceEnabled
+                  ? "✓ Facture normalisée ACTIVÉE"
+                  : "Facture simple (DÉSACTIVÉE)"}
+              </button>
+            </div>
+
+            {dgiFeedback && (
+              <p
+                className={`mt-4 rounded-lg px-4 py-3 text-xs font-bold ${
+                  dgiFeedback.isError
+                    ? "bg-red-50 text-red-700 border border-red-200"
+                    : "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                }`}
+              >
+                {dgiFeedback.text}
+              </p>
+            )}
+
+            {/* État Détaillé & Paramètres */}
+            <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50/70 p-5">
+              {isNormalizedInvoiceEnabled ? (
+                <div className="space-y-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3">
+                    <div className="flex items-center gap-2 text-xs font-black text-emerald-800">
+                      <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                      Statut : Factures et tickets certifiés DGI avec QR Code
+                    </div>
+                    <span className="rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-black text-emerald-800">
+                      e-MECeF {dgiEnv === "production" ? "Production" : "Sandbox (Test)"}
+                    </span>
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="rounded-xl border border-slate-200 bg-white p-3.5">
+                      <span className="block text-[11px] font-bold text-slate-500">IFU Vendeur associé</span>
+                      <p className="mt-1 font-mono text-sm font-black text-slate-900">
+                        {ifuNumber.trim() || (
+                          <span className="text-amber-600">⚠️ Aucun IFU renseigné ci-dessus</span>
+                        )}
+                      </p>
+                      <span className="mt-1 block text-[10px] text-slate-400">
+                        Récupéré automatiquement depuis les informations légales du promoteur.
+                      </span>
+                    </div>
+
+                    <div className="rounded-xl border border-slate-200 bg-white p-3.5">
+                      <span className="block text-[11px] font-bold text-slate-500">NIM (Numéro Machine SFE)</span>
+                      <input
+                        value={dgiNim}
+                        onChange={(e) => setDgiNim(e.target.value)}
+                        placeholder="Ex. SF00000001"
+                        className="mt-1 w-full font-mono text-sm font-black text-slate-900 outline-none border-b border-slate-200 focus:border-emerald-600"
+                      />
+                      <span className="mt-1 block text-[10px] text-slate-400">
+                        Identifiant attribué par la DGI (défaut : SF00000001).
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-2 pt-2">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600">Environnement DGI</label>
+                      <select
+                        value={dgiEnv}
+                        onChange={(e) => setDgiEnv(e.target.value as "sandbox" | "production")}
+                        className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-800"
+                      >
+                        <option value="sandbox">Sandbox (Plateforme de test DGI)</option>
+                        <option value="production">Production (Serveur officiel impots.bj)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600">Jeton API DGI (Optionnel en test)</label>
+                      <input
+                        type="password"
+                        value={dgiApiToken}
+                        onChange={(e) => setDgiApiToken(e.target.value)}
+                        placeholder="Bearer token e-MECeF"
+                        className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-mono text-slate-800"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end pt-2">
+                    <button
+                      type="button"
+                      disabled={dgiPending}
+                      onClick={() => handleToggleDgi(true)}
+                      className="rounded-lg bg-emerald-700 px-4 py-2 text-xs font-black text-white hover:bg-emerald-800 disabled:opacity-50"
+                    >
+                      {dgiPending ? "Enregistrement…" : "Mettre à jour la configuration DGI"}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-3">
+                  <p className="text-xs text-slate-600">
+                    La facturation normalisée est actuellement <b>désactivée</b> pour cet établissement.
+                  </p>
+                  <p className="mt-1 text-[11px] text-slate-400">
+                    Les tickets et factures sont délivrés simplement sans certification DGI. Cliquez sur le bouton ci-dessus pour activer l’intégration e-MECeF.
+                  </p>
+                </div>
+              )}
+            </div>
           </section>
         )}
 
