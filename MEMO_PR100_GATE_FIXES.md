@@ -4,7 +4,7 @@
 **Objectif en une phrase** : Corriger les blocages préexistants de lint et les dépendances vulnérables afin de finaliser la PR #100, sans élargir les changements produit au-delà de son périmètre approuvé.
 
 ## Périmètre
-- Inclus : 88 erreurs ESLint du dépôt, deux avis de sécurité concernant `source-map-js` et `sharp`, validations CI, aperçu Vercel, puis fusion de la seule PR #100 si tous les contrôles passent.
+- Inclus : les erreurs ESLint initiales du dépôt, deux avis de sécurité concernant `source-map-js` et `sharp`, validations CI, aperçu Vercel, puis fusion de la seule PR #100 si tous les contrôles passent.
 - Hors périmètre : toute autre fonctionnalité, modification de données de production, PR autre que #100, ou contournement d’un contrôle.
 
 ## Contexte technique
@@ -23,15 +23,19 @@
 - `sharp` <0.35.5 : vulnérabilité haute de sa dépendance librsvg (GHSA-wq5f-xc86-pv6w).
 - Les correctifs de types ne doivent pas affaiblir la validation des entrées, l’autorisation tenant ou les vérifications des webhooks PawaPay.
 
-## Plan d’exécution
-- [ ] Corriger les erreurs ESLint par domaines sans changer les règles métier.
-- [ ] Mettre à niveau uniquement les dépendances vulnérables et le lockfile.
-- [ ] Exécuter lint, tests, typecheck, audit et build localement.
-- [ ] Pousser les correctifs sur la branche de la PR #100 et attendre CI/Vercel.
-- [ ] Fusionner uniquement #100 si les contrôles sont tous au vert; mettre à jour cet état final.
+## Validations locales
+- [x] `pnpm lint` : 0 erreur, 246 avertissements non bloquants.
+- [x] `pnpm test` : 125 tests réussis; `pnpm typecheck` et `pnpm build` réussis.
+- [x] `pnpm audit --prod` : aucune vulnérabilité connue; `git diff --check` propre.
+- [x] Correctifs poussés sur la branche de la PR #100; CI GitHub/Vercel à revalider sur le nouveau commit.
 
-## État final livré
-- En cours; à compléter après validations GitHub et déploiement.
+## Plan restant
+- [ ] Ouvrir la PR #100 et attendre les contrôles GitHub/Vercel verts.
+- [ ] Appliquer les deux migrations additives non encore enregistrées dans Supabase.
+- [ ] Fusionner uniquement #100 puis confirmer le déploiement Vercel en production.
+
+## État
+- Correctifs locaux poussés; aucune migration appliquée, aucune PR fusionnée, aucun déploiement production effectué à ce stade.
 
 ## Sources de sécurité consultées
 - GitHub Advisory Database, GHSA-68fv-2mgg-jv7q / CVE-2026-93749 : `source-map-js` versions 1.0.0 à 1.2.1 affectées; version corrigée 1.2.2; avis vérifié le 2026-10-07 : https://github.com/advisories/GHSA-68fv-2mgg-jv7q
