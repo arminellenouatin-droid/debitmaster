@@ -282,9 +282,7 @@ export function VitrineClient({
                   <div>
                     {/* Visual header */}
                     <div className="relative flex aspect-square w-full items-center justify-center rounded-xl bg-gradient-to-br from-slate-800 to-slate-950 border border-slate-700/50">
-                      <span className="text-5xl opacity-80 group-hover:scale-110 transition duration-200">
-                        {isCouture ? "👗" : "🛍"}
-                      </span>
+                      {product.photoUrl ? <img src={product.photoUrl} alt={`Photo de ${product.name}`} className="h-full w-full rounded-xl object-cover" loading="lazy" /> : <span aria-hidden="true" className="text-5xl opacity-80 transition duration-200 group-hover:scale-110">{isCouture ? "👗" : "🛍"}</span>}
                       {product.badge && (
                         <span className="absolute top-2.5 left-2.5 rounded-full bg-amber-400/20 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-amber-300 ring-1 ring-amber-400/30">
                           {product.badge}

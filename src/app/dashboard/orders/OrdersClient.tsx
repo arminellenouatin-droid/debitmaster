@@ -7,7 +7,7 @@ import Link from "next/link";
 
 type Company = { id: string; name: string };
 type Category = { id: string; tenant_id: string; name: string };
-type Product = { id: string; name: string; price: number; current_stock: number; product_type: string; category_id: string | null };
+type Product = { id: string; name: string; price: number; current_stock: number; product_type: string; category_id: string | null; image_url?: string | null };
 type CartLine = Product & { quantity: number };
 
 const money = (value: number) => `${new Intl.NumberFormat("fr-FR").format(value)} FCFA`;
@@ -238,6 +238,7 @@ export function OrdersClient({ initialTableLabel = "" }: { initialTableLabel?: s
                       onClick={() => openQuantityModal(product)}
                       className="rounded-lg border border-[var(--line)] p-4 text-left transition hover:-translate-y-0.5 hover:border-[var(--primary)] hover:shadow-[0_14px_28px_-24px_var(--primary)] active:scale-[0.98]"
                     >
+                      {product.image_url ? <img src={product.image_url} alt={`Photo de ${product.name}`} className="mb-3 h-32 w-full rounded-lg object-cover" loading="lazy" /> : <div aria-hidden="true" className="mb-3 grid h-32 w-full place-items-center rounded-lg bg-[var(--surface-muted)] text-2xl text-[var(--muted)]">▧</div>}
                       <div className="flex items-start justify-between gap-3">
                         <span className="font-black text-[var(--primary)]">{product.name}</span>
                         <span className="text-xs font-black text-[var(--secondary)]">＋</span>
@@ -357,6 +358,7 @@ export function OrdersClient({ initialTableLabel = "" }: { initialTableLabel?: s
             {/* Entête */}
             <div className="flex items-start justify-between gap-3 border-b border-[var(--line)] pb-3">
               <div>
+                {pendingProduct.image_url && <img src={pendingProduct.image_url} alt={`Photo de ${pendingProduct.name}`} className="mb-3 h-32 w-full rounded-xl object-cover" />}
                 <span className="text-[10px] font-black uppercase tracking-wider text-[var(--secondary)]">
                   Article sélectionné
                 </span>

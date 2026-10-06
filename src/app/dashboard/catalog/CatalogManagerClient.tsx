@@ -2,6 +2,7 @@
 
 // DebitManager: Gestionnaire unifié des Produits et Services pour LE TEMPLE DU PLAISIR et établissements Power
 import { useState, useEffect, useMemo, useRef, ChangeEvent, FormEvent } from "react";
+import { MealAccompanimentImages } from "@/components/MealAccompanimentImages";
 
 type Category = {
   id: string;
@@ -74,12 +75,14 @@ export function CatalogManagerClient({
   companyName,
   isPower,
   canManage,
+  canManageMealAccompaniments,
   userRole,
 }: {
   tenantId: string;
   companyName: string;
   isPower: boolean;
   canManage: boolean;
+  canManageMealAccompaniments: boolean;
   userRole: string;
 }) {
   const [products, setProducts] = useState<Product[]>([]);
@@ -567,6 +570,8 @@ export function CatalogManagerClient({
           )}
         </div>
       </div>
+
+      {canManageMealAccompaniments && <MealAccompanimentImages tenantId={tenantId} />}
 
       {/* Grid of Items */}
       {loading ? (

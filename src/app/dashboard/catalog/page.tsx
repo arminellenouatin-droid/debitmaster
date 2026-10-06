@@ -33,6 +33,7 @@ export default async function CatalogPage() {
     context.role === "GERANT" ||
     can(context, "products.manage") ||
     can(context, "services.manage");
+  const canManageMealAccompaniments = can(context, "products.manage");
 
   return (
     <DashboardShell firstName={context.user.user_metadata?.first_name ?? "équipe"}>
@@ -41,6 +42,7 @@ export default async function CatalogPage() {
         companyName={context.company?.name ?? "Établissement"}
         isPower={isPower}
         canManage={canManage}
+        canManageMealAccompaniments={canManageMealAccompaniments}
         userRole={context.role ?? "MEMBRE"}
       />
     </DashboardShell>

@@ -713,6 +713,7 @@ export function MenuClient({ token }: { token: string }) {
                   <div className="space-y-2.5">
                     {data.rooms.map((room) => (
                       <div key={room.id} className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-xs">
+                        {room.image_url && <img src={room.image_url} alt={`Photo de la chambre ${room.room_number}`} className="mb-2 h-32 w-full rounded-lg object-cover" loading="lazy" />}
                         <div className="flex items-center justify-between mb-1">
                           <span className="font-bold text-neutral-200">Chambre {room.room_number}</span>
                           <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${room.occupied_until ? "bg-red-950/60 text-red-300 border border-red-500/30" : "bg-emerald-950/60 text-emerald-300 border border-emerald-500/30"}`}>
@@ -745,6 +746,7 @@ export function MenuClient({ token }: { token: string }) {
                     {data.services.slice(0, 4).map((srv) => (
                       <div key={srv.id} className="flex items-center justify-between p-2.5 rounded-xl bg-white/5 border border-white/10 text-xs">
                         <div>
+                          {srv.image_url && <img src={srv.image_url} alt={`Photo de ${srv.name}`} className="mb-2 h-24 w-full rounded-lg object-cover" loading="lazy" />}
                           <p className="font-bold text-neutral-200">{srv.name}</p>
                           {srv.billing_unit && <p className="text-[11px] text-neutral-400">{srv.billing_unit}</p>}
                         </div>
@@ -1013,4 +1015,3 @@ export function MenuClient({ token }: { token: string }) {
     </main>
   );
 }
-

@@ -1,5 +1,6 @@
 // DebitMaster Vitrine Publique API: consultation catalogue & stocks en temps réel pour l'option Avancée.
 import { NextResponse } from "next/server";
+import { isCommerceImagePath } from "@/lib/commerce-catalog";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export async function GET(
@@ -49,6 +50,15 @@ export async function GET(
         .eq("status", "ACTIVE")
         .limit(100);
 
+      const imagePaths = (rawProducts ?? []).flatMap((product) => Array.isArray(product.photo_paths)
+        ? product.photo_paths.filter((path): path is string => isCommerceImagePath(path, tenantId))
+        : []);
+      const signedImageUrls = new Map<string, string>();
+      if (imagePaths.length) {
+        const { data: signed } = await admin.storage.from("commerce-product-images").createSignedUrls(imagePaths, 3600);
+        for (const image of signed ?? []) if (image.path && image.signedUrl) signedImageUrls.set(image.path, image.signedUrl);
+      }
+
       // Charger les niveaux de stock
       const { data: stockLevels } = await admin
         .from("commerce_stock_levels")
@@ -77,7 +87,10 @@ export async function GET(
           description: p.description || (p.brand ? `Marque : ${p.brand}` : "Article disponible en boutique physique."),
           price: p.price_retail_xof ?? 1000,
           availableStock: stockQty,
-          photoUrl: null,
+          photoUrl: (() => {
+            const path = Array.isArray(p.photo_paths) ? p.photo_paths.find((candidate): candidate is string => isCommerceImagePath(candidate, tenantId)) : undefined;
+            return path ? signedImageUrls.get(path) ?? null : null;
+          })(),
           badge: p.brand || undefined,
         };
       });
@@ -86,7 +99,7 @@ export async function GET(
       if (products.length === 0) {
         const { data: genericProducts } = await admin
           .from("products")
-          .select("id, name, sale_price, stock_quantity, category_id")
+          .select("id, name, sale_price, stock_quantity, category_id, image_url")
           .eq("tenant_id", tenantId)
           .limit(100);
 
@@ -98,7 +111,7 @@ export async function GET(
             description: "Article en stock physique dans notre magasin.",
             price: g.sale_price ?? 1000,
             availableStock: g.stock_quantity ?? 10,
-            photoUrl: null,
+            photoUrl: g.image_url ?? null,
           }));
         }
       }
@@ -108,30 +121,37 @@ export async function GET(
         .from("couture_boutique_stocks")
         .select(`
           id, quantity, unit_price_xof, product_type,
-          model:couture_models!model_id (id, name, reference_code),
+          model:couture_models!model_id (id, name, reference_code, image_url),
           size:couture_sizes!size_id (label),
-          color:couture_colors!color_id (name)
+          color:couture_colors!color_id (name),
+          accessory:couture_accessories!accessory_id (id, name, photo_url)
         `)
         .eq("tenant_id", tenantId)
         .gt("quantity", 0)
         .limit(100);
 
       if (coutureStocks && coutureStocks.length > 0) {
-        products = coutureStocks.map((cs: any) => ({
-          id: cs.id,
-          name: cs.model?.name || "Modèle Créateur",
-          category: cs.product_type === "CLOTHING" ? "Prêt-à-porter & Tenues" : "Accessoires de Mode",
-          description: `Réf : ${cs.model?.reference_code || "EXCLU"} · Taille : ${cs.size?.label || "Sur mesure"} · Couleur : ${cs.color?.name || "Originale"}`,
-          price: cs.unit_price_xof || 25000,
-          availableStock: cs.quantity || 1,
-          photoUrl: null,
-          badge: "Création Atelier",
-        }));
+        products = coutureStocks.map((cs) => {
+          const model = Array.isArray(cs.model) ? cs.model[0] : cs.model;
+          const size = Array.isArray(cs.size) ? cs.size[0] : cs.size;
+          const color = Array.isArray(cs.color) ? cs.color[0] : cs.color;
+          const accessory = Array.isArray(cs.accessory) ? cs.accessory[0] : cs.accessory;
+          return {
+            id: cs.id,
+            name: model?.name || accessory?.name || "Modèle Créateur",
+            category: cs.product_type === "CLOTHING" ? "Prêt-à-porter & Tenues" : "Accessoires de Mode",
+            description: `Réf : ${model?.reference_code || "EXCLU"} · Taille : ${size?.label || "Sur mesure"} · Couleur : ${color?.name || "Originale"}`,
+            price: cs.unit_price_xof || 25000,
+            availableStock: cs.quantity || 1,
+            photoUrl: model?.image_url ?? accessory?.photo_url ?? null,
+            badge: "Création Atelier",
+          };
+        });
       } else {
         // Fallback sur modèles de couture
         const { data: models } = await admin
           .from("couture_models")
-          .select("id, name, reference_code, description")
+          .select("id, name, reference_code, description, image_url")
           .eq("tenant_id", tenantId)
           .limit(50);
 
@@ -142,7 +162,7 @@ export async function GET(
           description: m.description || `Création originale Distinction · Réf ${m.reference_code}`,
           price: 35000,
           availableStock: 5,
-          photoUrl: null,
+          photoUrl: m.image_url ?? null,
           badge: "Sur-mesure & Prêt-à-porter",
         }));
       }
@@ -160,7 +180,7 @@ export async function GET(
         currency: company.currency || "FCFA",
       },
       products,
-    });
+    }, { headers: { "Cache-Control": "private, no-store" } });
   } catch {
     return NextResponse.json({ error: "Impossible de charger la vitrine." }, { status: 500 });
   }
