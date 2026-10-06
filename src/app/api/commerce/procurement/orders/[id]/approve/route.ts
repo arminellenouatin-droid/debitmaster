@@ -36,7 +36,7 @@ export async function POST(
 
     const now = new Date().toISOString();
     let updatedStatus = order.status;
-    const updatePayload: Record<string, any> = { updated_at: now };
+    const updatePayload: Record<string, string> = { updated_at: now };
 
     if (action === "APPROVE") {
       updatedStatus = "APPROVED";

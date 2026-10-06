@@ -368,7 +368,7 @@ export function CommercePersonnelClient({ tenantId, isOwner }: { tenantId: strin
                   <label className="text-[11px] font-bold text-[var(--muted)]">Règle</label>
                   <select
                     value={commissionType}
-                    onChange={(e) => setCommissionType(e.target.value as any)}
+                    onChange={(e) => setCommissionType(e.target.value as typeof commissionType)}
                     className="mt-1 h-10 w-full rounded-xl border border-[var(--line)] bg-[var(--surface-muted)] px-3 text-xs font-black text-[var(--primary)]"
                   >
                     <option value="REVENUE_PERCENT">% sur CA réalisé</option>
@@ -520,7 +520,7 @@ export function CommercePersonnelClient({ tenantId, isOwner }: { tenantId: strin
               </select>
               <select
                 value={clockInStatus}
-                onChange={(e) => setClockInStatus(e.target.value as any)}
+                onChange={(e) => setClockInStatus(e.target.value as typeof clockInStatus)}
                 className="h-10 rounded-xl border border-[var(--line)] bg-[var(--surface)] px-3 text-xs font-black text-[var(--primary)]"
               >
                 <option value="PRESENT">À l’heure</option>

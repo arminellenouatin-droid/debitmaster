@@ -20,7 +20,7 @@ export async function GET() {
       .eq("activity_type", "ATELIER_COUTURE")
       .maybeSingle();
 
-    let sites: any[] = [];
+    let sites: unknown[] = [];
     let modelsCount = 0;
     let ratesCount = 0;
 

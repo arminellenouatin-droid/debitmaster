@@ -90,14 +90,14 @@ export async function POST(request: Request) {
       : "MANUAL_OD";
     const siteId = typeof body.siteId === "string" ? body.siteId.trim() : null;
     const currency = typeof body.currency === "string" ? body.currency.trim().toUpperCase() : "FCFA";
-    const linesInput = Array.isArray(body.lines) ? body.lines : [];
+    const linesInput: Record<string, unknown>[] = Array.isArray(body.lines) ? body.lines : [];
 
     if (linesInput.length < 2) {
       return NextResponse.json({ error: "Une écriture comptable requiert au moins 2 lignes (partie double)." }, { status: 400 });
     }
 
     // 1. Validation de la partie double Débit == Crédit
-    const linesDraft: JournalEntryLineDraft[] = linesInput.map((l: any) => ({
+    const linesDraft: JournalEntryLineDraft[] = linesInput.map((l) => ({
       accountNumber: String(l.accountNumber || "").trim(),
       label: typeof l.label === "string" ? l.label.trim().slice(0, 240) : description,
       debit: Math.max(0, Math.round(Number(l.debit) || 0)),

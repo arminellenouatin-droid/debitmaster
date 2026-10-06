@@ -1719,7 +1719,7 @@ export function ServeurClient({
                             className={`rounded-xl border p-2.5 text-center font-black text-xs transition ${
                               momoOperator === op.id
                                 ? `${op.color} shadow-md ring-2 ring-amber-500`
-                                : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                                : "border-slate-200 bg-white text-slate-700"
                             }`}
                           >
                             <span className="text-sm block">{op.icon}</span>

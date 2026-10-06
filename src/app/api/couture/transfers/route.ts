@@ -132,10 +132,10 @@ export async function POST(request: Request) {
     }
 
     // Insertion des lignes
-    const linesToInsert = items.map((it: any) => ({
+    const linesToInsert = items.map((it: Record<string, unknown>) => ({
       tenant_id: context.tenantId,
       transfer_id: createdTransfer.id,
-      item_type: ["CLOTHING", "ACCESSORY", "SUPPLY"].includes(it.itemType) ? it.itemType : "CLOTHING",
+      item_type: typeof it.itemType === "string" && ["CLOTHING", "ACCESSORY", "SUPPLY"].includes(it.itemType) ? it.itemType : "CLOTHING",
       model_id: it.modelId || null,
       range_id: it.rangeId || null,
       size_id: it.sizeId || null,

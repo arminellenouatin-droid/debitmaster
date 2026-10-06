@@ -63,7 +63,7 @@ export async function POST(
       .lte("effective_date", today)
       .order("effective_date", { ascending: false });
 
-    let currentRates: CoutureExchangeRates = { ...defaultExchangeRates };
+    const currentRates: CoutureExchangeRates = { ...defaultExchangeRates };
     if (ratesRows && ratesRows.length > 0) {
       const eur = ratesRows.find((r) => r.currency === "EUR");
       if (eur && Number(eur.rate_to_fcfa) > 0) currentRates.eurToFcfa = Number(eur.rate_to_fcfa);

@@ -90,7 +90,7 @@ export async function POST(request: Request) {
     let subtotalXof = 0;
     let totalTaxXof = 0;
 
-    const itemsToInsert = items.map((item: any) => {
+    const itemsToInsert = items.map((item: Record<string, unknown>) => {
       const qty = Math.max(1, Number(item.quantityOrdered) || 1);
       const unitPrice = Math.max(0, Math.round(Number(item.unitPriceXof) || 0));
       const lineTaxRate = Number(item.taxRateBasisPoints) || 0;
@@ -147,7 +147,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Impossible d'enregistrer le bon de commande." }, { status: 500 });
     }
 
-    const finalItems = itemsToInsert.map((it: any) => ({
+    const finalItems = itemsToInsert.map((it) => ({
       ...it,
       purchase_order_id: createdOrder.id,
     }));

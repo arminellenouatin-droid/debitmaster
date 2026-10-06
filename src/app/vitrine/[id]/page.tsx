@@ -109,16 +109,21 @@ export default async function VitrinePage({
       .limit(100);
 
     if (coutureStocks && coutureStocks.length > 0) {
-      products = coutureStocks.map((cs: any) => ({
-        id: cs.id,
-        name: cs.model?.name || "Modèle Créateur",
-        category: cs.product_type === "CLOTHING" ? "Prêt-à-porter & Robes" : "Accessoires de Mode",
-        description: `Réf : ${cs.model?.reference_code || "EXCLU"} · Taille : ${cs.size?.label || "Standard"} · Nuance : ${cs.color?.name || "Originale"}`,
-        price: cs.unit_price_xof || 25000,
-        availableStock: cs.quantity || 1,
-        photoUrl: null,
-        badge: "Création Atelier",
-      }));
+      products = coutureStocks.map((cs) => {
+        const model = Array.isArray(cs.model) ? cs.model[0] : cs.model;
+        const size = Array.isArray(cs.size) ? cs.size[0] : cs.size;
+        const color = Array.isArray(cs.color) ? cs.color[0] : cs.color;
+        return {
+          id: cs.id,
+          name: model?.name || "Modèle Créateur",
+          category: cs.product_type === "CLOTHING" ? "Prêt-à-porter & Robes" : "Accessoires de Mode",
+          description: `Réf : ${model?.reference_code || "EXCLU"} · Taille : ${size?.label || "Standard"} · Nuance : ${color?.name || "Originale"}`,
+          price: cs.unit_price_xof || 25000,
+          availableStock: cs.quantity || 1,
+          photoUrl: null,
+          badge: "Création Atelier",
+        };
+      });
     } else {
       const { data: models } = await admin
         .from("couture_models")

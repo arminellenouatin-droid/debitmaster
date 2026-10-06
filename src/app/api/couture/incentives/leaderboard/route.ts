@@ -56,8 +56,8 @@ export async function GET(request: Request) {
     }>();
 
     for (const r of records ?? []) {
-      const emp = (r as any).employee;
-      const site = (r as any).site;
+      const emp = r.employee;
+      const site = r.site;
       const empId = r.employee_id;
 
       // Ancienneté estimée

@@ -93,7 +93,7 @@ export async function PATCH(
 
     const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
 
-    if (typeof body.status === "string" && allowedPatchStatuses.includes(body.status.toUpperCase() as any)) {
+    if (typeof body.status === "string" && allowedPatchStatuses.includes(body.status.toUpperCase() as (typeof allowedPatchStatuses)[number])) {
       updates.status = body.status.toUpperCase();
     }
     if (body.notes !== undefined) {

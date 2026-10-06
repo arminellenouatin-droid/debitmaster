@@ -19,12 +19,14 @@ export async function GET(request: Request) {
     assertCouturePermission(context, "piecework.view");
 
     const admin = createSupabaseAdminClient();
-    let { data: rates, error } = await admin
+    const { data: queriedRates, error } = await admin
       .from("couture_piecework_rates")
       .select("*")
       .eq("tenant_id", context.tenantId)
       .eq("is_active", true)
       .order("task_label", { ascending: true });
+
+    let rates = queriedRates;
 
     // Auto-seed si vide
     if (!error && (!rates || rates.length === 0)) {

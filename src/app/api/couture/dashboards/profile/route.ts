@@ -36,7 +36,7 @@ export async function GET(request: Request) {
     const salesCount = (sales ?? []).length;
 
     // 2. Fiches de production atelier
-    let prodQuery = admin
+    const prodQuery = admin
       .from("couture_production_cards")
       .select("id, status, priority, due_date")
       .eq("tenant_id", context.tenantId);

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { DgiCertificationResult } from "@/lib/dgi-benin";
 
 type CashRegister = {
   id: string;
@@ -50,6 +51,13 @@ type TicketZ = {
   paymentsCount: number;
 };
 
+type CashReceipt = {
+  invoiceNumber: string;
+  totalAmount: number;
+  amountPaid: number;
+  timestamp: string;
+};
+
 export function CaissierClient({ tenantId, userId }: { tenantId: string; userId: string }) {
   const [registers, setRegisters] = useState<CashRegister[]>([]);
   const [activeSession, setActiveSession] = useState<CashSession | null>(null);
@@ -79,8 +87,8 @@ export function CaissierClient({ tenantId, userId }: { tenantId: string; userId:
   const [differenceReason, setDifferenceReason] = useState("");
   const [ticketZ, setTicketZ] = useState<TicketZ | null>(null);
 
-  const [lastReceipt, setLastReceipt] = useState<any | null>(null);
-  const [dgiCert, setDgiCert] = useState<any | null>(null);
+  const [lastReceipt, setLastReceipt] = useState<CashReceipt | null>(null);
+  const [dgiCert, setDgiCert] = useState<DgiCertificationResult | null>(null);
   const [isDgiActive, setIsDgiActive] = useState(false);
   const [message, setMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
 
@@ -146,8 +154,8 @@ export function CaissierClient({ tenantId, userId }: { tenantId: string; userId:
       setShowOpenModal(false);
       setMessage({ text: "Caisse ouverte avec succès !", type: "success" });
       loadData();
-    } catch (err: any) {
-      setMessage({ text: err.message, type: "error" });
+    } catch (err) {
+      setMessage({ text: err instanceof Error ? err.message : "Erreur inattendue.", type: "error" });
     }
   }
 
@@ -190,8 +198,8 @@ export function CaissierClient({ tenantId, userId }: { tenantId: string; userId:
       setPayingInvoice(null);
       setMessage({ text: `Règlement de ${paymentAmount.toLocaleString("fr-FR")} FCFA enregistré !`, type: "success" });
       loadData();
-    } catch (err: any) {
-      setMessage({ text: err.message, type: "error" });
+    } catch (err) {
+      setMessage({ text: err instanceof Error ? err.message : "Erreur inattendue.", type: "error" });
     } finally {
       setSubmittingPayment(false);
     }
@@ -217,8 +225,8 @@ export function CaissierClient({ tenantId, userId }: { tenantId: string; userId:
       setMovementReason("");
       setMessage({ text: "Mouvement de caisse enregistré avec succès.", type: "success" });
       loadData();
-    } catch (err: any) {
-      setMessage({ text: err.message, type: "error" });
+    } catch (err) {
+      setMessage({ text: err instanceof Error ? err.message : "Erreur inattendue.", type: "error" });
     }
   }
 
@@ -240,8 +248,8 @@ export function CaissierClient({ tenantId, userId }: { tenantId: string; userId:
       setActiveSession(null);
       setMessage({ text: "Caisse clôturée avec succès ! Le Ticket Z est disponible.", type: "success" });
       loadData();
-    } catch (err: any) {
-      setMessage({ text: err.message, type: "error" });
+    } catch (err) {
+      setMessage({ text: err instanceof Error ? err.message : "Erreur inattendue.", type: "error" });
     }
   }
 
@@ -601,7 +609,7 @@ export function CaissierClient({ tenantId, userId }: { tenantId: string; userId:
                 <label className="text-xs font-bold text-slate-700">Type de mouvement</label>
                 <select
                   value={movementType}
-                  onChange={(e) => setMovementType(e.target.value as any)}
+                  onChange={(e) => setMovementType(e.target.value as typeof movementType)}
                   className="mt-1 w-full px-3 py-2 text-xs rounded-xl border border-slate-300 font-bold"
                 >
                   <option value="EXPENSE">Dépense de caisse</option>

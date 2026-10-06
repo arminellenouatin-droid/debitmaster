@@ -559,7 +559,7 @@ export function InventaireClient({
                   <label className="text-xs font-bold text-slate-700">Type d’inventaire</label>
                   <select
                     value={newType}
-                    onChange={(e) => setNewType(e.target.value as any)}
+                    onChange={(e) => setNewType(e.target.value as typeof newType)}
                     className="mt-1 w-full rounded-xl border border-slate-200 p-2 text-xs font-bold"
                   >
                     <option value="GENERAL">Inventaire Général (Tous les produits)</option>

@@ -21,7 +21,7 @@ type PawaPayDepositPayload = {
   amount?: string | number;
   currency?: string;
   clientReferenceId?: string;
-  metadata?: Array<Record<string, any>> | Record<string, any>;
+  metadata?: Array<Record<string, unknown>> | Record<string, unknown>;
   failureReason?: {
     failureCode?: string;
     failureMessage?: string;
@@ -45,16 +45,17 @@ type PawaPayPayoutPayload = {
   clientReferenceId?: string;
 };
 
-export async function handlePawaPayPayload(payload: any) {
-  if (!payload || typeof payload !== "object") {
+export async function handlePawaPayPayload(payload: unknown) {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
     return NextResponse.json({ received: true, ignored: "empty_or_invalid_payload" });
   }
+  const payloadRecord = payload as Record<string, unknown>;
 
   const admin = createSupabaseAdminClient();
 
   // 1. REFOUND / REMBOURSEMENT
-  if ("refundId" in payload && payload.refundId) {
-    const refund = payload as PawaPayRefundPayload;
+  if ("refundId" in payloadRecord && payloadRecord.refundId) {
+    const refund = payloadRecord as PawaPayRefundPayload;
     const refundId = String(refund.refundId);
     const depositId = refund.depositId ? String(refund.depositId) : "";
     const status = (refund.status || "").toUpperCase();
@@ -76,8 +77,8 @@ export async function handlePawaPayPayload(payload: any) {
   }
 
   // 2. PAYOUT / PAIEMENT (DÉCAISSEMENT AFFILIÉ / RETRAIT)
-  if ("payoutId" in payload && payload.payoutId) {
-    const payout = payload as PawaPayPayoutPayload;
+  if ("payoutId" in payloadRecord && payloadRecord.payoutId) {
+    const payout = payloadRecord as PawaPayPayoutPayload;
     const payoutId = String(payout.payoutId);
     const status = (payout.status || "").toUpperCase();
 
@@ -92,8 +93,8 @@ export async function handlePawaPayPayload(payload: any) {
   }
 
   // 3. DEPOSIT OU CHECKOUT (DÉPÔT / ENCAISSEMENT)
-  if ("depositId" in payload && payload.depositId) {
-    const deposit = payload as PawaPayDepositPayload;
+  if ("depositId" in payloadRecord && payloadRecord.depositId) {
+    const deposit = payloadRecord as PawaPayDepositPayload;
     const depositId = String(deposit.depositId);
     const clientRef = deposit.clientReferenceId ? String(deposit.clientReferenceId) : "";
     const status = (deposit.status || "").toUpperCase();

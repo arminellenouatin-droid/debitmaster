@@ -288,16 +288,19 @@ export async function initiateRefund(
   });
 }
 
+type PawaPayStatusData = Record<string, unknown> & { status?: string };
+type PawaPayStatusResponse = PawaPayStatusData & { data?: PawaPayStatusData };
+
 /**
  * Vérifie le statut d'un dépôt avec extraction unifiée du statut
  */
 export async function getDepositStatus(depositId: string): Promise<{
   status: string;
   depositId: string;
-  data: any;
-  raw: any;
+  data: PawaPayStatusData;
+  raw: PawaPayStatusResponse;
 }> {
-  const res = await pawapayFetch<any>(`/v2/deposits/${encodeURIComponent(depositId)}`, {
+  const res = await pawapayFetch<PawaPayStatusResponse>(`/v2/deposits/${encodeURIComponent(depositId)}`, {
     method: "GET",
   });
 
@@ -318,10 +321,10 @@ export async function getDepositStatus(depositId: string): Promise<{
 export async function getPayoutStatus(payoutId: string): Promise<{
   status: string;
   payoutId: string;
-  data: any;
-  raw: any;
+  data: PawaPayStatusData;
+  raw: PawaPayStatusResponse;
 }> {
-  const res = await pawapayFetch<any>(`/v2/payouts/${encodeURIComponent(payoutId)}`, {
+  const res = await pawapayFetch<PawaPayStatusResponse>(`/v2/payouts/${encodeURIComponent(payoutId)}`, {
     method: "GET",
   });
 
@@ -342,10 +345,10 @@ export async function getPayoutStatus(payoutId: string): Promise<{
 export async function getRefundStatus(refundId: string): Promise<{
   status: string;
   refundId: string;
-  data: any;
-  raw: any;
+  data: PawaPayStatusData;
+  raw: PawaPayStatusResponse;
 }> {
-  const res = await pawapayFetch<any>(`/v2/refunds/${encodeURIComponent(refundId)}`, {
+  const res = await pawapayFetch<PawaPayStatusResponse>(`/v2/refunds/${encodeURIComponent(refundId)}`, {
     method: "GET",
   });
 
