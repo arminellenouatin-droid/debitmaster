@@ -89,7 +89,7 @@ export async function POST(request: Request) {
     const returnNumber = `RET-${new Date().getFullYear()}-${Math.floor(100000 + Math.random() * 900000)}`;
 
     let totalRefundAmount = 0;
-    const returnItemsToInsert: any[] = [];
+    const returnItemsToInsert = [];
 
     for (const item of itemsInput) {
       const qty = Math.max(1, Number(item.quantity) || 1);

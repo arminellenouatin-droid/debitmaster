@@ -70,7 +70,7 @@ export async function POST(request: Request) {
     const lastName = typeof body.lastName === "string" ? body.lastName.trim().slice(0, 100) : "";
     const phone = typeof body.phone === "string" ? normalizePhoneIdentifier(body.phone) : "";
     const email = typeof body.email === "string" && body.email.includes("@") ? body.email.trim().toLowerCase().slice(0, 120) : null;
-    const gender = typeof body.gender === "string" && validGenders.includes(body.gender.toUpperCase() as any) ? body.gender.toUpperCase() : "HOMME";
+    const gender = typeof body.gender === "string" && validGenders.includes(body.gender.toUpperCase() as (typeof validGenders)[number]) ? body.gender.toUpperCase() : "HOMME";
     const birthday = typeof body.birthday === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.birthday) ? body.birthday : null;
     const notes = typeof body.notes === "string" ? body.notes.trim().slice(0, 2000) : null;
     const photoUrl = typeof body.photoUrl === "string" ? body.photoUrl.trim() : null;
@@ -142,7 +142,7 @@ export async function PATCH(request: Request) {
     if (typeof body.lastName === "string" && body.lastName.trim()) updates.last_name = body.lastName.trim().slice(0, 100);
     if (typeof body.phone === "string" && body.phone.trim()) updates.phone = normalizePhoneIdentifier(body.phone);
     if (body.email !== undefined) updates.email = typeof body.email === "string" && body.email.includes("@") ? body.email.trim().toLowerCase().slice(0, 120) : null;
-    if (typeof body.gender === "string" && validGenders.includes(body.gender.toUpperCase() as any)) updates.gender = body.gender.toUpperCase();
+    if (typeof body.gender === "string" && validGenders.includes(body.gender.toUpperCase() as (typeof validGenders)[number])) updates.gender = body.gender.toUpperCase();
     if (body.birthday !== undefined) updates.birthday = typeof body.birthday === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.birthday) ? body.birthday : null;
     if (body.notes !== undefined) updates.notes = typeof body.notes === "string" ? body.notes.trim().slice(0, 2000) : null;
     if (body.photoUrl !== undefined) updates.photo_url = typeof body.photoUrl === "string" ? body.photoUrl.trim() : null;

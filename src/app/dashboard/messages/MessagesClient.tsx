@@ -272,6 +272,44 @@ export function MessagesClient() {
     []
   );
 
+  function terminateCall() {
+    if (callTimerRef.current) clearInterval(callTimerRef.current);
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach((track) => track.stop());
+      localStreamRef.current = null;
+    }
+    if (peerConnectionRef.current) {
+      peerConnectionRef.current.close();
+      peerConnectionRef.current = null;
+    }
+
+    // Logger la fin de l'appel
+    if (activeCallTarget && tenantId) {
+      void fetch("/api/messages/call-signal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tenantId,
+          recipientUserId: activeCallTarget.userId,
+          action: callState === "CONNECTED" ? "END" : "DECLINE",
+          callType,
+          duration: callDuration,
+        }),
+      });
+    }
+
+    setCallModalOpen(false);
+    setCallState("ENDED");
+    setCallDuration(0);
+    // Recharger la conversation pour afficher le journal de l'appel
+    void loadMessages(tenantId, selectedContactId);
+  }
+
+  const terminateCallRef = useRef(terminateCall);
+  useEffect(() => {
+    terminateCallRef.current = terminateCall;
+  });
+
   useEffect(() => {
     if (tenantId && selectedContactId) {
       void loadMessages(tenantId, selectedContactId);
@@ -325,7 +363,7 @@ export function MessagesClient() {
               setCallState("INCOMING");
               setCallModalOpen(true);
             } else if (sig.action === "DECLINE" || sig.action === "END") {
-              terminateCall();
+              terminateCallRef.current();
             }
           }
         })
@@ -620,39 +658,6 @@ export function MessagesClient() {
       localStreamRef.current = stream;
       if (localVideoRef.current) localVideoRef.current.srcObject = stream;
     } catch {}
-  };
-
-  const terminateCall = () => {
-    if (callTimerRef.current) clearInterval(callTimerRef.current);
-    if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach((track) => track.stop());
-      localStreamRef.current = null;
-    }
-    if (peerConnectionRef.current) {
-      peerConnectionRef.current.close();
-      peerConnectionRef.current = null;
-    }
-
-    // Logger la fin de l'appel
-    if (activeCallTarget && tenantId) {
-      void fetch("/api/messages/call-signal", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          tenantId,
-          recipientUserId: activeCallTarget.userId,
-          action: callState === "CONNECTED" ? "END" : "DECLINE",
-          callType,
-          duration: callDuration,
-        }),
-      });
-    }
-
-    setCallModalOpen(false);
-    setCallState("ENDED");
-    setCallDuration(0);
-    // Recharger la conversation pour afficher le journal de l'appel
-    void loadMessages(tenantId, selectedContactId);
   };
 
   const toggleMute = () => {

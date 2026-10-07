@@ -14,7 +14,7 @@ export async function GET(request: Request) {
 
     const admin = createSupabaseAdminClient();
 
-    let query = admin
+    const query = admin
       .from("commerce_journal_entry_lines")
       .select(`
         account_number, account_name, debit_amount_xof, credit_amount_xof,

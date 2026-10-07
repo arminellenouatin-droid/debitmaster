@@ -146,11 +146,11 @@ export async function PATCH(
         .eq("transfer_id", id)
         .eq("tenant_id", context.tenantId);
 
-      const receivedItemsInput = Array.isArray(body.receivedItems) ? body.receivedItems : [];
+      const receivedItemsInput = Array.isArray(body.receivedItems) ? body.receivedItems as Record<string, unknown>[] : [];
       const resolutionList = [];
 
       for (const line of lines ?? []) {
-        const matchingInput = receivedItemsInput.find((it: any) => it.lineId === line.id);
+        const matchingInput = receivedItemsInput.find((it) => it.lineId === line.id);
         const qtyReceived =
           matchingInput && Number.isFinite(Number(matchingInput.quantityReceived))
             ? Number(matchingInput.quantityReceived)

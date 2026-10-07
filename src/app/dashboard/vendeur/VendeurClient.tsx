@@ -541,6 +541,7 @@ export function VendeurClient({
                     className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-3.5 text-left transition hover:-translate-y-0.5 hover:border-emerald-600 hover:shadow-md active:scale-98"
                   >
                     <div>
+                      {p.image_url ? <img src={p.image_url} alt={`Photo de ${p.name}`} className="mb-3 h-28 w-full rounded-xl object-cover" loading="lazy" /> : <div aria-hidden="true" className="mb-3 grid h-28 w-full place-items-center rounded-xl bg-slate-100 text-2xl text-slate-400">▧</div>}
                       <div className="flex items-start justify-between gap-1">
                         <span className="text-xs font-black text-slate-900 line-clamp-2">
                           {p.name}

@@ -153,7 +153,7 @@ export async function POST(request: Request) {
     }
 
     // 4. Copier les lignes de commande dans delivery_note_items
-    const items = (order.order_items || []).map((item: any) => ({
+    const items = (order.order_items || []).map((item) => ({
       tenant_id: context.tenantId,
       delivery_note_id: deliveryNote.id,
       product_id: item.product_id,

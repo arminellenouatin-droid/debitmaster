@@ -22,7 +22,7 @@ export async function GET(request: Request) {
     if (error) return NextResponse.json({ error: "Impossible de charger les produits." }, { status: 500 });
     const products = data ?? [];
     if (context.role === "SERVEUR" || context.role === "SERVEUSE") {
-      return NextResponse.json({ products: products.map(({ id, category_id, name, product_type, unit, price, stock_family }) => ({ id, category_id, name, product_type, unit, price, stock_family })) });
+      return NextResponse.json({ products: products.map(({ id, category_id, name, product_type, unit, price, stock_family, image_url }) => ({ id, category_id, name, product_type, unit, price, stock_family, image_url })) });
     }
     return NextResponse.json({ products });
   } catch {

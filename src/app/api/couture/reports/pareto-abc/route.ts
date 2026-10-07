@@ -21,7 +21,7 @@ export async function GET(request: Request) {
     const admin = createSupabaseAdminClient();
 
     // 1. Récupérer les lignes de vente
-    let query = admin
+    const query = admin
       .from("couture_sale_lines")
       .select(`
         id,
@@ -40,9 +40,10 @@ export async function GET(request: Request) {
     }
 
     // Filtrer par site si demandé et exclure les ventes annulées
-    const validLines = (lines ?? []).filter((l: any) => {
-      if (!l.sale) return false;
-      if (siteId && l.sale.site_id !== siteId) return false;
+    const validLines = (lines ?? []).filter((l) => {
+      const sale = Array.isArray(l.sale) ? l.sale[0] : l.sale;
+      if (!sale) return false;
+      if (siteId && sale.site_id !== siteId) return false;
       return true;
     });
 

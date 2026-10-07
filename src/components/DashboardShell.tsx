@@ -120,9 +120,16 @@ export async function DashboardShell({ children, firstName }: { children: React.
     : "Indisponible";
 
   const isBuvette = activeContext.company?.activity_type === "BUVETTE";
+  const isCouture = activeContext.company?.activity_type === "ATELIER_COUTURE";
   const buvetteLimits = isBuvette ? getBuvetteLimits(activeContext.company) : null;
 
-  const baseNavigation: ReadonlyArray<NavItem> = serviceRole
+  const baseNavigation: ReadonlyArray<NavItem> = isCouture
+    ? [
+        ["⌂", "Dashboard", "/dashboard"],
+        ["📦", "Catalogue Couture", "/dashboard/couture/catalogue"],
+        ["⚙", "Profil", "/dashboard/settings"],
+      ]
+    : serviceRole
     ? serviceNavigation[serviceRole]
     : isPowerSupervisor
     ? navigation.filter(([, label]) => label !== "Ventes")

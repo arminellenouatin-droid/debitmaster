@@ -134,7 +134,7 @@ export async function POST(request: Request) {
     }
 
     let totalEstimated = 0;
-    const itemsToInsert = items.map((item: any) => {
+    const itemsToInsert = items.map((item: Record<string, unknown>) => {
       const qty = Math.max(1, Number(item.quantityRequested) || 1);
       const unitPrice = Math.max(0, Math.round(Number(item.estimatedUnitPriceXof) || 0));
       totalEstimated += qty * unitPrice;
@@ -169,7 +169,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Impossible de créer la demande d'achat." }, { status: 500 });
     }
 
-    const finalItems = itemsToInsert.map((it: any) => ({
+    const finalItems = itemsToInsert.map((it) => ({
       ...it,
       request_id: createdRequest.id,
     }));

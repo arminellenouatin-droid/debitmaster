@@ -107,7 +107,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Impossible de créer la demande de transfert." }, { status: 500 });
     }
 
-    const itemsToInsert = items.map((item: any) => ({
+    const itemsToInsert = items.map((item: Record<string, unknown>) => ({
       tenant_id: context.tenantId,
       transfer_id: createdTransfer.id,
       product_id: item.productId,

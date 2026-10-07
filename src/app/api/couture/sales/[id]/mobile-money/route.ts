@@ -32,7 +32,7 @@ export async function POST(
     }
 
     const phone = typeof body.phone === "string" ? normalizePhoneIdentifier(body.phone) : "";
-    const provider = typeof body.provider === "string" && validProviders.includes(body.provider.toUpperCase() as any)
+    const provider = typeof body.provider === "string" && validProviders.includes(body.provider.toUpperCase() as (typeof validProviders)[number])
       ? body.provider.toUpperCase()
       : "MTN";
     const amountXof = Math.max(0, Math.floor(Number(body.amountXof) || 0));

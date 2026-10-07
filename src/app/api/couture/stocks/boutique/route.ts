@@ -50,7 +50,7 @@ export async function GET(request: Request) {
 
     let filtered = stocks ?? [];
     if (lowStockOnly) {
-      filtered = filtered.filter((s: any) => s.quantity <= (s.min_threshold ?? 2));
+      filtered = filtered.filter((s) => s.quantity <= (s.min_threshold ?? 2));
     }
 
     return NextResponse.json({ stocks: filtered });

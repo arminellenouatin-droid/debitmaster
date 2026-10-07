@@ -11,6 +11,38 @@ type Employee = { id: string; first_name: string; last_name: string; phone: stri
 type Permission = { key: string; label: string; group: string };
 type AuditEvent = { id: string; actor_user_id: string | null; action: string; entity_type: string; entity_id: string | null; metadata: Record<string, unknown>; created_at: string };
 type DashboardData = { company: CommerceCompany; isOwner: boolean; roleNames: string[]; permissions: string[]; accessMode: "ACTIVE" | "GRACE" | "READ_ONLY" | "BLOCKED"; subscription: { status: string; plan: string | null; trialEndsAt: string | null; expiresAt: string | null; cutoff: string | null }; stores: Store[]; employees: Employee[]; roles: Role[]; auditEvents: AuditEvent[]; metrics: { storeCount: number; activeEmployeeCount: number; roleCount: number } };
+type CommerceProfileData = {
+  executive?: {
+    todayRevenue: number;
+    monthRevenue: number;
+    treasury: { total: number; cash: number; mobileMoney: number };
+    pendingApprovals: { total: number; expenses: number; purchaseOrders: number };
+  };
+  vendeur?: {
+    todaySales: number;
+    monthSales: number;
+    targetRevenue: number;
+    achievementPercent: number;
+    estimatedCommission: number;
+    commissionRatePercent: number;
+    pendingQuotesCount: number;
+    pendingInvoicesCount: number;
+  };
+  caissier?: {
+    queueCount: number;
+    totalCollectedToday: number;
+    activeSession: { session_number: string; register_name: string; opening_balance_xof: number } | null;
+    pendingInvoicesQueue: { id: string; order_number: string; server_name: string | null; total_amount: number }[];
+  };
+  magasinier?: {
+    deliveriesCount: number;
+    receiptsCount: number;
+    lowStockProducts: unknown[];
+  };
+  approvisionnement?: { reorderSuggestions: unknown[]; ongoingCount: number };
+  inventaire?: { activeSessions: unknown[]; hasOngoingSession: boolean };
+  comptable?: { allBalanced: boolean; recentCount: number };
+};
 type Feedback = { error: string; message: string };
 
 const dateTime = new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short" });
@@ -36,7 +68,7 @@ export function CommerceDashboardClient({ tenantId, isOwner, initialPermissions,
   const [employeeRoles, setEmployeeRoles] = useState<string[]>([]);
   const [employeeStores, setEmployeeStores] = useState<string[]>([]);
   const [selectedProfile, setSelectedProfile] = useState<string>(isOwner ? "ADMINISTRATEUR" : "VENDEUR");
-  const [profileData, setProfileData] = useState<any>(null);
+  const [profileData, setProfileData] = useState<CommerceProfileData | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
 
   const activePermissions = data?.permissions ?? initialPermissions;
@@ -48,7 +80,7 @@ export function CommerceDashboardClient({ tenantId, isOwner, initialPermissions,
     try {
       const res = await fetch(`/api/commerce/dashboards/profile?tenantId=${encodeURIComponent(tenantId)}&profile=${encodeURIComponent(prof)}`);
       if (res.ok) {
-        const json = await res.json();
+        const json = (await res.json()) as CommerceProfileData;
         setProfileData(json);
       }
     } catch {
@@ -334,7 +366,7 @@ export function CommerceDashboardClient({ tenantId, isOwner, initialPermissions,
                 <div className="rounded-xl border border-[var(--line)] p-3">
                   <p className="text-xs font-black text-[var(--primary)] mb-2">Commandes à encaisser en caisse :</p>
                   <div className="divide-y divide-[var(--line)] text-xs">
-                    {profileData.caissier.pendingInvoicesQueue.map((item: any) => (
+                    {profileData.caissier.pendingInvoicesQueue.map((item) => (
                       <div key={item.id} className="py-2 flex justify-between items-center">
                         <div>
                           <span className="font-black">{item.order_number}</span>

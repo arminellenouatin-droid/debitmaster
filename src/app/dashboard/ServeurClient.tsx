@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLiveRefresh } from "@/hooks/useLiveRefresh";
 import type { DgiCertificationResult } from "@/lib/dgi-benin";
+import { mealAccompanimentOptions } from "@/lib/meal-accompaniments";
 import {
   Wine,
   UtensilsCrossed,
@@ -93,6 +94,7 @@ type Product = {
   product_type?: string | null;
   stock_family?: string | null;
   category_id?: string | null;
+  image_url?: string | null;
 };
 type Customer = { id: string; full_name: string; phone: string | null; customer_type: string };
 type CartLine = { product: Product; quantity: number; fulfillmentUnit: "BEVERAGE" | "MEAL"; accompaniment?: string };
@@ -143,7 +145,7 @@ const itemStatusLabel: Record<string, string> = {
   DELIVERED: "Livrée",
 };
 const days = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
-const accompaniments = ["Aucun", "Riz", "Pâte", "Frites", "Attiéké", "Salade composée", "Alloco"] as const;
+const accompaniments = mealAccompanimentOptions;
 
 export function ServeurClient({
   tenantId,
@@ -168,6 +170,7 @@ export function ServeurClient({
   const [remittance, setRemittance] = useState<RemittanceSnapshot | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [accompanimentImageUrls, setAccompanimentImageUrls] = useState<Record<string, string>>({});
   const [selectedType, setSelectedType] = useState<"BEVERAGE" | "MEAL">("BEVERAGE");
   const [productSearch, setProductSearch] = useState("");
   const [productPickerOpen, setProductPickerOpen] = useState(false);
@@ -226,12 +229,19 @@ export function ServeurClient({
   }, [tenantId]);
 
   const loadOrderData = useCallback(async () => {
-    const [productsResponse, customersResponse] = await Promise.all([
+    const [productsResponse, customersResponse, accompanimentResponse] = await Promise.all([
       fetch(`/api/products?tenantId=${tenantId}`, { cache: "no-store" }),
       fetch(`/api/customers?tenantId=${tenantId}`, { cache: "no-store" }),
+      fetch(`/api/meal-accompaniment-images?tenantId=${encodeURIComponent(tenantId)}`, { cache: "no-store" }),
     ]);
     if (productsResponse.ok) setProducts((await productsResponse.json()).products ?? []);
     if (customersResponse.ok) setCustomers((await customersResponse.json()).customers ?? []);
+    if (accompanimentResponse.ok) {
+      const { images = [] } = await accompanimentResponse.json();
+      setAccompanimentImageUrls(Object.fromEntries(images.filter((item: { imageUrl?: string | null }) => item.imageUrl).map((item: { name: string; imageUrl: string }) => [item.name, item.imageUrl])));
+    } else {
+      setAccompanimentImageUrls({});
+    }
   }, [tenantId]);
 
   useEffect(() => {
@@ -1017,9 +1027,7 @@ export function ServeurClient({
                       {/* En-tête : Nom du produit & Type */}
                       <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
                         <div className="flex items-center gap-3">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-100 text-amber-700 shrink-0">
-                            {selectedType === "BEVERAGE" ? <Wine className="h-6 w-6" /> : <UtensilsCrossed className="h-6 w-6" />}
-                          </div>
+                          {pendingProduct.image_url ? <img src={pendingProduct.image_url} alt={`Photo de ${pendingProduct.name}`} className="h-12 w-12 shrink-0 rounded-xl object-cover" /> : <div aria-hidden="true" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700">{selectedType === "BEVERAGE" ? <Wine className="h-6 w-6" /> : <UtensilsCrossed className="h-6 w-6" />}</div>}
                           <div>
                             <span className="text-[10px] font-black uppercase tracking-wider text-amber-600">
                               {selectedType === "BEVERAGE" ? "Boisson / Bar" : "Plat Cuisine"}
@@ -1126,6 +1134,12 @@ export function ServeurClient({
                                 ))}
                               </select>
                             </label>
+                            {pendingAccompaniment !== "Aucun" && (
+                              <div className="mt-2 flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-2.5" aria-live="polite">
+                                {accompanimentImageUrls[pendingAccompaniment] ? <img src={accompanimentImageUrls[pendingAccompaniment]} alt={`Photo de l’accompagnement ${pendingAccompaniment}`} className="h-14 w-14 shrink-0 rounded-lg object-cover" /> : <div aria-hidden="true" className="grid h-14 w-14 shrink-0 place-items-center rounded-lg bg-slate-200 text-xl text-slate-500">＋</div>}
+                                <div><p className="text-xs font-black text-slate-800">{pendingAccompaniment}</p><p className="text-[11px] text-slate-500">{accompanimentImageUrls[pendingAccompaniment] ? "Accompagnement sélectionné" : "Photo non renseignée pour cet établissement"}</p></div>
+                              </div>
+                            )}
                           </div>
                         )}
 
@@ -1165,7 +1179,7 @@ export function ServeurClient({
                       const qty = getProductQty(product.id);
                       return <button key={product.id} type="button" onClick={() => selectProduct(product)} className="flex min-h-14 w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left hover:bg-emerald-50 focus:bg-emerald-50 focus:outline-none">
                         <span className="min-w-0"><span className="block truncate text-sm font-bold text-slate-900">{product.name}</span><span className="block text-xs font-black text-amber-600">{money(product.price)}{qty ? ` · ${qty} au panier` : ""}</span></span>
-                        {selectedType === "BEVERAGE" ? <Wine className="h-5 w-5 shrink-0 text-amber-500" /> : <UtensilsCrossed className="h-5 w-5 shrink-0 text-emerald-600" />}
+                        {product.image_url ? <img src={product.image_url} alt={`Photo de ${product.name}`} className="h-10 w-10 shrink-0 rounded-lg object-cover" /> : selectedType === "BEVERAGE" ? <Wine className="h-5 w-5 shrink-0 text-amber-500" /> : <UtensilsCrossed className="h-5 w-5 shrink-0 text-emerald-600" />}
                       </button>;
                     })}
                     {!filteredProducts.length && <p className="px-3 py-6 text-center text-sm text-slate-400">Aucun article trouvé.</p>}
@@ -1701,11 +1715,11 @@ export function ServeurClient({
                           <button
                             key={op.id}
                             type="button"
-                            onClick={() => setMomoOperator(op.id as any)}
+                            onClick={() => setMomoOperator(op.id as typeof momoOperator)}
                             className={`rounded-xl border p-2.5 text-center font-black text-xs transition ${
                               momoOperator === op.id
                                 ? `${op.color} shadow-md ring-2 ring-amber-500`
-                                : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                                : "border-slate-200 bg-white text-slate-700"
                             }`}
                           >
                             <span className="text-sm block">{op.icon}</span>

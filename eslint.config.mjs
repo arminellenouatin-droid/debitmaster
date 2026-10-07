@@ -16,5 +16,12 @@ export default defineConfig([
       "react/no-unescaped-entities": "warn",
     },
   },
+  {
+    files: ["scripts/**/*.js"],
+    // These standalone .js scripts run as CommonJS (package.json has no "type": "module").
+    rules: {
+      "@typescript-eslint/no-require-imports": "off",
+    },
+  },
   globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts"]),
 ]);

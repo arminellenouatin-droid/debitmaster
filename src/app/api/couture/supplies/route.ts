@@ -59,7 +59,7 @@ export async function GET(request: Request) {
     if (siteId) {
       result = result.map((item) => ({
         ...item,
-        stocks: Array.isArray(item.stocks) ? item.stocks.filter((s: any) => s.site_id === siteId) : [],
+        stocks: Array.isArray(item.stocks) ? item.stocks.filter((s: { site_id: string | null }) => s.site_id === siteId) : [],
       }));
     }
 
@@ -93,7 +93,7 @@ export async function POST(request: Request) {
     const category: CoutureSupplyCategory = validCategories.includes(body.category) ? body.category : "OTHER";
     const code = typeof body.code === "string" ? body.code.trim().toUpperCase() : "";
     const name = typeof body.name === "string" ? body.name.trim().slice(0, 120) : "";
-    const unit = typeof body.unit === "string" && validUnits.includes(body.unit.toUpperCase() as any)
+    const unit = typeof body.unit === "string" && validUnits.includes(body.unit.toUpperCase() as (typeof validUnits)[number])
       ? body.unit.toUpperCase()
       : "PIECE";
     const color = typeof body.color === "string" ? body.color.trim().slice(0, 60) : null;

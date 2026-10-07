@@ -4,20 +4,33 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
 type ActivityCode = "GYM" | "LAVAGE" | "LODGING";
-type Service = { id: string; name: string; price_xof: number; billing_unit: string; activity_id: string };
-type Room = { id: string; room_number: string; pass_price_xof: number; pass_duration_minutes: number; night_price_xof: number; night_duration_nights: number; occupied_until: string | null };
+type Service = { id: string; name: string; price_xof: number; billing_unit: string; activity_id: string; image_url?: string | null };
+type Room = { id: string; room_number: string; pass_price_xof: number; pass_duration_minutes: number; night_price_xof: number; night_duration_nights: number; occupied_until: string | null; image_url?: string | null };
 type Sale = { id: string; customer_name: string; quantity: number; unit_price_xof: number; total_amount_xof: number; payment_method: string; room_id: string | null; membership_expires_at: string | null; duration_minutes: number | null; created_at: string };
 
 const defaults: Record<ActivityCode, Array<{ name: string; price: number; unit: string }>> = {
   GYM: [{ name: "Séance", price: 500, unit: "UNIT" }, { name: "Abonnement mensuel", price: 8200, unit: "MONTH" }, { name: "Tapis roulant", price: 500, unit: "5 MINUTES" }, { name: "Vibromasseur", price: 300, unit: "3 MINUTES" }],
-  LAVAGE: [], LODGING: [],
+  LAVAGE: [],
+  LODGING: [],
 };
 const money = (value: number) => `${new Intl.NumberFormat("fr-FR").format(value)} XOF`;
 
 export function ServiceSalesClient({ tenantId, activityCode }: { tenantId: string; activityCode: ActivityCode }) {
-  const [services, setServices] = useState<Service[]>([]); const [rooms, setRooms] = useState<Room[]>([]); const [sales, setSales] = useState<Sale[]>([]);
-  const [serviceId, setServiceId] = useState(""); const [roomId, setRoomId] = useState(""); const [lodgingOption, setLodgingOption] = useState<"PASS" | "NIGHT">("PASS"); const [customerName, setCustomerName] = useState(""); const [quantity, setQuantity] = useState("1"); const [price, setPrice] = useState(""); const [expires, setExpires] = useState(""); const [duration, setDuration] = useState(""); const [paymentMethod, setPaymentMethod] = useState("CASH");
-  const [error, setError] = useState(""); const [message, setMessage] = useState(""); const [busy, setBusy] = useState(false);
+  const [services, setServices] = useState<Service[]>([]);
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [sales, setSales] = useState<Sale[]>([]);
+  const [serviceId, setServiceId] = useState("");
+  const [roomId, setRoomId] = useState("");
+  const [lodgingOption, setLodgingOption] = useState<"PASS" | "NIGHT">("PASS");
+  const [customerName, setCustomerName] = useState("");
+  const [quantity, setQuantity] = useState("1");
+  const [price, setPrice] = useState("");
+  const [expires, setExpires] = useState("");
+  const [duration, setDuration] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("CASH");
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
   const label = activityCode === "GYM" ? "Salle de GYM" : activityCode === "LAVAGE" ? "Lavage" : "Auberge";
   const selectedRoom = rooms.find((room) => room.id === roomId);
   const selectedService = services.find((item) => item.id === serviceId);
@@ -31,26 +44,85 @@ export function ServiceSalesClient({ tenantId, activityCode }: { tenantId: strin
       fetch(`/api/power/service-sales?tenantId=${encodeURIComponent(tenantId)}&activityCode=${activityCode}`, { cache: "no-store" }),
       ...(activityCode === "LODGING" ? [fetch(`/api/power/rooms?tenantId=${encodeURIComponent(tenantId)}`, { cache: "no-store" })] : []),
     ]);
-    const serviceResult = await responses[0].json(); const salesResult = await responses[1].json();
+    const serviceResult = await responses[0].json();
+    const salesResult = await responses[1].json();
     if (!responses[1].ok) throw new Error(salesResult.error ?? "Impossible de charger les ventes du service.");
-    setServices((serviceResult.services ?? []) as Service[]); setSales((salesResult.sales ?? []) as Sale[]);
-    if (activityCode === "LODGING" && responses[2]) { const roomsResult = await responses[2].json(); if (!responses[2].ok) throw new Error(roomsResult.error ?? "Impossible de charger les chambres."); setRooms((roomsResult.rooms ?? []) as Room[]); }
+    setServices((serviceResult.services ?? []) as Service[]);
+    setSales((salesResult.sales ?? []) as Sale[]);
+    if (activityCode === "LODGING" && responses[2]) {
+      const roomsResult = await responses[2].json();
+      if (!responses[2].ok) throw new Error(roomsResult.error ?? "Impossible de charger les chambres.");
+      setRooms((roomsResult.rooms ?? []) as Room[]);
+    }
   }
-  useEffect(() => { void load().catch((cause) => setError(cause instanceof Error ? cause.message : "Impossible de charger les ventes.")); }, [tenantId, activityCode]);
-  useEffect(() => { if (activityCode === "LODGING" && selectedRoom) setDuration(String(effectiveDuration)); }, [activityCode, roomId, lodgingOption]);
 
-  function chooseService(id: string) { setServiceId(id); const item = services.find((service) => service.id === id); if (item) setPrice(String(item.price_xof)); }
+  useEffect(() => {
+    void load().catch((cause) => setError(cause instanceof Error ? cause.message : "Impossible de charger les ventes."));
+  }, [tenantId, activityCode]);
+
+  useEffect(() => {
+    if (activityCode === "LODGING" && selectedRoom) setDuration(String(effectiveDuration));
+  }, [activityCode, roomId, lodgingOption]);
+
+  function chooseService(id: string) {
+    setServiceId(id);
+    const item = services.find((service) => service.id === id);
+    if (item) setPrice(String(item.price_xof));
+  }
+
   async function submit(event: FormEvent) {
-    event.preventDefault(); setError(""); setMessage(""); setBusy(true);
+    event.preventDefault();
+    setError("");
+    setMessage("");
+    setBusy(true);
     try {
-      const response = await fetch("/api/power/service-sales", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tenantId, activityCode, serviceId: serviceId || undefined, roomId: roomId || undefined, lodgingOption: activityCode === "LODGING" ? lodgingOption : undefined, customerName, quantity: Number(quantity), unitPriceXof: effectivePrice, paymentMethod, membershipExpiresAt: expires ? new Date(`${expires}T23:59:59`).toISOString() : undefined, durationMinutes: effectiveDuration || undefined }) });
-      const result = await response.json(); if (!response.ok) throw new Error(result.error ?? "Impossible d’enregistrer la vente.");
-      setSales((current) => [result.sale, ...current]); setCustomerName(""); setRoomId(""); setMessage("Vente enregistrée dans la caisse de l’activité."); await load();
-    } catch (cause) { setError(cause instanceof Error ? cause.message : "Impossible d’enregistrer la vente."); }
-    finally { setBusy(false); }
+      const response = await fetch("/api/power/service-sales", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tenantId, activityCode, serviceId: serviceId || undefined, roomId: roomId || undefined, lodgingOption: activityCode === "LODGING" ? lodgingOption : undefined, customerName, quantity: Number(quantity), unitPriceXof: effectivePrice, paymentMethod, membershipExpiresAt: expires ? new Date(`${expires}T23:59:59`).toISOString() : undefined, durationMinutes: effectiveDuration || undefined }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error ?? "Impossible d’enregistrer la vente.");
+      setSales((current) => [result.sale, ...current]);
+      setCustomerName("");
+      setRoomId("");
+      setMessage("Vente enregistrée dans la caisse de l’activité.");
+      await load();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Impossible d’enregistrer la vente.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   const fallback = defaults[activityCode];
   const availableRooms = useMemo(() => rooms.filter((room) => !room.occupied_until || new Date(room.occupied_until).getTime() <= Date.now()), [rooms]);
-  return <section><div><p className="text-xs font-black uppercase tracking-[0.18em] text-[var(--secondary)]">Power · {label}</p><h1 className="mt-3 text-4xl font-black tracking-[-0.04em] text-[var(--primary)]">Vente de {activityCode === "LODGING" ? "nuitées et pass" : "prestations"}</h1><p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">{activityCode === "LODGING" ? "Attribuez une chambre libre, choisissez Nuitée ou Pass et laissez le système calculer le tarif." : `Enregistrez les prestations et suivez la caisse ${label} sans mouvement de stock.`}</p></div>{(error || message) && <p role={error ? "alert" : "status"} className={`mt-6 rounded-lg px-4 py-3 text-sm font-bold ${error ? "bg-[#ffdad6] text-[var(--danger)]" : "bg-[var(--accent-soft)] text-[var(--primary)]"}`}>{error || message}</p>}<div className="mt-8 grid gap-6 xl:grid-cols-[390px_1fr]"><form onSubmit={submit} className="h-fit rounded-2xl bg-[var(--primary)] p-6 text-white"><p className="text-xs font-black uppercase tracking-[0.15em] text-white/55">Nouvelle vente</p><label className="mt-6 block text-sm font-bold text-white/80">Client<input required value={customerName} onChange={(event) => setCustomerName(event.target.value)} className="mt-2 h-11 w-full rounded-lg border border-white/15 bg-white/10 px-3 text-white" placeholder="Nom du client" /></label>{activityCode === "LODGING" ? <><label className="mt-4 block text-sm font-bold text-white/80">Chambre<select required value={roomId} onChange={(event) => setRoomId(event.target.value)} className="mt-2 h-11 w-full rounded-lg border border-white/15 bg-white/10 px-3 text-white"><option value="" className="text-black">Choisir une chambre libre</option>{availableRooms.map((room) => <option key={room.id} value={room.id} className="text-black">Chambre {room.room_number}</option>)}</select></label><label className="mt-4 block text-sm font-bold text-white/80">Option<select value={lodgingOption} onChange={(event) => setLodgingOption(event.target.value as "PASS" | "NIGHT")} className="mt-2 h-11 w-full rounded-lg border border-white/15 bg-white/10 px-3 text-white"><option value="PASS" className="text-black">Pass · {selectedRoom ? `${selectedRoom.pass_duration_minutes} minutes` : "1 heure"}</option><option value="NIGHT" className="text-black">Nuitée · {selectedRoom ? `${selectedRoom.night_duration_nights} nuit` : "1 nuit"}</option></select></label></> : <><label className="mt-4 block text-sm font-bold text-white/80">Prestation<select value={serviceId} onChange={(event) => chooseService(event.target.value)} className="mt-2 h-11 w-full rounded-lg border border-white/15 bg-white/10 px-3 text-white"><option value="" className="text-black">Choisir une prestation</option>{services.map((item) => <option key={item.id} value={item.id} className="text-black">{item.name} · {money(item.price_xof)}</option>)}{!services.length && fallback.map((item) => <option key={item.name} value={item.name} className="text-black">{item.name} · {money(item.price)}</option>)}</select></label></>}{activityCode !== "LODGING" && <label className="mt-4 block text-sm font-bold text-white/80">Prix unitaire<input required type="number" min="0" value={price} onChange={(event) => setPrice(event.target.value)} className="mt-2 h-11 w-full rounded-lg border border-white/15 bg-white/10 px-3 text-white" /></label>}<label className="mt-4 block text-sm font-bold text-white/80">Quantité<input required type="number" min="1" value={quantity} onChange={(event) => setQuantity(event.target.value)} className="mt-2 h-11 w-full rounded-lg border border-white/15 bg-white/10 px-3 text-white" /></label>{activityCode === "GYM" && <label className="mt-4 block text-sm font-bold text-white/80">Échéance abonnement<input type="date" value={expires} onChange={(event) => setExpires(event.target.value)} className="mt-2 h-11 w-full rounded-lg border border-white/15 bg-white/10 px-3 text-white" /></label>}<label className="mt-4 block text-sm font-bold text-white/80">Mode de règlement<select value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value)} className="mt-2 h-11 w-full rounded-lg border border-white/15 bg-white/10 px-3 text-white"><option value="CASH" className="text-black">Espèces</option><option value="MOBILE_MONEY" className="text-black">Mobile Money</option></select></label><div className="mt-6 flex items-center justify-between border-t border-white/15 pt-5"><span className="text-sm text-white/60">Total</span><strong className="text-2xl">{money(total)}</strong></div><button disabled={busy || total <= 0 || (activityCode === "LODGING" && !roomId)} className="mt-5 h-11 w-full rounded-lg bg-[var(--secondary-container)] text-sm font-black text-[var(--primary)] disabled:opacity-50">{busy ? "Enregistrement…" : "Encaisser la prestation"}</button></form><div className="rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-6"><div className="flex flex-wrap items-end justify-between gap-3 border-b border-[var(--line)] pb-5"><div><p className="text-xs font-black uppercase tracking-[0.15em] text-[var(--muted)]">Journal de caisse</p><h2 className="mt-2 text-xl font-black">Ventes récentes</h2></div><p className="text-sm font-bold text-[var(--muted)]">{money(sales.reduce((sum, item) => sum + Number(item.total_amount_xof), 0))}</p></div>{sales.length ? <div className="divide-y divide-[var(--line)]">{sales.map((sale) => <article key={sale.id} className="flex flex-wrap items-center justify-between gap-4 py-5"><div><p className="font-black text-[var(--primary)]">{sale.customer_name}{sale.room_id ? ` · Chambre` : ""}</p><p className="mt-1 text-xs text-[var(--muted)]">{new Date(sale.created_at).toLocaleString("fr-FR")} · {sale.quantity} × {money(sale.unit_price_xof)} · {sale.payment_method === "MOBILE_MONEY" ? "Mobile Money" : "Espèces"}</p>{sale.duration_minutes && <p className="mt-1 text-xs font-bold text-[var(--secondary)]">Durée : {sale.duration_minutes} minutes</p>}</div><strong className="text-lg text-[var(--primary)]">{money(sale.total_amount_xof)}</strong></article>)}</div> : <div className="py-16 text-center text-sm text-[var(--muted)]">Aucune vente enregistrée pour cette activité.</div>}</div></div></section>;
+
+  return (
+    <section>
+      <div><p className="text-xs font-black uppercase tracking-[0.18em] text-[var(--secondary)]">Power · {label}</p><h1 className="mt-3 text-4xl font-black tracking-[-0.04em] text-[var(--primary)]">Vente de {activityCode === "LODGING" ? "nuitées et pass" : "prestations"}</h1><p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">{activityCode === "LODGING" ? "Attribuez une chambre libre, choisissez Nuitée ou Pass et laissez le système calculer le tarif." : `Enregistrez les prestations et suivez la caisse ${label} sans mouvement de stock.`}</p></div>
+      {(error || message) && <p role={error ? "alert" : "status"} className={`mt-6 rounded-lg px-4 py-3 text-sm font-bold ${error ? "bg-[#ffdad6] text-[var(--danger)]" : "bg-[var(--accent-soft)] text-[var(--primary)]"}`}>{error || message}</p>}
+      <div className="mt-8 grid gap-6 xl:grid-cols-[390px_1fr]">
+        <form onSubmit={submit} className="h-fit rounded-2xl bg-[var(--primary)] p-6 text-white">
+          <p className="text-xs font-black uppercase tracking-[0.15em] text-white/55">Nouvelle vente</p>
+          <label className="mt-6 block text-sm font-bold text-white/80">Client<input required value={customerName} onChange={(event) => setCustomerName(event.target.value)} className="mt-2 h-11 w-full rounded-lg border border-white/15 bg-white/10 px-3 text-white" placeholder="Nom du client" /></label>
+          {activityCode === "LODGING" ? <>
+            <label className="mt-4 block text-sm font-bold text-white/80">Chambre<select required value={roomId} onChange={(event) => setRoomId(event.target.value)} className="mt-2 h-11 w-full rounded-lg border border-white/15 bg-white/10 px-3 text-white"><option value="" className="text-black">Choisir une chambre libre</option>{availableRooms.map((room) => <option key={room.id} value={room.id} className="text-black">Chambre {room.room_number}</option>)}</select></label>
+            {selectedRoom?.image_url && <img src={selectedRoom.image_url} alt={`Photo de la chambre ${selectedRoom.room_number}`} className="mt-3 h-32 w-full rounded-xl object-cover" />}
+            <label className="mt-4 block text-sm font-bold text-white/80">Option<select value={lodgingOption} onChange={(event) => setLodgingOption(event.target.value as "PASS" | "NIGHT")} className="mt-2 h-11 w-full rounded-lg border border-white/15 bg-white/10 px-3 text-white"><option value="PASS" className="text-black">Pass · {selectedRoom ? `${selectedRoom.pass_duration_minutes} minutes` : "1 heure"}</option><option value="NIGHT" className="text-black">Nuitée · {selectedRoom ? `${selectedRoom.night_duration_nights} nuit` : "1 nuit"}</option></select></label>
+          </> : <>
+            <label className="mt-4 block text-sm font-bold text-white/80">Prestation<select value={serviceId} onChange={(event) => chooseService(event.target.value)} className="mt-2 h-11 w-full rounded-lg border border-white/15 bg-white/10 px-3 text-white"><option value="" className="text-black">Choisir une prestation</option>{services.map((item) => <option key={item.id} value={item.id} className="text-black">{item.name} · {money(item.price_xof)}</option>)}{!services.length && fallback.map((item) => <option key={item.name} value={item.name} className="text-black">{item.name} · {money(item.price)}</option>)}</select></label>
+            {selectedService?.image_url && <img src={selectedService.image_url} alt={`Photo de ${selectedService.name}`} className="mt-3 h-32 w-full rounded-xl object-cover" />}
+          </>}
+          {activityCode !== "LODGING" && <label className="mt-4 block text-sm font-bold text-white/80">Prix unitaire<input required type="number" min="0" value={price} onChange={(event) => setPrice(event.target.value)} className="mt-2 h-11 w-full rounded-lg border border-white/15 bg-white/10 px-3 text-white" /></label>}
+          <label className="mt-4 block text-sm font-bold text-white/80">Quantité<input required type="number" min="1" value={quantity} onChange={(event) => setQuantity(event.target.value)} className="mt-2 h-11 w-full rounded-lg border border-white/15 bg-white/10 px-3 text-white" /></label>
+          {activityCode === "GYM" && <label className="mt-4 block text-sm font-bold text-white/80">Échéance abonnement<input type="date" value={expires} onChange={(event) => setExpires(event.target.value)} className="mt-2 h-11 w-full rounded-lg border border-white/15 bg-white/10 px-3 text-white" /></label>}
+          <label className="mt-4 block text-sm font-bold text-white/80">Mode de règlement<select value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value)} className="mt-2 h-11 w-full rounded-lg border border-white/15 bg-white/10 px-3 text-white"><option value="CASH" className="text-black">Espèces</option><option value="MOBILE_MONEY" className="text-black">Mobile Money</option></select></label>
+          <div className="mt-6 flex items-center justify-between border-t border-white/15 pt-5"><span className="text-sm text-white/60">Total</span><strong className="text-2xl">{money(total)}</strong></div>
+          <button disabled={busy || total <= 0 || (activityCode === "LODGING" && !roomId)} className="mt-5 h-11 w-full rounded-lg bg-[var(--secondary-container)] text-sm font-black text-[var(--primary)] disabled:opacity-50">{busy ? "Enregistrement…" : "Encaisser la prestation"}</button>
+        </form>
+        <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-6"><div className="flex flex-wrap items-end justify-between gap-3 border-b border-[var(--line)] pb-5"><div><p className="text-xs font-black uppercase tracking-[0.15em] text-[var(--muted)]">Journal de caisse</p><h2 className="mt-2 text-xl font-black">Ventes récentes</h2></div><p className="text-sm font-bold text-[var(--muted)]">{money(sales.reduce((sum, item) => sum + Number(item.total_amount_xof), 0))}</p></div>{sales.length ? <div className="divide-y divide-[var(--line)]">{sales.map((sale) => <article key={sale.id} className="flex flex-wrap items-center justify-between gap-4 py-5"><div><p className="font-black text-[var(--primary)]">{sale.customer_name}{sale.room_id ? " · Chambre" : ""}</p><p className="mt-1 text-xs text-[var(--muted)]">{new Date(sale.created_at).toLocaleString("fr-FR")} · {sale.quantity} × {money(sale.unit_price_xof)} · {sale.payment_method === "MOBILE_MONEY" ? "Mobile Money" : "Espèces"}</p>{sale.duration_minutes && <p className="mt-1 text-xs font-bold text-[var(--secondary)]">Durée : {sale.duration_minutes} minutes</p>}</div><strong className="text-lg text-[var(--primary)]">{money(sale.total_amount_xof)}</strong></article>)}</div> : <div className="py-16 text-center text-sm text-[var(--muted)]">Aucune vente enregistrée pour cette activité.</div>}</div>
+      </div>
+    </section>
+  );
 }

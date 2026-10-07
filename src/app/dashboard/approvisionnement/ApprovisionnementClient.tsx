@@ -1029,7 +1029,7 @@ export function ApprovisionnementClient({
                   <label className="text-xs font-bold text-slate-700">Priorité</label>
                   <select
                     value={reqPriority}
-                    onChange={(e) => setReqPriority(e.target.value as any)}
+                    onChange={(e) => setReqPriority(e.target.value as typeof reqPriority)}
                     className="mt-1 w-full rounded-xl border border-slate-200 p-2 text-xs font-bold"
                   >
                     <option value="NORMAL">Normale</option>

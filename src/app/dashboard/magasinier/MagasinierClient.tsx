@@ -56,6 +56,14 @@ type CustomerReturn = {
   }[];
 };
 
+type PrintableDeliveryNote = {
+  deliveryNumber: string;
+  customerName: string;
+  recipientName: string;
+  deliveredAt?: string;
+  items?: DeliveryNote["delivery_note_items"];
+};
+
 export function MagasinierClient({ tenantId, userId }: { tenantId: string; userId: string }) {
   const [activeTab, setActiveTab] = useState<"DELIVERIES" | "RETURNS" | "OUT">("DELIVERIES");
   const [deliveryNotes, setDeliveryNotes] = useState<DeliveryNote[]>([]);
@@ -70,7 +78,7 @@ export function MagasinierClient({ tenantId, userId }: { tenantId: string; userI
   const [pickupCode, setPickupCode] = useState("");
   const [confirmingLoading, setConfirmingLoading] = useState(false);
 
-  const [printedBl, setPrintedBl] = useState<any | null>(null);
+  const [printedBl, setPrintedBl] = useState<PrintableDeliveryNote | null>(null);
 
   // Modal Retour
   const [showReturnModal, setShowReturnModal] = useState(false);
@@ -123,8 +131,8 @@ export function MagasinierClient({ tenantId, userId }: { tenantId: string; userI
       if (!res.ok) throw new Error(data.error || "Impossible de préparer le bon de livraison.");
       setMessage({ text: `Bon de livraison ${data.deliveryNote.delivery_number} généré !`, type: "success" });
       loadData();
-    } catch (err: any) {
-      setMessage({ text: err.message, type: "error" });
+    } catch (err) {
+      setMessage({ text: err instanceof Error ? err.message : "Erreur inattendue.", type: "error" });
     }
   }
 
@@ -146,8 +154,8 @@ export function MagasinierClient({ tenantId, userId }: { tenantId: string; userI
       setConfirmingDn(null);
       setMessage({ text: `Livraison ${confirmingDn.delivery_number} confirmée avec sortie de stock !`, type: "success" });
       loadData();
-    } catch (err: any) {
-      setMessage({ text: err.message, type: "error" });
+    } catch (err) {
+      setMessage({ text: err instanceof Error ? err.message : "Erreur inattendue.", type: "error" });
     } finally {
       setConfirmingLoading(false);
     }
@@ -180,8 +188,8 @@ export function MagasinierClient({ tenantId, userId }: { tenantId: string; userI
         type: "success",
       });
       loadData();
-    } catch (err: any) {
-      setMessage({ text: err.message, type: "error" });
+    } catch (err) {
+      setMessage({ text: err instanceof Error ? err.message : "Erreur inattendue.", type: "error" });
     }
   }
 
@@ -489,7 +497,7 @@ export function MagasinierClient({ tenantId, userId }: { tenantId: string; userI
                 <label className="text-xs font-bold text-slate-700">Décision sur la marchandise</label>
                 <select
                   value={returnItemCondition}
-                  onChange={(e) => setReturnItemCondition(e.target.value as any)}
+                  onChange={(e) => setReturnItemCondition(e.target.value as typeof returnItemCondition)}
                   className="mt-1 w-full px-3 py-2 text-xs rounded-xl border border-slate-300 font-bold"
                 >
                   <option value="RESTOCKED">Remettre en stock vendable</option>
@@ -534,7 +542,7 @@ export function MagasinierClient({ tenantId, userId }: { tenantId: string; userI
                 <span className="font-bold">{printedBl.recipientName}</span>
               </div>
               <div className="text-[10px] text-slate-400 pt-1">
-                Date : {new Date(printedBl.deliveredAt).toLocaleString("fr-FR")}
+                Date : {new Date(printedBl.deliveredAt ?? "").toLocaleString("fr-FR")}
               </div>
             </div>
 

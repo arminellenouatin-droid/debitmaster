@@ -88,7 +88,7 @@ export async function POST(request: Request) {
     const password = typeof body.password === "string" ? body.password : "";
     const roleIds: string[] = Array.isArray(body.roleIds) ? Array.from(new Set<string>(body.roleIds.filter((id: unknown): id is string => typeof id === "string"))) : [];
     const siteIds: string[] = Array.isArray(body.siteIds) ? Array.from(new Set<string>(body.siteIds.filter((id: unknown): id is string => typeof id === "string"))) : [];
-    const crafts: string[] = Array.isArray(body.crafts) ? Array.from(new Set<string>(body.crafts.filter((c: unknown): c is string => typeof c === "string" && validCrafts.includes(c as any)))) : [];
+    const crafts: string[] = Array.isArray(body.crafts) ? Array.from(new Set<string>(body.crafts.filter((c: unknown): c is string => typeof c === "string" && validCrafts.includes(c as (typeof validCrafts)[number])))) : [];
 
     if (firstName.length < 2 || lastName.length < 2 || !phone || password.length < 8 || roleIds.length < 1 || roleIds.length > 8) {
       return NextResponse.json({

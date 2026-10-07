@@ -1,13 +1,24 @@
 // DebitManager Image Upload API: uploads product & service pictures to Supabase product-images bucket.
 import { NextResponse } from "next/server";
-import { getAuthorizationContext } from "@/lib/authorization";
+import { randomUUID } from "node:crypto";
+import { can, getAuthorizationContext } from "@/lib/authorization";
+import { detectSupportedImageMime } from "@/lib/image-validation";
+import { requestHasSameOrigin } from "@/lib/request-security";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
-const allowedTypes = new Set(["image/jpeg", "image/png", "image/webp", "image/jpg"]);
 const maxBytes = 5 * 1024 * 1024; // 5MB
 
 export async function POST(request: Request) {
   try {
+    if (!requestHasSameOrigin(request)) {
+      return NextResponse.json({ error: "Origine de requête non autorisée." }, { status: 403 });
+    }
+
+    const contentLength = Number(request.headers.get("content-length"));
+    if (Number.isFinite(contentLength) && contentLength > maxBytes + 64 * 1024) {
+      return NextResponse.json({ error: "L’image ne doit pas dépasser 5 Mo." }, { status: 413 });
+    }
+
     const context = await getAuthorizationContext();
     if (!context.user) {
       return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
@@ -21,25 +32,37 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Établissement non autorisé." }, { status: 403 });
     }
 
+    if (!can(context, "products.manage") && !can(context, "services.manage")) {
+      return NextResponse.json({ error: "Droit de gestion du catalogue requis." }, { status: 403 });
+    }
+
     if (!(file instanceof File)) {
       return NextResponse.json({ error: "Sélectionnez un fichier image valide." }, { status: 400 });
     }
 
-    if (!allowedTypes.has(file.type) || file.size > maxBytes) {
+    if (file.size <= 0 || file.size > maxBytes) {
       return NextResponse.json(
         { error: "L’image doit être au format JPG, PNG ou WebP et ne pas dépasser 5 Mo." },
         { status: 400 }
       );
     }
 
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const contentType = detectSupportedImageMime(bytes);
+    if (!contentType) {
+      return NextResponse.json(
+        { error: "L’image doit être un fichier JPG, PNG ou WebP valide et ne pas dépasser 5 Mo." },
+        { status: 400 }
+      );
+    }
+
     const admin = createSupabaseAdminClient();
-    const extension = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
-    const uniqueId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-    const path = `${tenantId}/${uniqueId}.${extension}`;
+    const extension = contentType === "image/png" ? "png" : contentType === "image/webp" ? "webp" : "jpg";
+    const path = `${tenantId}/${randomUUID()}.${extension}`;
 
     const { error: uploadError } = await admin.storage
       .from("product-images")
-      .upload(path, file, { contentType: file.type, upsert: true, cacheControl: "3600" });
+      .upload(path, bytes, { contentType, upsert: false, cacheControl: "3600" });
 
     if (uploadError) {
       console.error("[upload] Erreur upload image:", uploadError);

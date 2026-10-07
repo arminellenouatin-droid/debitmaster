@@ -152,7 +152,7 @@ export async function POST(request: Request) {
 
       // Mettre à jour purchase_order_items
       if (item.purchaseOrderItemId) {
-        const poItem = (po.purchase_order_items || []).find((p: any) => p.id === item.purchaseOrderItemId);
+        const poItem = (po.purchase_order_items || []).find((p) => p.id === item.purchaseOrderItemId);
         if (poItem) {
           const newQtyRec = (Number(poItem.quantity_received) || 0) + qtyReceived;
           await admin

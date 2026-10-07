@@ -234,8 +234,8 @@ export async function getCoutureContext(requestedTenantId?: string): Promise<Cou
       .eq("employee_id", employee.id);
 
     roles = (employeeRoles ?? [])
-      .map((entry: any) => entry.couture_roles)
-      .filter((role: any): role is CoutureRole => Boolean(role?.id));
+      .map((entry: { couture_roles: CoutureRole[] }) => entry.couture_roles[0] ?? null)
+      .filter((role): role is CoutureRole => Boolean(role?.id));
 
     const roleIds = roles.map((role) => role.id);
     if (roleIds.length > 0) {
@@ -256,7 +256,7 @@ export async function getCoutureContext(requestedTenantId?: string): Promise<Cou
       .eq("tenant_id", company.id)
       .eq("employee_id", employee.id);
 
-    const assignedSiteIds = new Set((assignedSites ?? []).map((site: any) => site.site_id));
+    const assignedSiteIds = new Set((assignedSites ?? []).map((site: { site_id: string }) => site.site_id));
     if (assignedSiteIds.size === 0) {
       // If no explicit site assigned, can access all active sites for their role scope
       siteIds = allSites.map((site) => site.id);
