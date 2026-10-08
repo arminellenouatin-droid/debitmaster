@@ -4,7 +4,7 @@
 
 Le dépôt contient maintenant un jeton QR signé côté serveur, un menu public dynamique à l’adresse `/menu/[token]`, la lecture des produits BEVERAGE et KITCHEN du tenant, la recherche sans accent, les filtres de catégories, le panier mobile, l’envoi de commande et le paiement Mobile Money public protégé par le même jeton. Le menu reprend la direction lounge sombre et ambre de la maquette fournie.
 
-L’API des tables renvoie aussi un lien public signé par table. L’écran de plan de salle ajoute le téléchargement local du PNG QR et un lien pour ouvrir le menu. Une commande publique est créée avec la table réelle, les prix relus côté serveur et les notifications existantes vers GERANT pour les boissons et CHEF_CUISINE/CUISINIER pour les repas.
+L’API des tables renvoie aussi un lien public signé par table. L’écran de plan de salle permet d’ouvrir, d’imprimer ou de télécharger une affiche par table : nom de l’établissement, QR au centre, numéro de table et zone. Le lien reste celui signé par l’API pour la table concernée. Une commande publique est créée avec la table réelle, les prix relus côté serveur et les notifications existantes vers GERANT pour les boissons et CHEF_CUISINE/CUISINIER pour les repas.
 
 ## Garde-fous
 

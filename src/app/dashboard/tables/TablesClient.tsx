@@ -1,7 +1,8 @@
 /* DebitManager / maquette plandesalle: surface claire, vert profond, ambre de signalement, actions visibles seulement si le rôle peut les exécuter. */
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import QRCode from "qrcode";
 
@@ -17,6 +18,17 @@ type DiningTable = {
   updated_at: string;
   public_menu_url: string | null;
 };
+
+type QrPoster = {
+  companyName: string;
+  table: Pick<DiningTable, "label" | "zone">;
+  qrDataUrl: string;
+};
+
+const htmlEscapes: Record<string, string> = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+function escapeHtml(value: string) {
+  return value.replace(/[&<>"']/g, (character) => htmlEscapes[character] ?? character);
+}
 
 const statusLabels = { FREE: "Libre", OCCUPIED: "Occupée", RESERVED: "Réservée" } as const;
 const statusStyles = {
@@ -36,6 +48,8 @@ export function TablesClient({ canManage }: { canManage: boolean }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [poster, setPoster] = useState<QrPoster | null>(null);
+  const posterDialogRef = useRef<HTMLDialogElement>(null);
 
   async function load(id: string) {
     const response = await fetch(`/api/tables?tenantId=${encodeURIComponent(id)}`, { cache: "no-store" });
@@ -75,6 +89,13 @@ export function TablesClient({ canManage }: { canManage: boolean }) {
     };
   }, [tenantId]);
 
+  useEffect(() => {
+    const dialog = posterDialogRef.current;
+    if (!dialog) return;
+    if (poster && !dialog.open) dialog.showModal();
+    else if (!poster && dialog.open) dialog.close();
+  }, [poster]);
+
   async function createTable(event: FormEvent) {
     event.preventDefault();
     setError("");
@@ -100,19 +121,145 @@ export function TablesClient({ canManage }: { canManage: boolean }) {
     }
   }
 
-  async function downloadQr(table: DiningTable) {
+  async function openQrPoster(table: DiningTable) {
     setError("");
     setMessage("");
     try {
       if (!table.public_menu_url) throw new Error("QR_NOT_CONFIGURED");
-      const dataUrl = await QRCode.toDataURL(table.public_menu_url, { width: 900, margin: 3, errorCorrectionLevel: "M", color: { dark: "#141b2b", light: "#fffdf7" } });
-      const link = document.createElement("a");
-      link.href = dataUrl;
-      link.download = `menu-${table.label.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").toLowerCase() || "table"}.png`;
-      link.click();
-      setMessage(`QR de ${table.label} téléchargé.`);
+      const qrDataUrl = await QRCode.toDataURL(table.public_menu_url, { width: 900, margin: 3, errorCorrectionLevel: "M", color: { dark: "#07150f", light: "#fffdf7" } });
+      setPoster({
+        companyName: companies.find((company) => company.id === table.tenant_id)?.name ?? "Établissement",
+        table: { label: table.label, zone: table.zone },
+        qrDataUrl,
+      });
     } catch (cause) {
-      setError(cause instanceof Error && cause.message === "QR_NOT_CONFIGURED" ? "Table affichée, mais le QR nécessite la configuration du secret serveur." : "Impossible de générer le QR de cette table.");
+      setError(cause instanceof Error && cause.message === "QR_NOT_CONFIGURED" ? "Le QR n’est pas disponible pour cette table." : "Impossible d’afficher l’affiche QR de cette table.");
+    }
+  }
+
+  function printPoster() {
+    if (!poster) return;
+    const printWindow = window.open("", "_blank", "popup,width=900,height=1200");
+    if (!printWindow) {
+      setError("Autorisez les fenêtres contextuelles pour imprimer l’affiche QR.");
+      return;
+    }
+    const companyName = escapeHtml(poster.companyName);
+    const tableLabel = escapeHtml(poster.table.label);
+    const zone = `ZONE ${escapeHtml(poster.table.zone?.trim() || "Zone non renseignée")}`;
+    const imageAlt = escapeHtml(`QR de ${poster.companyName}, table ${poster.table.label}, zone ${poster.table.zone || "Zone non renseignée"}`);
+    printWindow.opener = null;
+    printWindow.document.write(`<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Affiche QR - ${companyName}</title>
+  <style>
+    @page { size: A4 portrait; margin: 7mm; }
+    * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    html, body { margin: 0; min-height: 100%; background: #fff; font-family: Arial, sans-serif; }
+    .poster { width: 196mm; min-height: 283mm; margin: 0 auto; padding: 12mm 10mm; border: 3px solid #d9a83e; color: #fff; background: linear-gradient(145deg, #09261c, #06110d); display: flex; flex-direction: column; align-items: center; justify-content: space-around; text-align: center; }
+    .mark { color: #d9a83e; font-size: 26pt; }
+    .eyebrow { margin: 0; color: #d9a83e; font-size: 13pt; font-weight: 800; letter-spacing: 4pt; }
+    .poster h1 { max-width: 100%; margin: 4mm 0; color: #fff; font: 700 32pt/1.08 Georgia, serif; text-transform: uppercase; overflow-wrap: anywhere; }
+    .scan { margin: 2mm 0; color: #d9a83e; font-size: 23pt; font-weight: 900; }
+    .message { margin: 0; color: #fff; font-size: 14pt; font-weight: 800; line-height: 1.35; text-transform: uppercase; }
+    .qr { width: 125mm; aspect-ratio: 1; margin: 7mm auto; padding: 7mm; border: 3px solid #d9a83e; border-radius: 8mm; background: #fff; }
+    .qr img { display: block; width: 100%; height: 100%; object-fit: contain; }
+    .table { margin: 0; color: #fff; font-size: 19pt; font-weight: 900; text-transform: uppercase; }
+    .zone { margin: 2mm 0 0; color: #e7c77d; font-size: 15pt; font-weight: 700; }
+    @media print { html, body { height: 100%; } .poster { width: 100%; min-height: 283mm; margin: 0; break-inside: avoid; } }
+  </style>
+</head>
+<body>
+  <main class="poster">
+    <div class="mark" aria-hidden="true">✦</div>
+    <p class="eyebrow">COMMANDE DIRECTE</p>
+    <h1>${companyName}</h1>
+    <p class="scan">SCANNEZ LE QR CODE</p>
+    <p class="message">ET COMMANDEZ DIRECTEMENT<br>CE QUE VOUS VOULEZ</p>
+    <div class="qr"><img src="${escapeHtml(poster.qrDataUrl)}" alt="${imageAlt}"></div>
+    <p class="table">TABLE ${tableLabel}</p>
+    <p class="zone">${zone}</p>
+  </main>
+</body>
+</html>`);
+    printWindow.document.close();
+    window.setTimeout(() => {
+      if (printWindow.closed) return;
+      printWindow.focus();
+      printWindow.print();
+    }, 250);
+  }
+
+  async function downloadPoster() {
+    if (!poster) return;
+    setError("");
+    try {
+      const canvas = document.createElement("canvas");
+      canvas.width = 1800;
+      canvas.height = 2546;
+      const context = canvas.getContext("2d");
+      if (!context) throw new Error("Canvas indisponible.");
+      const gradient = context.createLinearGradient(0, 0, 1800, 2546);
+      gradient.addColorStop(0, "#09261c");
+      gradient.addColorStop(1, "#06110d");
+      context.fillStyle = gradient;
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.strokeStyle = "#d9a83e";
+      context.lineWidth = 12;
+      context.strokeRect(25, 25, 1750, 2496);
+      context.textAlign = "center";
+      context.fillStyle = "#d9a83e";
+      context.font = "800 50px Arial";
+      context.fillText("COMMANDE DIRECTE", 900, 185, 1600);
+      context.fillStyle = "#ffffff";
+      context.font = "700 100px Georgia";
+      context.fillText(poster.companyName.toLocaleUpperCase("fr-FR"), 900, 350, 1560);
+      context.fillStyle = "#d9a83e";
+      context.font = "900 76px Arial";
+      context.fillText("SCANNEZ LE QR CODE", 900, 530, 1600);
+      context.fillStyle = "#ffffff";
+      context.font = "700 43px Arial";
+      context.fillText("ET COMMANDEZ DIRECTEMENT", 900, 615, 1600);
+      context.fillText("CE QUE VOUS VOULEZ", 900, 680, 1600);
+      const qrImage = new window.Image();
+      await new Promise<void>((resolve, reject) => {
+        qrImage.onload = () => resolve();
+        qrImage.onerror = () => reject(new Error("QR image indisponible."));
+        qrImage.src = poster.qrDataUrl;
+      });
+      context.fillStyle = "#fff";
+      context.fillRect(250, 760, 1300, 1300);
+      context.strokeStyle = "#d9a83e";
+      context.lineWidth = 12;
+      context.strokeRect(250, 760, 1300, 1300);
+      context.drawImage(qrImage, 310, 820, 1180, 1180);
+      context.fillStyle = "#ffffff";
+      context.font = "900 54px Arial";
+      context.fillText(`TABLE ${poster.table.label.toLocaleUpperCase("fr-FR")}`, 900, 2170, 1600);
+      context.fillStyle = "#e7c77d";
+      context.font = "700 42px Arial";
+      context.fillText(`ZONE ${(poster.table.zone?.trim() || "Zone non renseignée").toLocaleUpperCase("fr-FR")}`, 900, 2260, 1600);
+      context.fillStyle = "#d9a83e";
+      context.font = "italic 86px Georgia";
+      context.fillText("Merci", 900, 2400, 1500);
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob((value) => value ? resolve(value) : reject(new Error("Image non générée.")), "image/png");
+      });
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const slug = poster.table.label.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").toLowerCase() || "table";
+      link.href = objectUrl;
+      link.download = `affiche-qr-${slug}.png`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+      setMessage(`Affiche QR de la table ${poster.table.label} téléchargée.`);
+    } catch {
+      setError("Impossible de télécharger l’affiche QR.");
     }
   }
 
@@ -234,7 +381,7 @@ export function TablesClient({ canManage }: { canManage: boolean }) {
                     <Link href={`/dashboard/orders?table=${encodeURIComponent(table.label)}`} className="inline-flex text-xs font-black text-[var(--primary)]">
                       Prendre une commande →
                     </Link>
-                    {canManage && <button type="button" onClick={() => downloadQr(table)} className="inline-flex text-xs font-black text-[var(--primary)] underline underline-offset-4">Télécharger le QR</button>}
+                    {canManage && <button type="button" onClick={() => void openQrPoster(table)} aria-label={`Afficher l’affiche QR de ${table.label}`} className="inline-flex text-xs font-black text-[var(--primary)] underline underline-offset-4">Affiche QR</button>}
                     {table.public_menu_url && <a href={table.public_menu_url} target="_blank" rel="noreferrer" className="inline-flex text-xs font-bold text-[var(--muted)]">Ouvrir le menu</a>}
                   </div>
                 </article>
@@ -278,6 +425,33 @@ export function TablesClient({ canManage }: { canManage: boolean }) {
           </aside>
         )}
       </div>
+      {poster && (
+        <dialog ref={posterDialogRef} className="qr-poster-dialog" aria-labelledby="qr-poster-title" onClose={() => setPoster(null)} onClick={(event) => { if (event.target === event.currentTarget) setPoster(null); }}>
+          <div className="qr-poster-preview">
+            <span className="qr-poster-decoration qr-poster-decoration-one" aria-hidden="true">✦</span>
+            <span className="qr-poster-decoration qr-poster-decoration-two" aria-hidden="true">✦</span>
+            <div className="qr-poster-content">
+              <div className="qr-poster-logo" aria-hidden="true">✦</div>
+              <p className="qr-poster-label">COMMANDE DIRECTE</p>
+              <h2 id="qr-poster-title">{poster.companyName}</h2>
+              <div className="qr-poster-separator" aria-hidden="true">◆ ───────── ◆</div>
+              <p className="qr-poster-scan">SCANNEZ LE QR CODE</p>
+              <p className="qr-poster-message">ET COMMANDEZ DIRECTEMENT<br />CE QUE VOUS VOULEZ</p>
+              <div className="qr-poster-qr">
+                <Image src={poster.qrDataUrl} alt={`QR de ${poster.companyName}, table ${poster.table.label}, zone ${poster.table.zone || "Zone non renseignée"}`} width={900} height={900} unoptimized />
+              </div>
+              <p className="qr-poster-table">TABLE {poster.table.label}</p>
+              <p className="qr-poster-zone">ZONE {poster.table.zone?.trim() || "Zone non renseignée"}</p>
+              <p className="qr-poster-thanks">Merci</p>
+            </div>
+          </div>
+          <div className="qr-poster-actions">
+            <button type="button" autoFocus onClick={printPoster} className="qr-poster-action qr-poster-primary">Imprimer</button>
+            <button type="button" onClick={() => void downloadPoster()} className="qr-poster-action">Télécharger l’affiche</button>
+            <button type="button" onClick={() => setPoster(null)} className="qr-poster-close">Fermer</button>
+          </div>
+        </dialog>
+      )}
     </section>
   );
 }
