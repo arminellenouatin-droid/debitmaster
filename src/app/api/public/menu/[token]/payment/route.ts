@@ -17,23 +17,30 @@ async function resolve(token: string, orderId: string) {
   const payload = verifyPublicMenuToken(token);
   if (!payload) return null;
   const admin = createSupabaseAdminClient();
-  const [{ data: table }, { data: order }] = await Promise.all([
-    admin
-      .from("dining_tables")
-      .select("id,label,tenant_id")
-      .eq("id", payload.tableId)
-      .eq("tenant_id", payload.tenantId)
-      .is("deleted_at", null)
-      .maybeSingle(),
+  const tableRequest = payload.tableId
+    ? admin.from("dining_tables").select("id,label,zone,tenant_id").eq("id", payload.tableId).eq("tenant_id", payload.tenantId).is("deleted_at", null).maybeSingle()
+    : Promise.resolve({ data: null });
+  const roomRequest = payload.roomId
+    ? admin.from("power_lodging_rooms").select("id,room_number,tenant_id,is_active").eq("id", payload.roomId).eq("tenant_id", payload.tenantId).eq("is_active", true).maybeSingle()
+    : Promise.resolve({ data: null });
+  const [{ data: table }, { data: room }, { data: order }] = await Promise.all([
+    tableRequest,
+    roomRequest,
     admin
       .from("orders")
-      .select("id,tenant_id,table_label,order_number,total_amount,currency,status")
+      .select("id,tenant_id,table_label,location_label,order_number,total_amount,currency,status")
       .eq("id", orderId)
       .eq("tenant_id", payload.tenantId)
       .maybeSingle(),
   ]);
-  if (!table || !order || order.table_label !== table.label) return null;
-  return { payload, table, order, admin };
+  const target = table
+    ? { label: table.label, zone: table.zone }
+    : room
+      ? { label: `Chambre ${room.room_number}`, zone: "Auberge" }
+      : null;
+  if (!target || !order || order.table_label !== target.label) return null;
+  if (room && order.location_label !== target.zone) return null;
+  return { payload, target, order, admin };
 }
 
 export async function POST(request: Request, { params }: Context) {
@@ -64,7 +71,7 @@ export async function POST(request: Request, { params }: Context) {
     const resolved = await resolve((await params).token, orderId);
     if (!resolved) {
       return NextResponse.json(
-        { error: "Commande introuvable pour cette table." },
+        { error: "Commande introuvable pour cette table ou chambre." },
         { status: 404 }
       );
     }
@@ -216,7 +223,7 @@ export async function GET(request: Request, { params }: Context) {
     const resolved = await resolve((await params).token, orderId);
     if (!resolved) {
       return NextResponse.json(
-        { error: "Commande introuvable pour cette table." },
+        { error: "Commande introuvable pour cette table ou chambre." },
         { status: 404 }
       );
     }

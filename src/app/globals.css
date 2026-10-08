@@ -154,3 +154,55 @@ button { cursor: pointer; }
   .qr-dock-wrapper { bottom: 1rem; left: .75rem; right: .75rem; }
   .qr-drawer { width: 100%; padding: 1.25rem; }
 }
+
+/* Affiche de commande QR par table, reprise du modèle historique. */
+.qr-poster-dialog { width: min(calc(100% - 2rem), 42rem); max-height: calc(100vh - 2rem); max-height: calc(100dvh - 2rem); overflow: auto; margin: auto; padding: 0; border: 1px solid #d9a83e; border-radius: .8rem; background: #06110d; color: #fff; box-shadow: 0 2rem 6rem rgba(0,0,0,.55); }
+.qr-poster-dialog::backdrop { background: rgba(4,8,6,.82); backdrop-filter: blur(8px); }
+.qr-poster-preview { position: relative; min-height: 0; overflow: hidden; padding: clamp(1rem, 4vh, 2.25rem) clamp(1rem, 4vw, 2rem); color: #fff; background: linear-gradient(145deg,#09261c,#06110d); border: 3px solid #d9a83e; }
+.qr-poster-preview::before { position: absolute; inset: .9rem; content: ""; border: 1px solid rgba(217,168,62,.7); pointer-events: none; }
+.qr-poster-content { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; text-align: center; }
+.qr-poster-logo { display: grid; place-items: center; width: 4.3rem; height: 4.3rem; margin-bottom: .7rem; border: 2px solid #d9a83e; border-radius: 50%; color: #d9a83e; font-size: 2rem; background: rgba(217,168,62,.05); }
+.qr-poster-label { margin: 0; color: #d9a83e; font-size: .9rem; font-weight: 800; letter-spacing: .2em; }
+.qr-poster-content h2 { max-width: 100%; margin: .4rem 0 .7rem; color: #fff; font-family: Georgia, "Times New Roman", serif; font-size: clamp(1.5rem, 5vw, 3rem); line-height: 1.05; text-wrap: balance; text-transform: uppercase; overflow-wrap: anywhere; }
+.qr-poster-separator { width: min(100%, 24rem); color: #d9a83e; font-size: 1rem; white-space: nowrap; }
+.qr-poster-scan { margin: 1.1rem 0 .3rem; color: #d9a83e; font-size: clamp(1.35rem, 4vw, 2rem); font-weight: 900; letter-spacing: .04em; }
+.qr-poster-message { margin: 0; color: #fff; font-size: clamp(.85rem, 2.2vw, 1.15rem); font-weight: 800; line-height: 1.35; text-transform: uppercase; }
+.qr-poster-qr { width: min(100%, 18rem); aspect-ratio: 1; margin: .9rem auto .6rem; padding: .75rem; background: #fff; border: 3px solid #d9a83e; border-radius: 1rem; box-shadow: 0 .8rem 2rem rgba(0,0,0,.4); }
+.qr-poster-qr img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.qr-poster-table { margin: .1rem 0 0; color: #fff; font-size: 1.05rem; font-weight: 900; text-transform: uppercase; overflow-wrap: anywhere; }
+.qr-poster-zone { margin: .35rem 0 0; color: #e7c77d; font-size: .9rem; font-weight: 800; overflow-wrap: anywhere; }
+.qr-poster-thanks { margin: .6rem 0 0; color: #d9a83e; font-family: Georgia, "Times New Roman", serif; font-size: 2rem; font-style: italic; }
+.qr-poster-decoration { position: absolute; color: rgba(217,168,62,.13); font-size: 5rem; }
+.qr-poster-decoration-one { left: .2rem; top: 45%; }
+.qr-poster-decoration-two { right: .8rem; bottom: 16%; }
+.qr-poster-actions { position: sticky; bottom: 0; z-index: 2; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .6rem; padding: .8rem; border-top: 1px solid rgba(217,168,62,.3); background: #111c16; }
+.qr-poster-action, .qr-poster-close { min-height: 2.75rem; padding: .5rem .75rem; border: 1px solid #d9a83e; border-radius: .4rem; background: transparent; color: #ffdea8; font-size: .78rem; font-weight: 900; cursor: pointer; }
+.qr-poster-action:hover { background: #d9a83e; color: #07150f; }
+.qr-poster-primary { background: #d9a83e; color: #07150f; }
+.qr-poster-close { border-color: rgba(255,255,255,.25); color: #d5c4ab; }
+.qr-poster-action:focus-visible, .qr-poster-close:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+@media (max-width: 600px) {
+  .qr-poster-dialog { max-height: calc(100vh - 1rem); max-height: calc(100dvh - 1rem); }
+  .qr-poster-preview { padding: 1rem .75rem; }
+  .qr-poster-logo { width: 3rem; height: 3rem; margin-bottom: .4rem; font-size: 1.5rem; }
+  .qr-poster-content h2 { margin: .3rem 0 .6rem; font-size: clamp(1.3rem, 6vw, 2rem); }
+  .qr-poster-scan { margin: .7rem 0 .2rem; }
+  .qr-poster-qr { width: min(100%, 15rem); margin: .75rem auto .5rem; padding: .5rem; }
+  .qr-poster-thanks { margin-top: .5rem; font-size: 1.8rem; }
+  .qr-poster-actions { grid-template-columns: 1fr 1fr; }
+  .qr-poster-close { grid-column: span 2; }
+}
+@media (max-width: 600px) and (max-height: 740px) {
+  .qr-poster-preview { padding: .6rem .75rem; }
+  .qr-poster-logo { width: 2.4rem; height: 2.4rem; margin-bottom: .25rem; font-size: 1.2rem; }
+  .qr-poster-label { font-size: .75rem; }
+  .qr-poster-content h2 { margin: .15rem 0 .35rem; font-size: clamp(1.1rem, 5vw, 1.5rem); }
+  .qr-poster-separator { font-size: .8rem; }
+  .qr-poster-scan { margin: .4rem 0 .1rem; font-size: 1.1rem; }
+  .qr-poster-message { font-size: .72rem; }
+  .qr-poster-qr { width: min(100%, 11rem); margin: .45rem auto .3rem; padding: .35rem; }
+  .qr-poster-table { font-size: .9rem; }
+  .qr-poster-zone { font-size: .78rem; }
+  .qr-poster-thanks { display: none; }
+  .qr-poster-actions { gap: .4rem; padding: .55rem; }
+}

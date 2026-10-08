@@ -4,11 +4,13 @@
 
 Le dépôt contient maintenant un jeton QR signé côté serveur, un menu public dynamique à l’adresse `/menu/[token]`, la lecture des produits BEVERAGE et KITCHEN du tenant, la recherche sans accent, les filtres de catégories, le panier mobile, l’envoi de commande et le paiement Mobile Money public protégé par le même jeton. Le menu reprend la direction lounge sombre et ambre de la maquette fournie.
 
-L’API des tables renvoie aussi un lien public signé par table. L’écran de plan de salle ajoute le téléchargement local du PNG QR et un lien pour ouvrir le menu. Une commande publique est créée avec la table réelle, les prix relus côté serveur et les notifications existantes vers GERANT pour les boissons et CHEF_CUISINE/CUISINIER pour les repas.
+L’API des tables renvoie aussi un lien public signé par table. L’écran de plan de salle permet d’ouvrir, d’imprimer ou de télécharger une affiche par table : nom de l’établissement, QR au centre, numéro de table et zone. Le lien reste celui signé par l’API pour la table concernée. Une commande publique est créée avec la table réelle, les prix relus côté serveur et les notifications existantes vers GERANT pour les boissons et CHEF_CUISINE/CUISINIER pour les repas.
+
+Dans l’activité Hôtel/Auberge, l’écran `/dashboard/tables` charge aussi les chambres actives après les tables, avec leur photo de catalogue, leur état et leur affiche QR. Chaque QR de chambre porte le même jeton v1 signé, avec `roomId` à la place de `tableId`; le serveur vérifie l’établissement et que la chambre est active. Les commandes de consommation sont enregistrées avec `table_label = Chambre N` et `location_label = Auberge`, puis vérifiées de la même façon au paiement. Cela ne crée pas de réservation ni de vente de nuitée.
 
 ## Garde-fous
 
-Le navigateur n’est pas une source de vérité pour le tenant, la table, les prix ou les unités de préparation. Le jeton est signé avec `PUBLIC_MENU_TOKEN_SECRET` ou `JWT_SECRET`. Le paiement ne peut viser que la commande liée à la table du jeton et doit correspondre au solde serveur. La commande n’est jamais marquée payée avant la confirmation du fournisseur.
+Le navigateur n’est pas une source de vérité pour le tenant, la table/chambre, les prix ou les unités de préparation. Le jeton est signé avec `PUBLIC_MENU_TOKEN_SECRET` ou `JWT_SECRET` et vise exactement une table ou une chambre. Le paiement ne peut viser que la commande liée à cette cible et doit correspondre au solde serveur. La commande n’est jamais marquée payée avant la confirmation du fournisseur.
 
 ## Point à décider avant l’extension des activités
 
