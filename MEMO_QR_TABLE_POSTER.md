@@ -21,10 +21,10 @@
 - [x] Rebrancher la prévisualisation et les actions impression/téléchargement par table.
 - [x] Prévoir le responsive mobile/tablette/desktop, le dialogue natif clavier et l’échappement des libellés dans l’impression.
 - [x] Lancer lint ciblé, typecheck, tests et build.
-- [ ] Créer une PR dédiée, sans fusionner ni déployer sans autorisation.
+- [x] Committer, pousser et ouvrir la PR dédiée #101; attendre ses checks, sans fusionner ni déployer.
 
 ## État final livré
-- Implémentation locale prête : affiche par table, avec impression et PNG; aucun changement de base ni de jeton.
+- PR #101 ouverte : https://github.com/arminellenouatin-droid/debitmaster/pull/101. L’affiche par table propose aperçu, impression et PNG; aucun changement de base ni de jeton.
 - Validations : lint réussi (0 erreur, 246 avertissements repo-wide), TypeScript réussi, 125/125 tests, build réussi et `git diff --check` réussi.
 - Vérification visuelle responsive effectuée à 375×667, 375×850, 768×1024 et 1440×1000; le QR, la table, la zone et les actions restent lisibles, y compris sur petit écran.
-- Reste à faire : pousser la branche et ouvrir la PR; production non modifiée.
+- Reste à faire : attendre les checks de la PR et sa revue; production non modifiée.
