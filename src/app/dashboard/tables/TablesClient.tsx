@@ -6,7 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import QRCode from "qrcode";
 
-type Company = { id: string; name: string };
+type Company = { id: string; name: string; activity_type?: string };
 type DiningTable = {
   id: string;
   tenant_id: string;
@@ -18,9 +18,18 @@ type DiningTable = {
   updated_at: string;
   public_menu_url: string | null;
 };
+type LodgingRoom = {
+  id: string;
+  tenant_id: string;
+  room_number: string;
+  image_url: string | null;
+  occupied_until: string | null;
+  public_menu_url: string | null;
+};
 
 type QrPoster = {
   companyName: string;
+  targetKind: "TABLE" | "ROOM";
   table: Pick<DiningTable, "label" | "zone">;
   qrDataUrl: string;
 };
@@ -31,6 +40,7 @@ function escapeHtml(value: string) {
 }
 
 const statusLabels = { FREE: "Libre", OCCUPIED: "Occupée", RESERVED: "Réservée" } as const;
+const isRoomOccupied = (room: LodgingRoom) => Boolean(room.occupied_until && new Date(room.occupied_until).getTime() > Date.now());
 const statusStyles = {
   FREE: "border-[var(--primary-container)] bg-[var(--accent-soft)]",
   OCCUPIED: "border-[var(--secondary-container)] bg-[#fff8e8]",
@@ -41,6 +51,8 @@ export function TablesClient({ canManage }: { canManage: boolean }) {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [tenantId, setTenantId] = useState("");
   const [tables, setTables] = useState<DiningTable[]>([]);
+  const [rooms, setRooms] = useState<LodgingRoom[]>([]);
+  const [roomsError, setRoomsError] = useState("");
   const [label, setLabel] = useState("");
   const [zone, setZone] = useState("");
   const [capacity, setCapacity] = useState("2");
@@ -51,11 +63,26 @@ export function TablesClient({ canManage }: { canManage: boolean }) {
   const [poster, setPoster] = useState<QrPoster | null>(null);
   const posterDialogRef = useRef<HTMLDialogElement>(null);
 
-  async function load(id: string) {
-    const response = await fetch(`/api/tables?tenantId=${encodeURIComponent(id)}`, { cache: "no-store" });
+  async function load(id: string, activityType?: string) {
+    const [response, roomResponse] = await Promise.all([
+      fetch(`/api/tables?tenantId=${encodeURIComponent(id)}`, { cache: "no-store" }),
+      activityType === "HOTEL_AUBERGE"
+        ? fetch(`/api/power/rooms?tenantId=${encodeURIComponent(id)}`, { cache: "no-store" }).catch(() => null)
+        : Promise.resolve(null),
+    ]);
     const result = await response.json();
     if (!response.ok) throw new Error(result.error ?? "Impossible de charger le plan de salle.");
-    setTables(result.tables ?? []);
+    const loadedTables = result.tables ?? [];
+    if (!roomResponse) {
+      return { tables: loadedTables, rooms: [], roomsError: activityType === "HOTEL_AUBERGE" ? "Impossible de joindre le service des chambres." : "" };
+    }
+    try {
+      const roomResult = await roomResponse.json();
+      if (!roomResponse.ok) throw new Error(roomResult.error ?? "Impossible de charger les chambres.");
+      return { tables: loadedTables, rooms: roomResult.rooms ?? [], roomsError: "" };
+    } catch (cause) {
+      return { tables: loadedTables, rooms: [], roomsError: cause instanceof Error ? cause.message : "Impossible de charger les chambres." };
+    }
   }
 
   useEffect(() => {
@@ -81,13 +108,25 @@ export function TablesClient({ canManage }: { canManage: boolean }) {
     let active = true;
     setLoading(true);
     setError("");
-    load(tenantId)
-      .catch((cause) => active && setError(cause instanceof Error ? cause.message : "Impossible de charger le plan de salle."))
+    load(tenantId, companies.find((company) => company.id === tenantId)?.activity_type)
+      .then((loaded) => {
+        if (!active) return;
+        setTables(loaded.tables);
+        setRooms(loaded.rooms);
+        setRoomsError(loaded.roomsError);
+      })
+      .catch((cause) => {
+        if (!active) return;
+        setError(cause instanceof Error ? cause.message : "Impossible de charger le plan de salle.");
+        setTables([]);
+        setRooms([]);
+        setRoomsError("");
+      })
       .finally(() => active && setLoading(false));
     return () => {
       active = false;
     };
-  }, [tenantId]);
+  }, [tenantId, companies]);
 
   useEffect(() => {
     const dialog = posterDialogRef.current;
@@ -121,19 +160,24 @@ export function TablesClient({ canManage }: { canManage: boolean }) {
     }
   }
 
-  async function openQrPoster(table: DiningTable) {
+  async function openQrPoster(
+    target: Pick<DiningTable, "tenant_id" | "label" | "zone" | "public_menu_url">,
+    targetKind: QrPoster["targetKind"] = "TABLE",
+  ) {
     setError("");
     setMessage("");
     try {
-      if (!table.public_menu_url) throw new Error("QR_NOT_CONFIGURED");
-      const qrDataUrl = await QRCode.toDataURL(table.public_menu_url, { width: 900, margin: 3, errorCorrectionLevel: "M", color: { dark: "#07150f", light: "#fffdf7" } });
+      if (!target.public_menu_url) throw new Error("QR_NOT_CONFIGURED");
+      const qrDataUrl = await QRCode.toDataURL(target.public_menu_url, { width: 900, margin: 3, errorCorrectionLevel: "M", color: { dark: "#07150f", light: "#fffdf7" } });
       setPoster({
-        companyName: companies.find((company) => company.id === table.tenant_id)?.name ?? "Établissement",
-        table: { label: table.label, zone: table.zone },
+        companyName: companies.find((company) => company.id === target.tenant_id)?.name ?? "Établissement",
+        targetKind,
+        table: { label: target.label, zone: target.zone },
         qrDataUrl,
       });
     } catch (cause) {
-      setError(cause instanceof Error && cause.message === "QR_NOT_CONFIGURED" ? "Le QR n’est pas disponible pour cette table." : "Impossible d’afficher l’affiche QR de cette table.");
+      const place = targetKind === "ROOM" ? "cette chambre" : "cette table";
+      setError(cause instanceof Error && cause.message === "QR_NOT_CONFIGURED" ? `Le QR n’est pas disponible pour ${place}.` : `Impossible d’afficher l’affiche QR de ${place}.`);
     }
   }
 
@@ -146,8 +190,10 @@ export function TablesClient({ canManage }: { canManage: boolean }) {
     }
     const companyName = escapeHtml(poster.companyName);
     const tableLabel = escapeHtml(poster.table.label);
+    const targetType = poster.targetKind === "ROOM" ? "CHAMBRE" : "TABLE";
+    const targetNoun = poster.targetKind === "ROOM" ? "chambre" : "table";
     const zone = `ZONE ${escapeHtml(poster.table.zone?.trim() || "Zone non renseignée")}`;
-    const imageAlt = escapeHtml(`QR de ${poster.companyName}, table ${poster.table.label}, zone ${poster.table.zone || "Zone non renseignée"}`);
+    const imageAlt = escapeHtml(`QR de ${poster.companyName}, ${targetNoun} ${poster.table.label}, zone ${poster.table.zone || "Zone non renseignée"}`);
     printWindow.opener = null;
     printWindow.document.write(`<!doctype html>
 <html lang="fr">
@@ -180,7 +226,7 @@ export function TablesClient({ canManage }: { canManage: boolean }) {
     <p class="scan">SCANNEZ LE QR CODE</p>
     <p class="message">ET COMMANDEZ DIRECTEMENT<br>CE QUE VOUS VOULEZ</p>
     <div class="qr"><img src="${escapeHtml(poster.qrDataUrl)}" alt="${imageAlt}"></div>
-    <p class="table">TABLE ${tableLabel}</p>
+    <p class="table">${targetType} ${tableLabel}</p>
     <p class="zone">${zone}</p>
   </main>
 </body>
@@ -238,7 +284,8 @@ export function TablesClient({ canManage }: { canManage: boolean }) {
       context.drawImage(qrImage, 310, 820, 1180, 1180);
       context.fillStyle = "#ffffff";
       context.font = "900 54px Arial";
-      context.fillText(`TABLE ${poster.table.label.toLocaleUpperCase("fr-FR")}`, 900, 2170, 1600);
+      const targetType = poster.targetKind === "ROOM" ? "CHAMBRE" : "TABLE";
+      context.fillText(`${targetType} ${poster.table.label.toLocaleUpperCase("fr-FR")}`, 900, 2170, 1600);
       context.fillStyle = "#e7c77d";
       context.font = "700 42px Arial";
       context.fillText(`ZONE ${(poster.table.zone?.trim() || "Zone non renseignée").toLocaleUpperCase("fr-FR")}`, 900, 2260, 1600);
@@ -252,12 +299,12 @@ export function TablesClient({ canManage }: { canManage: boolean }) {
       const link = document.createElement("a");
       const slug = poster.table.label.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").toLowerCase() || "table";
       link.href = objectUrl;
-      link.download = `affiche-qr-${slug}.png`;
+      link.download = `affiche-qr-${poster.targetKind === "ROOM" ? "chambre" : "table"}-${slug}.png`;
       document.body.appendChild(link);
       link.click();
       link.remove();
       window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
-      setMessage(`Affiche QR de la table ${poster.table.label} téléchargée.`);
+      setMessage(`Affiche QR de la ${poster.targetKind === "ROOM" ? "chambre" : "table"} ${poster.table.label} téléchargée.`);
     } catch {
       setError("Impossible de télécharger l’affiche QR.");
     }
@@ -394,6 +441,58 @@ export function TablesClient({ canManage }: { canManage: boolean }) {
               <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[var(--muted)]">Ajoutez la première table de cet établissement pour commencer à organiser le service.</p>
             </div>
           )}
+
+          {companies.find((company) => company.id === tenantId)?.activity_type === "HOTEL_AUBERGE" && (
+            <section className="mt-8 border-t border-[var(--line)] pt-6" aria-labelledby="lodging-rooms-title">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.16em] text-[var(--muted)]">Hébergement</p>
+                  <h2 id="lodging-rooms-title" className="mt-2 text-xl font-black text-[var(--primary)]">Chambres de l’auberge</h2>
+                </div>
+                {!loading && !roomsError && <span className="text-xs font-bold text-[var(--muted)]">{rooms.length} chambre(s) active(s)</span>}
+              </div>
+              {loading ? (
+                <p className="py-8 text-center text-sm font-bold text-[var(--muted)]">Chargement des chambres…</p>
+              ) : roomsError ? (
+                <p role="alert" className="mt-5 rounded-lg bg-[#ffdad6] px-4 py-3 text-sm font-bold text-[var(--danger)]">{roomsError}</p>
+              ) : rooms.length ? (
+                <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {rooms.map((room) => {
+                    const occupied = isRoomOccupied(room);
+                    return (
+                      <article key={room.id} className="overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--surface)]">
+                        <div className="relative aspect-[16/10] bg-[var(--surface-muted)]">
+                          {room.image_url ? (
+                            <Image src={room.image_url} alt={`Photo de la chambre ${room.room_number}`} fill sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 320px" unoptimized className="object-cover" />
+                          ) : (
+                            <div className="grid h-full place-content-center gap-2 text-center text-xs font-bold text-[var(--muted)]">
+                              <span aria-hidden="true" className="text-3xl">⌂</span>
+                              <span>Photo non renseignée</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="p-4">
+                          <div className="flex items-start justify-between gap-3">
+                            <h3 className="text-lg font-black text-[var(--primary)]">Chambre {room.room_number}</h3>
+                            <span className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.06em] ${occupied ? "bg-[#fff0d1] text-[#684900]" : "bg-[var(--accent-soft)] text-[var(--primary)]"}`}>
+                              {occupied ? "Occupée" : "Disponible"}
+                            </span>
+                          </div>
+                          <p className="mt-1 text-xs font-bold text-[var(--muted)]">Auberge · commande directe par QR</p>
+                          <div className="mt-4 flex flex-wrap items-center gap-3">
+                            {canManage && <button type="button" onClick={() => void openQrPoster({ tenant_id: room.tenant_id, label: room.room_number, zone: "Auberge", public_menu_url: room.public_menu_url }, "ROOM")} aria-label={`Afficher l’affiche QR de la chambre ${room.room_number}`} className="inline-flex min-h-11 items-center text-xs font-black text-[var(--primary)] underline underline-offset-4">Affiche QR</button>}
+                            {room.public_menu_url && <a href={room.public_menu_url} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center text-xs font-bold text-[var(--muted)] underline underline-offset-4">Tester le menu</a>}
+                          </div>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="mt-5 rounded-lg bg-[var(--surface-muted)] px-4 py-6 text-center text-sm font-bold text-[var(--muted)]">Aucune chambre active configurée.</p>
+              )}
+            </section>
+          )}
         </div>
 
         {canManage ? (
@@ -438,9 +537,9 @@ export function TablesClient({ canManage }: { canManage: boolean }) {
               <p className="qr-poster-scan">SCANNEZ LE QR CODE</p>
               <p className="qr-poster-message">ET COMMANDEZ DIRECTEMENT<br />CE QUE VOUS VOULEZ</p>
               <div className="qr-poster-qr">
-                <Image src={poster.qrDataUrl} alt={`QR de ${poster.companyName}, table ${poster.table.label}, zone ${poster.table.zone || "Zone non renseignée"}`} width={900} height={900} unoptimized />
+                <Image src={poster.qrDataUrl} alt={`QR de ${poster.companyName}, ${poster.targetKind === "ROOM" ? "chambre" : "table"} ${poster.table.label}, zone ${poster.table.zone || "Zone non renseignée"}`} width={900} height={900} unoptimized />
               </div>
-              <p className="qr-poster-table">TABLE {poster.table.label}</p>
+              <p className="qr-poster-table">{poster.targetKind === "ROOM" ? "CHAMBRE" : "TABLE"} {poster.table.label}</p>
               <p className="qr-poster-zone">ZONE {poster.table.zone?.trim() || "Zone non renseignée"}</p>
               <p className="qr-poster-thanks">Merci</p>
             </div>

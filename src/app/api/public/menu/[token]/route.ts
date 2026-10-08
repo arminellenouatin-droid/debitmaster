@@ -7,17 +7,26 @@ import { verifyPublicMenuToken } from "@/lib/public-menu-token";
 
 type Context = { params: Promise<{ token: string }> };
 type LineInput = { productId?: unknown; quantity?: unknown };
+type MenuTarget = { id: string; label: string; zone: string | null; kind: "TABLE" | "ROOM" };
 
 async function resolve(token: string) {
   const payload = verifyPublicMenuToken(token);
   if (!payload) return { error: NextResponse.json({ error: "Lien de menu invalide ou expiré." }, { status: 404 }) } as const;
   const admin = createSupabaseAdminClient();
-  const [{ data: company, error: companyError }, { data: table, error: tableError }] = await Promise.all([
-    admin.from("companies").select("id,name,activity_type,zones_tables_enabled").eq("id", payload.tenantId).is("deleted_at", null).maybeSingle(),
-    admin.from("dining_tables").select("id,tenant_id,label,zone,status").eq("id", payload.tableId).eq("tenant_id", payload.tenantId).is("deleted_at", null).maybeSingle(),
-  ]);
-  if (companyError || tableError || !company || !table) return { error: NextResponse.json({ error: "Cette table n’est plus disponible." }, { status: 404 }) } as const;
-  return { payload, company, table, admin } as const;
+  const { data: company, error: companyError } = await admin.from("companies").select("id,name,activity_type,zones_tables_enabled").eq("id", payload.tenantId).is("deleted_at", null).maybeSingle();
+  if (companyError || !company) return { error: NextResponse.json({ error: "Cet établissement n’est plus disponible." }, { status: 404 }) } as const;
+
+  if (payload.tableId) {
+    const { data: table, error: tableError } = await admin.from("dining_tables").select("id,tenant_id,label,zone,status").eq("id", payload.tableId).eq("tenant_id", payload.tenantId).is("deleted_at", null).maybeSingle();
+    if (tableError || !table) return { error: NextResponse.json({ error: "Cette table n’est plus disponible." }, { status: 404 }) } as const;
+    const target: MenuTarget = { id: table.id, label: table.label, zone: table.zone, kind: "TABLE" };
+    return { payload, company, target, admin } as const;
+  }
+
+  const { data: room, error: roomError } = await admin.from("power_lodging_rooms").select("id,tenant_id,room_number,is_active").eq("id", payload.roomId!).eq("tenant_id", payload.tenantId).eq("is_active", true).maybeSingle();
+  if (roomError || !room || company.activity_type !== "HOTEL_AUBERGE") return { error: NextResponse.json({ error: "Cette chambre n’est plus disponible." }, { status: 404 }) } as const;
+  const target: MenuTarget = { id: room.id, label: room.room_number, zone: "Auberge", kind: "ROOM" };
+  return { payload, company, target, admin } as const;
 }
 
 export async function GET(request: Request, { params }: Context) {
@@ -25,7 +34,7 @@ export async function GET(request: Request, { params }: Context) {
     const token = (await params).token;
     const resolved = await resolve(token);
     if ("error" in resolved) return resolved.error;
-    const { admin, company, table, payload } = resolved;
+    const { admin, company, target, payload } = resolved;
     const [{ data: products, error: productsError }, { data: categories }, { data: activities }, { data: services }, { data: rooms }] = await Promise.all([
       admin.from("products").select("id,name,price,product_type,stock_family,unit,packaging_label,category_id,image_url").eq("tenant_id", payload.tenantId).is("deleted_at", null).order("name").limit(300),
       admin.from("categories").select("id,name,parent_id").eq("tenant_id", payload.tenantId).is("deleted_at", null).order("name").limit(100),
@@ -40,7 +49,7 @@ export async function GET(request: Request, { params }: Context) {
       stock_family: (p.stock_family === "KITCHEN" || String(p.product_type ?? "").toUpperCase().includes("MEAL") || String(p.product_type ?? "").toUpperCase().includes("FOOD")) ? "KITCHEN" as const : "BEVERAGE" as const,
     }));
     const wifiTickets = [{ ticket_code: "3_HOURS", label: "Wi-Fi 3 heures", duration_label: "3 heures", unit_price_xof: 100 }, { ticket_code: "72_HOURS", label: "Wi-Fi 72 heures", duration_label: "72 heures", unit_price_xof: 500 }, { ticket_code: "1_MONTH", label: "Wi-Fi 1 mois", duration_label: "1 mois", unit_price_xof: 2500 }];
-    return NextResponse.json({ company: { id: company.id, name: company.name }, table: { id: table.id, label: table.label, zone: table.zone }, products: formattedProducts, categories: categories ?? [], activities: activities ?? [], services: services ?? [], rooms: rooms ?? [], wifiTickets }, { headers: { "Cache-Control": "private, no-store" } });
+    return NextResponse.json({ company: { id: company.id, name: company.name }, table: { id: target.id, label: target.label, zone: target.zone }, targetKind: target.kind, products: formattedProducts, categories: categories ?? [], activities: activities ?? [], services: services ?? [], rooms: rooms ?? [], wifiTickets }, { headers: { "Cache-Control": "private, no-store" } });
   } catch {
     return NextResponse.json({ error: "Le menu est momentanément indisponible." }, { status: 500 });
   }
@@ -51,7 +60,7 @@ export async function POST(request: Request, { params }: Context) {
     const token = (await params).token;
     const resolved = await resolve(token);
     if ("error" in resolved) return resolved.error;
-    const { admin, company, table, payload } = resolved;
+    const { admin, target, payload } = resolved;
     const body = await request.json() as { lines?: LineInput[]; customerName?: unknown; note?: unknown };
     const lines = Array.isArray(body.lines) ? body.lines : [];
     if (!lines.length || lines.length > 50) return NextResponse.json({ error: "Ajoutez au moins un article au panier." }, { status: 400 });
@@ -70,12 +79,14 @@ export async function POST(request: Request, { params }: Context) {
     const orderNumber = `QR-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}-${randomUUID().slice(0, 8).toUpperCase()}`;
     const customerName = typeof body.customerName === "string" ? body.customerName.trim().slice(0, 80) : "Client QR";
     const note = typeof body.note === "string" ? body.note.trim().slice(0, 250) : null;
-    const { data: order, error: orderError } = await admin.from("orders").insert({ tenant_id: payload.tenantId, order_number: orderNumber, table_label: table.label, location_label: table.zone, server_user_id: null, server_name: customerName || "Client QR", total_amount: totalAmount, currency: "XOF" }).select("id,tenant_id,order_number,table_label,location_label,status,total_amount,currency,created_at").single();
+    const targetLabel = target.kind === "ROOM" ? `Chambre ${target.label}` : target.label;
+    const { data: order, error: orderError } = await admin.from("orders").insert({ tenant_id: payload.tenantId, order_number: orderNumber, table_label: targetLabel, location_label: target.zone, server_user_id: null, server_name: customerName || "Client QR", total_amount: totalAmount, currency: "XOF" }).select("id,tenant_id,order_number,table_label,location_label,status,total_amount,currency,created_at").single();
     if (orderError || !order) return NextResponse.json({ error: "Impossible d’enregistrer la commande." }, { status: 400 });
     const { data: insertedLines, error: linesError } = await admin.from("order_items").insert(orderLines.map((line) => ({ ...line, order_id: order.id }))).select("id,product_id,product_name,quantity,unit_price,total_price,fulfillment_unit");
     if (linesError) { await admin.from("orders").delete().eq("id", order.id).eq("tenant_id", payload.tenantId); return NextResponse.json({ error: "Impossible d’enregistrer les articles de la commande." }, { status: 400 }); }
     const units = [...new Set(orderLines.map((line) => line.fulfillment_unit))];
-    await emitTenantNotification({ tenantId: payload.tenantId, actorUserId: null, subject: `Commande client ${order.order_number}`, body: `${customerName || "Un client"} a commandé ${totalAmount.toLocaleString("fr-FR")} XOF à la ${table.label}.`, eventType: "PUBLIC_ORDER_CREATED", entityId: order.id, actionPath: `/dashboard/orders?orderId=${encodeURIComponent(order.id)}`, actionPermission: "orders.prepare", operatorPositions: units.flatMap((unit) => unit === "MEAL" ? ["CHEF_CUISINE", "CUISINIER"] : ["GERANT"]), dedupeKey: `public-order-created:${order.id}`, metadata: { source: "QR_MENU", tableId: table.id, tableLabel: table.label, note, units, orderNumber: order.order_number } });
+    const placeLabel = target.kind === "ROOM" ? `la chambre ${target.label}` : `la table ${target.label}`;
+    await emitTenantNotification({ tenantId: payload.tenantId, actorUserId: null, subject: `Commande client ${order.order_number}`, body: `${customerName || "Un client"} a commandé ${totalAmount.toLocaleString("fr-FR")} XOF à ${placeLabel}${target.zone ? ` (${target.zone})` : ""}.`, eventType: "PUBLIC_ORDER_CREATED", entityId: order.id, actionPath: `/dashboard/orders?orderId=${encodeURIComponent(order.id)}`, actionPermission: "orders.prepare", operatorPositions: units.flatMap((unit) => unit === "MEAL" ? ["CHEF_CUISINE", "CUISINIER"] : ["GERANT"]), dedupeKey: `public-order-created:${order.id}`, metadata: { source: "QR_MENU", tableId: target.kind === "TABLE" ? target.id : null, roomId: target.kind === "ROOM" ? target.id : null, targetKind: target.kind, tableLabel: targetLabel, note, units, orderNumber: order.order_number } });
     return NextResponse.json({ order: { ...order, order_items: insertedLines ?? [] }, message: `Commande ${order.order_number} envoyée.` }, { status: 201 });
   } catch {
     return NextResponse.json({ error: "Impossible d’enregistrer la commande." }, { status: 400 });

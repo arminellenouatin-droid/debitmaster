@@ -52,6 +52,7 @@ type WifiTicket = {
 type MenuData = {
   company: { id: string; name: string };
   table: { id: string; label: string; zone: string | null };
+  targetKind?: "TABLE" | "ROOM";
   products: Product[];
   categories: Category[];
   activities?: { id: string; activity_code: string; name: string }[];
@@ -164,6 +165,7 @@ export function MenuClient({ token }: { token: string }) {
   const [paymentPhone, setPaymentPhone] = useState("");
   const [paymentBusy, setPaymentBusy] = useState(false);
   const [payAtTableSuccess, setPayAtTableSuccess] = useState(false);
+  const locationType = data?.targetKind === "ROOM" ? "Chambre" : "Table";
 
   useEffect(() => {
     let active = true;
@@ -331,11 +333,11 @@ export function MenuClient({ token }: { token: string }) {
           </div>
         </div>
 
-        {/* Table Badge & Cart Button */}
+        {/* Table or room badge & Cart Button */}
         <div className="flex items-center gap-2.5">
           <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-950/60 border border-emerald-500/30 text-emerald-300 text-xs font-bold">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span>Table {data.table.label}</span>
+            <span>{locationType} {data.table.label}</span>
             {data.table.zone && <span className="text-emerald-400/60 font-normal">· {data.table.zone}</span>}
           </div>
 
@@ -354,7 +356,7 @@ export function MenuClient({ token }: { token: string }) {
         <div className="qr-hero-copy">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-400/30 text-amber-300 text-xs font-bold mb-3">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-            <span>Connecté à la Table {data.table.label}</span>
+            <span>Connecté à la {locationType} {data.table.label}</span>
             {data.table.zone && <span className="opacity-70">({data.table.zone})</span>}
           </div>
 
@@ -412,7 +414,7 @@ export function MenuClient({ token }: { token: string }) {
         {/* Section Heading & Live Search */}
         <div className="qr-section-heading">
           <div>
-            <p className="qr-kicker">À votre rythme • Table {data.table.label}</p>
+            <p className="qr-kicker">À votre rythme • {locationType} {data.table.label}</p>
             <h2>Notre Sélection Gourmande</h2>
           </div>
           <label className="qr-search">
@@ -788,7 +790,7 @@ export function MenuClient({ token }: { token: string }) {
       <footer className="qr-footer">
         <div className="flex flex-col gap-1">
           <span className="text-amber-200 font-bold text-sm">{data.company.name}</span>
-          <span className="text-neutral-400 text-xs">Service à table en direct · Table {data.table.label}</span>
+          <span className="text-neutral-400 text-xs">Service à la {locationType} en direct · {locationType} {data.table.label}</span>
         </div>
         <div className="flex items-center gap-4 text-xs text-neutral-500">
           <span>Plateforme DébitMaster</span>
@@ -830,13 +832,13 @@ export function MenuClient({ token }: { token: string }) {
                 </div>
                 <h3 className="text-xl font-bold text-amber-200 mt-2">Commande bien reçue en cuisine & au bar !</h3>
                 <p className="text-xs text-neutral-300 mt-1 max-w-sm">
-                  Votre commande a été transmise directement à nos équipes pour la <strong>Table {data.table.label}</strong>. Vos consommations sont en cours de préparation.
+                  Votre commande a été transmise directement à nos équipes pour la <strong>{locationType} {data.table.label}</strong>. Vos consommations sont en cours de préparation.
                 </p>
 
                 <div className="qr-total-box my-4 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30">
                   <div className="flex justify-between text-xs text-neutral-400 mb-1">
-                    <span>Table assignée :</span>
-                    <strong className="text-amber-200">Table {data.table.label} {data.table.zone ? `(${data.table.zone})` : ""}</strong>
+                    <span>{locationType} assignée :</span>
+                    <strong className="text-amber-200">{locationType} {data.table.label} {data.table.zone ? `(${data.table.zone})` : ""}</strong>
                   </div>
                   <div className="flex justify-between text-sm text-neutral-300">
                     <span>Montant total de la commande :</span>
@@ -974,7 +976,7 @@ export function MenuClient({ token }: { token: string }) {
                     <span>{money(total)}</span>
                   </div>
                   <div className="flex justify-between text-xs text-neutral-400">
-                    <span>Service à table (Table {data.table.label}) :</span>
+                    <span>Service à la {locationType} ({locationType} {data.table.label}) :</span>
                     <span className="text-emerald-400 font-semibold">Inclus</span>
                   </div>
                   <div className="flex justify-between text-base font-black text-amber-300 pt-2 border-t border-white/10">
@@ -992,7 +994,7 @@ export function MenuClient({ token }: { token: string }) {
                   {submitting ? "Transmission en cuisine…" : "Confirmer et envoyer la commande"}
                 </button>
                 <p className="qr-payment-note">
-                  Votre commande sera transmise instantanément au bar et en cuisine pour la Table {data.table.label}.
+                  Votre commande sera transmise instantanément au bar et en cuisine pour la {locationType} {data.table.label}.
                 </p>
               </>
             ) : (

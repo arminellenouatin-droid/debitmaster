@@ -3,7 +3,9 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 
 const TOKEN_VERSION = "v1";
 
-type MenuTokenPayload = { tenantId: string; tableId: string };
+export type MenuTokenPayload =
+  | { tenantId: string; tableId: string; roomId?: never }
+  | { tenantId: string; roomId: string; tableId?: never };
 
 function secret() {
   const value =
@@ -27,6 +29,11 @@ function signature(input: string) {
 }
 
 export function createPublicMenuToken(payload: MenuTokenPayload) {
+  const hasTable = typeof payload.tableId === "string" && payload.tableId.length > 0;
+  const hasRoom = typeof payload.roomId === "string" && payload.roomId.length > 0;
+  if (!payload.tenantId || Number(hasTable) + Number(hasRoom) !== 1) {
+    throw new Error("MENU_TOKEN_TARGET_INVALID");
+  }
   const body = encode(JSON.stringify(payload));
   return `${TOKEN_VERSION}.${body}.${signature(`${TOKEN_VERSION}.${body}`)}`;
 }
@@ -39,9 +46,19 @@ export function verifyPublicMenuToken(token: string): MenuTokenPayload | null {
   const right = Buffer.from(suppliedSignature);
   if (left.length !== right.length || !timingSafeEqual(left, right)) return null;
   try {
-    const payload = JSON.parse(decode(body)) as Partial<MenuTokenPayload>;
-    if (typeof payload.tenantId !== "string" || typeof payload.tableId !== "string") return null;
-    return { tenantId: payload.tenantId, tableId: payload.tableId };
+    const payload = JSON.parse(decode(body)) as {
+      tenantId?: unknown;
+      tableId?: unknown;
+      roomId?: unknown;
+    };
+    if (typeof payload.tenantId !== "string" || !payload.tenantId) return null;
+    if (typeof payload.tableId === "string" && payload.tableId && payload.roomId === undefined) {
+      return { tenantId: payload.tenantId, tableId: payload.tableId };
+    }
+    if (typeof payload.roomId === "string" && payload.roomId && payload.tableId === undefined) {
+      return { tenantId: payload.tenantId, roomId: payload.roomId };
+    }
+    return null;
   } catch {
     return null;
   }
